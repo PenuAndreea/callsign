@@ -1,0 +1,6 @@
+CLAUDE.local.md
+node_modules
+.turbo
+.env
+.env.*
+!.env.example
