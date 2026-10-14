@@ -44,6 +44,8 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
 - Rooms are public, there is no role field, and rooms have no frequency number.
 - Monorepo: **pnpm workspaces + Turborepo** (`nodeLinker: hoisted` in `pnpm-workspace.yaml` for Expo).
 - Shared package builds: `packages/types` is **built with tsup** (ESM + CJS in `dist/`) because the NestJS API runs compiled JS under plain Node and cannot import TS source. `theme`, `ui` and `hooks` stay **source-only** (consumed only by Vite and Metro). Turbo runs `^build` before `typecheck`, `test` and `dev`.
+  - `exports` maps `require` → `dist/index.cjs` + `.d.cts` (API) and `import` → `dist/index.js` + `.d.ts` (Vite, Metro, Vitest).
+  - tsup's declaration build sets `baseUrl` internally, which TS 6 deprecates, so `tsup.config.ts` passes `ignoreDeprecations: '6.0'` to the dts step. tsup is in maintenance mode; **tsdown** is the drop-in successor if it causes more trouble.
 - One React version: `react`, `react-dom`, `react-test-renderer`, `react-native-web`, `@types/react` and `@types/react-dom` live in the default pnpm `catalog:` in `pnpm-workspace.yaml`, pinned to what the Expo SDK expects (React 19.2.3 for SDK 57). Apps reference them as `"catalog:"`. Bump only together with an Expo SDK upgrade.
   - Libraries must support that React version: **React Router 7** (v8 needs React ≥19.2.7), **React Native Testing Library 13** with `react-test-renderer` (v14 needs React 19.3).
   - Known harmless peer warning: `@react-native/metro-config` 0.87 vs 0.86 (optional peer of the RN CLI; Expo uses its own Metro config).
