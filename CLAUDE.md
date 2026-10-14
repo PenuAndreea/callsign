@@ -57,7 +57,8 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
 - Data fetching: **TanStack Query** inside the shared hooks.
 - Routing: **React Router** on web, **Expo Router** on mobile (routing stays in the apps).
 - Testing: **Vitest** (web, shared packages), **Jest + Supertest** (API, against **mongodb-memory-server**: a real throwaway MongoDB per test file, no Docker in CI), **jest-expo + React Native Testing Library** (mobile-only behavior).
-- Local MongoDB: `docker-compose.yml` at the root (`docker compose up`, then `pnpm dev`).
+- Local MongoDB: `docker-compose.yml` at the root (MongoDB 8.0, named volume, healthcheck, bound to `127.0.0.1` only, no auth). `pnpm db:up` (waits until healthy), then `pnpm dev`; `pnpm db:down` stops it and keeps the data.
+- Env: the API reads `apps/api/.env` (git-ignored); `apps/api/.env.example` is committed and lists every variable. Add new variables to both.
 - Git: **Husky + lint-staged** at the repo root (lint/format staged files, typecheck on pre-commit); CI runs the same checks. **Conventional Commits**, enforced by commitlint in a `commit-msg` hook. Optional scope from: `api`, `web`, `mobile`, `types`, `theme`, `ui`, `hooks`, `config`, `deps`, `ci`, `docs`.
 - Reconnect and offline behavior on mobile: handled in M6.
 
