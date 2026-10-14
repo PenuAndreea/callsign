@@ -39,11 +39,12 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
 - Shared contract: **Zod** schemas in a shared package, with TypeScript types inferred from them (`z.infer`).
 - Shared hooks and the API client live in `packages/`, not in the apps (single source of truth). Platform-specific parts (token storage, API base URL) are injected through a provider, never imported directly in hooks.
 - Rooms are public, there is no role field, and rooms have no frequency number.
-- Monorepo: **pnpm workspaces + Turborepo** (`node-linker=hoisted` for Expo).
+- Monorepo: **pnpm workspaces + Turborepo** (`nodeLinker: hoisted` in `pnpm-workspace.yaml` for Expo).
 - Shared package builds: `packages/types` is **built with tsup** (ESM + CJS in `dist/`) because the NestJS API runs compiled JS under plain Node and cannot import TS source. `theme`, `ui` and `hooks` stay **source-only** (consumed only by Vite and Metro). Turbo runs `^build` before `typecheck`, `test` and `dev`.
 - One React version: pin `react`, `react-dom`, `react-native` and `react-native-web` to the versions the Expo SDK expects (pnpm `catalog:` or `overrides`), so hoisting never installs two Reacts.
 - API validation: the shared Zod schemas, through a `ZodValidationPipe` (custom or `nestjs-zod`). No `class-validator`.
-- TypeScript pinned to `~6.0` (typescript-eslint supports `<6.1`; TS 7's native compiler is not yet supported by the tooling).
+- TypeScript pinned to `~6.0` (typescript-eslint supports `<6.1`; TS 7's native compiler is not yet supported by the tooling). TS 6 defaults `types` to `[]`, so every tsconfig lists its globals explicitly (e.g. `["jest"]` on mobile, `["node", "jest"]` on the API, `["vite/client"]` on web).
+- Tests: in `src/__tests__/` or next to the code, but never inside Expo Router's `src/app/` (every file there becomes a route).
 - Linting: one root `eslint.config.js` (re-exports `@callsign/config/eslint`) covers the whole repo; `pnpm lint` runs it once from the root, packages need no lint script. Each app/package defines its own `typecheck` script, run through Turbo.
 - Data fetching: **TanStack Query** inside the shared hooks.
 - Routing: **React Router** on web, **Expo Router** on mobile (routing stays in the apps).
@@ -67,7 +68,7 @@ packages/
   config/    shared eslint, tsconfig, prettier
 ```
 
-Expo in a pnpm monorepo usually needs `node-linker=hoisted` in `.npmrc` and a Metro config tweak. Vite needs an alias from `react-native` to `react-native-web`.
+Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `pnpm-workspace.yaml` (pnpm 11+ ignores pnpm settings in `.npmrc`; that file is only for registry/auth). Recent Expo SDKs configure Metro for monorepos automatically; add a `metro.config.js` only if `@callsign/*` packages fail to resolve. Vite needs an alias from `react-native` to `react-native-web`.
 
 ## Milestones
 

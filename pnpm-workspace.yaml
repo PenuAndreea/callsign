@@ -1,3 +1,6 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+
+# Expo/Metro needs a flat node_modules in a pnpm monorepo
+nodeLinker: hoisted
