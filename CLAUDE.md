@@ -5,6 +5,7 @@
 Technical assignment for the Aviobook fullstack role: a real-time chat application matching the business case of the Connect application. The product is called **Callsign**. Chatrooms are called **nets**, and users are identified by a **callsign**.
 
 Hard requirements from the assignment:
+
 - Backend: Node.js + TypeScript, REST API for chatrooms, messages sent and received via WebSockets, chatrooms and messages stored in MongoDB.
 - Frontend: React for web, React Native for mobile. Everything else in the stack is free of choice.
 
@@ -42,11 +43,13 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
 - Shared package builds: `packages/types` is **built with tsup** (ESM + CJS in `dist/`) because the NestJS API runs compiled JS under plain Node and cannot import TS source. `theme`, `ui` and `hooks` stay **source-only** (consumed only by Vite and Metro). Turbo runs `^build` before `typecheck`, `test` and `dev`.
 - One React version: pin `react`, `react-dom`, `react-native` and `react-native-web` to the versions the Expo SDK expects (pnpm `catalog:` or `overrides`), so hoisting never installs two Reacts.
 - API validation: the shared Zod schemas, through a `ZodValidationPipe` (custom or `nestjs-zod`). No `class-validator`.
+- TypeScript pinned to `~6.0` (typescript-eslint supports `<6.1`; TS 7's native compiler is not yet supported by the tooling).
+- Linting: one root `eslint.config.js` (re-exports `@callsign/config/eslint`) covers the whole repo; `pnpm lint` runs it once from the root, packages need no lint script. Each app/package defines its own `typecheck` script, run through Turbo.
 - Data fetching: **TanStack Query** inside the shared hooks.
 - Routing: **React Router** on web, **Expo Router** on mobile (routing stays in the apps).
 - Testing: **Vitest** (web, shared packages), **Jest + Supertest** (API, against **mongodb-memory-server**: a real throwaway MongoDB per test file, no Docker in CI), **jest-expo + React Native Testing Library** (mobile-only behavior).
 - Local MongoDB: `docker-compose.yml` at the root (`docker compose up`, then `pnpm dev`).
-- Git: **Husky + lint-staged** at the repo root (lint/format staged files, typecheck on pre-commit); CI runs the same checks. **Conventional Commits.**
+- Git: **Husky + lint-staged** at the repo root (lint/format staged files, typecheck on pre-commit); CI runs the same checks. **Conventional Commits**, enforced by commitlint in a `commit-msg` hook. Optional scope from: `api`, `web`, `mobile`, `types`, `theme`, `ui`, `hooks`, `config`, `deps`, `ci`, `docs`.
 - Reconnect and offline behavior on mobile: handled in M6.
 
 ## Repository layout (planned)
@@ -88,13 +91,13 @@ Expo in a pnpm monorepo usually needs `node-linker=hoisted` in `.npmrc` and a Me
 
 **Indexes:**
 
-| Collection | Index | Serves |
-|---|---|---|
-| users | `{ callsign: 1 }` unique | login, register |
-| rooms | `{ name: 1 }` unique | create net (duplicate check) |
-| memberships | `{ userId: 1, roomId: 1 }` unique | "my nets", prevents double join |
-| memberships | `{ roomId: 1 }` | members of a net, socket room sync |
-| messages | `{ roomId: 1, _id: -1 }` | paginated history (cursor on `_id`: unique and time-ordered, no ties) |
+| Collection  | Index                             | Serves                                                                |
+| ----------- | --------------------------------- | --------------------------------------------------------------------- |
+| users       | `{ callsign: 1 }` unique          | login, register                                                       |
+| rooms       | `{ name: 1 }` unique              | create net (duplicate check)                                          |
+| memberships | `{ userId: 1, roomId: 1 }` unique | "my nets", prevents double join                                       |
+| memberships | `{ roomId: 1 }`                   | members of a net, socket room sync                                    |
+| messages    | `{ roomId: 1, _id: -1 }`          | paginated history (cursor on `_id`: unique and time-ordered, no ties) |
 
 Nets list: joined = the user's memberships → rooms by id; open = rooms whose `_id` is not in that set. Both sorted by name, cursor = last name on the page.
 
@@ -130,20 +133,20 @@ Flat and printed rather than machined. The WW2 feel comes from color, typography
 
 **Tokens** (in `packages/theme`, components reference names only, never raw values):
 
-| Token | Value | Use |
-|---|---|---|
-| background | `#3b4630` | olive drab screen background |
-| backgroundDark | `#2c3524` | headers, footers, sidebar |
-| paper | `#e8dfc0` | cards, other users' messages, inputs |
-| ink | `#1f1a14` | text on paper, all borders |
-| inkMuted | `#4a4234` | secondary text on paper |
-| brass | `#c9a24a` | buttons, own-message border, accent bars |
-| brown | `#4a2f20` | own messages |
-| alert | `#9e3a26` | stamp badges (darkened from `#b5442e` to reach 4.5:1 on paper) |
-| signalOn | `#8fd14f` | active status dot |
-| mutedOnOlive | `#cfc7a6` | secondary text on olive |
-| divider | `#6b7a58` | dashed dividers |
-| placeholder | `#655d4a` | input placeholders |
+| Token          | Value     | Use                                                            |
+| -------------- | --------- | -------------------------------------------------------------- |
+| background     | `#3b4630` | olive drab screen background                                   |
+| backgroundDark | `#2c3524` | headers, footers, sidebar                                      |
+| paper          | `#e8dfc0` | cards, other users' messages, inputs                           |
+| ink            | `#1f1a14` | text on paper, all borders                                     |
+| inkMuted       | `#4a4234` | secondary text on paper                                        |
+| brass          | `#c9a24a` | buttons, own-message border, accent bars                       |
+| brown          | `#4a2f20` | own messages                                                   |
+| alert          | `#9e3a26` | stamp badges (darkened from `#b5442e` to reach 4.5:1 on paper) |
+| signalOn       | `#8fd14f` | active status dot                                              |
+| mutedOnOlive   | `#cfc7a6` | secondary text on olive                                        |
+| divider        | `#6b7a58` | dashed dividers                                                |
+| placeholder    | `#655d4a` | input placeholders                                             |
 
 - **Fonts:** Stardos Stencil (400/700) for headings and labels, Special Elite for body text. Both from Google Fonts. Two fonts only.
 - **Borders:** 2px solid ink on cards and buttons, 3px brass line under headers and above footers. No border radius.
@@ -154,6 +157,7 @@ Flat and printed rather than machined. The WW2 feel comes from color, typography
 - **Accessibility:** touch targets at least 44px, real labels on inputs, `aria-label` on icon-only buttons, text contrast at least 4.5:1.
 
 **Planned components** (primitives first, then compose):
+
 - `Text`, `Button` (brass primary, outline secondary), `Panel` (paper card), `StatusDot`, `SectionDivider` (label + dashed line).
 - `Input` with a `variant`: `underline` (form cards) and `boxed` (chat input). One component, not two.
 - `Badge` (stamp), e.g. "FORM 1".
@@ -163,6 +167,7 @@ Flat and printed rather than machined. The WW2 feel comes from color, typography
 - `MessageInput`.
 
 **Screens** (mockups in `docs/design/`: `login.png`, `register.png`, `nets.png`, `chat.png`, `newNet.png`, `chatWeb.png`):
+
 - Login: callsign + passphrase on a "Report for duty" form card, "Report in" button, "Enlist here" link to register.
 - Register: "Enlistment" form card with a "FORM 1A" stamp; callsign (3 to 20 characters), passphrase (at least 8 characters), confirm passphrase; "Enlist" button; "Already enlisted? Report in" link to login.
 - Nets list: joined nets (green dot = joined, name, member count, last message) and open nets with a Join button. "+ New net" and Log out.

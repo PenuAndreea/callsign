@@ -28,24 +28,24 @@ Every error response has the same shape, with a stable `code` the apps map to co
 type ApiError = { statusCode: number; code: ErrorCode; message: string };
 
 type ErrorCode =
-  | 'VALIDATION_FAILED'   // 400, message lists the failing fields
+  | 'VALIDATION_FAILED' // 400, message lists the failing fields
   | 'INVALID_CREDENTIALS' // 401, login: same code for unknown callsign and wrong passphrase
-  | 'UNAUTHORIZED'        // 401, missing, expired or invalid token
-  | 'NOT_A_MEMBER'        // 403
-  | 'NOT_FOUND'           // 404
-  | 'CALLSIGN_TAKEN'      // 409
-  | 'NET_NAME_TAKEN'      // 409
-  | 'RATE_LIMITED';       // 429
+  | 'UNAUTHORIZED' // 401, missing, expired or invalid token
+  | 'NOT_A_MEMBER' // 403
+  | 'NOT_FOUND' // 404
+  | 'CALLSIGN_TAKEN' // 409
+  | 'NET_NAME_TAKEN' // 409
+  | 'RATE_LIMITED'; // 429
 ```
 
 ## Shared field rules
 
-| Field | Rule |
-|---|---|
-| `callsign` | trimmed, lowercased, 3 to 20 characters |
-| `passphrase` | 8 to 128 characters (upper bound keeps argon2 hashing cheap to reject) |
-| net `name` | trimmed, lowercased, 3 to 30 characters |
-| message `content` | trimmed, 1 to 1000 characters |
+| Field             | Rule                                                                   |
+| ----------------- | ---------------------------------------------------------------------- |
+| `callsign`        | trimmed, lowercased, 3 to 20 characters                                |
+| `passphrase`      | 8 to 128 characters (upper bound keeps argon2 hashing cheap to reject) |
+| net `name`        | trimmed, lowercased, 3 to 30 characters                                |
+| message `content` | trimmed, 1 to 1000 characters                                          |
 
 "Confirm passphrase" exists only in the register form schema (`RegisterFormSchema = RegisterRequest.extend(...).refine(...)`); the API never receives it.
 
@@ -82,13 +82,13 @@ type AuthResponse = {
 
 ### Auth
 
-| Method | Path | Body | Response |
-|---|---|---|---|
-| POST | `/auth/register` | `{ callsign, passphrase }` | 201 `AuthResponse` (registering logs you in) · 409 `CALLSIGN_TAKEN` |
-| POST | `/auth/login` | `{ callsign, passphrase }` | 200 `AuthResponse` · 401 `INVALID_CREDENTIALS` |
-| POST | `/auth/refresh` | web: cookie · mobile: `{ refreshToken }` | 200 `AuthResponse` · 401 `UNAUTHORIZED` |
-| POST | `/auth/logout` | web: cookie · mobile: `{ refreshToken }` (no access token needed) | 204, clears the stored hash and the cookie |
-| GET | `/auth/me` | | 200 `UserDto` |
+| Method | Path             | Body                                                              | Response                                                            |
+| ------ | ---------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------- |
+| POST   | `/auth/register` | `{ callsign, passphrase }`                                        | 201 `AuthResponse` (registering logs you in) · 409 `CALLSIGN_TAKEN` |
+| POST   | `/auth/login`    | `{ callsign, passphrase }`                                        | 200 `AuthResponse` · 401 `INVALID_CREDENTIALS`                      |
+| POST   | `/auth/refresh`  | web: cookie · mobile: `{ refreshToken }`                          | 200 `AuthResponse` · 401 `UNAUTHORIZED`                             |
+| POST   | `/auth/logout`   | web: cookie · mobile: `{ refreshToken }` (no access token needed) | 204, clears the stored hash and the cookie                          |
+| GET    | `/auth/me`       |                                                                   | 200 `UserDto`                                                       |
 
 - **Tokens:** the access token is a JWT (~15 min). The refresh token is an opaque random string (32 bytes), stored as a SHA-256 hash.
 - **Refresh token rotation:** every `/auth/refresh` issues a new refresh token and replaces the stored hash. A reused old token fails, which limits the damage of a stolen one. The API client must run only one refresh at a time; concurrent 401s wait for it.
@@ -97,22 +97,22 @@ type AuthResponse = {
 
 ### Nets
 
-| Method | Path | Body / query | Response |
-|---|---|---|---|
-| GET | `/rooms` | `?scope=joined\|open&cursor&limit` | 200 `Page<RoomDto>` |
-| POST | `/rooms` | `{ name }` | 201 `RoomDto` (creator is joined automatically) · 409 `NET_NAME_TAKEN` |
-| GET | `/rooms/:id` | | 200 `RoomDto` · 404 |
-| PUT | `/rooms/:id/members/me` | | 200 `RoomDto` (join; idempotent) |
-| DELETE | `/rooms/:id/members/me` | | 204 (leave; idempotent) |
+| Method | Path                    | Body / query                       | Response                                                               |
+| ------ | ----------------------- | ---------------------------------- | ---------------------------------------------------------------------- |
+| GET    | `/rooms`                | `?scope=joined\|open&cursor&limit` | 200 `Page<RoomDto>`                                                    |
+| POST   | `/rooms`                | `{ name }`                         | 201 `RoomDto` (creator is joined automatically) · 409 `NET_NAME_TAKEN` |
+| GET    | `/rooms/:id`            |                                    | 200 `RoomDto` · 404                                                    |
+| PUT    | `/rooms/:id/members/me` |                                    | 200 `RoomDto` (join; idempotent)                                       |
+| DELETE | `/rooms/:id/members/me` |                                    | 204 (leave; idempotent)                                                |
 
 - The nets screen makes two calls: `scope=joined` and `scope=open`. Both are sorted by name; the cursor is the last name of the page.
 - `PUT` / `DELETE` on `members/me`: joining twice or leaving twice is not an error, which matches the unique membership index.
 
 ### Messages (history only)
 
-| Method | Path | Query | Response |
-|---|---|---|---|
-| GET | `/rooms/:id/messages` | `?cursor&limit` | 200 `Page<MessageDto>`, newest first · 403 `NOT_A_MEMBER` |
+| Method | Path                  | Query           | Response                                                  |
+| ------ | --------------------- | --------------- | --------------------------------------------------------- |
+| GET    | `/rooms/:id/messages` | `?cursor&limit` | 200 `Page<MessageDto>`, newest first · 403 `NOT_A_MEMBER` |
 
 - Only members can read history (join first).
 - There is no POST: messages are sent over the socket.
