@@ -59,7 +59,7 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
 - Testing: **Vitest** (web, shared packages), **Jest + Supertest** (API, against **mongodb-memory-server**: a real throwaway MongoDB per test file, no Docker in CI), **jest-expo + React Native Testing Library** (mobile-only behavior).
 - Local MongoDB: `docker-compose.yml` at the root (MongoDB 8.0, named volume, healthcheck, bound to `127.0.0.1` only, no auth). `pnpm db:up` (waits until healthy), then `pnpm dev`; `pnpm db:down` stops it and keeps the data.
 - Env: the API reads `apps/api/.env` (git-ignored); `apps/api/.env.example` is committed and lists every variable. Add new variables to both.
-- Git: **Husky + lint-staged** at the repo root (lint/format staged files, typecheck on pre-commit); CI runs the same checks. **Conventional Commits**, enforced by commitlint in a `commit-msg` hook. Optional scope from: `api`, `web`, `mobile`, `types`, `theme`, `ui`, `hooks`, `config`, `deps`, `ci`, `docs`.
+- Git: **Husky + lint-staged** at the repo root (lint/format staged files, typecheck on pre-commit). CI (`.github/workflows/ci.yml`, on push to `main`/`develop` and on PRs) runs `format:check`, `lint`, `typecheck`, `test`, the API's `test:e2e` and `build`, with Node from `.nvmrc` and pnpm from `packageManager`. When mongodb-memory-server arrives (M2), cache its binary (`~/.cache/mongodb-binaries`) in CI. **Conventional Commits**, enforced by commitlint in a `commit-msg` hook. Optional scope from: `api`, `web`, `mobile`, `types`, `theme`, `ui`, `hooks`, `config`, `deps`, `ci`, `docs`.
 - Reconnect and offline behavior on mobile: handled in M6.
 
 ## Repository layout (planned)

@@ -4,6 +4,7 @@ One short line per commit, newest first.
 
 ## Unreleased
 
+- ci: GitHub Actions running format, lint, typecheck, unit and e2e tests and build
 - chore: docker-compose MongoDB for local development and API .env.example
 - feat(types): shared Zod package built with tsup (ESM + CJS), first schema: callsign
 - feat(api): scaffold NestJS app with /api prefix, Jest unit and e2e tests
