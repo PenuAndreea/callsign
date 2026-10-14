@@ -162,6 +162,21 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@types/react':
+      specifier: ~19.2.2
+      version: 19.2.18
+    react:
+      specifier: 19.2.3
+      version: 19.2.3
+    react-dom:
+      specifier: 19.2.3
+      version: 19.2.3
+    react-native-web:
+      specifier: ~0.21.0
+      version: 0.21.4
+
 importers:
 
   .:
@@ -221,10 +236,10 @@ importers:
         specifier: ~57.0.4
         version: 57.0.4(expo@57.0.28)(react-native-web@0.21.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(supports-color@8.1.1)
       react:
-        specifier: 19.2.3
+        specifier: 'catalog:'
         version: 19.2.3
       react-dom:
-        specifier: 19.2.3
+        specifier: 'catalog:'
         version: 19.2.3(react@19.2.3)
       react-native:
         specifier: 0.86.3
@@ -242,7 +257,7 @@ importers:
         specifier: ~4.26.0
         version: 4.26.2(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)
       react-native-web:
-        specifier: ~0.21.0
+        specifier: 'catalog:'
         version: 0.21.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react-native-worklets:
         specifier: 0.10.1
@@ -258,7 +273,7 @@ importers:
         specifier: 29.5.14
         version: 29.5.14
       '@types/react':
-        specifier: ~19.2.2
+        specifier: 'catalog:'
         version: 19.2.18
       jest:
         specifier: ~29.7.0

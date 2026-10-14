@@ -2,5 +2,11 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
+catalog:
+  react: 19.2.3
+  react-dom: 19.2.3
+  react-native-web: ~0.21.0
+  '@types/react': ~19.2.2
+
 # Expo/Metro needs a flat node_modules in a pnpm monorepo
 nodeLinker: hoisted
