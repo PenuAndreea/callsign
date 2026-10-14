@@ -4,6 +4,7 @@ One short line per commit, newest first.
 
 ## Unreleased
 
+- feat(api): scaffold NestJS app with /api prefix, Jest unit and e2e tests
 - feat(web): scaffold Vite app with react-native-web alias, dev proxy and Vitest smoke tests
 - chore(config): add react-hooks lint rules and pin shared React versions in a pnpm catalog
 - feat(mobile): scaffold Expo app with Expo Router, jest-expo and a first smoke test

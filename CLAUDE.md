@@ -32,7 +32,10 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
 
 ## Decisions made
 
-- Backend: **NestJS** (Express under the hood), Mongoose for MongoDB, Socket.IO gateway for WebSockets.
+- Backend: **NestJS 12** (Express under the hood), Mongoose for MongoDB, Socket.IO gateway for WebSockets.
+  - The API itself compiles to **CommonJS** (`module: nodenext`, no `"type": "module"`), but Nest 12's packages are **ESM-only**. This works because Node can `require()` ES modules natively, hence Node **≥24.9** (`engines`, `.nvmrc`). Jest needs `NODE_OPTIONS=--experimental-vm-modules` for the same reason (set in the API's `test` scripts).
+  - API tsconfig: extends the shared base, then `module`/`moduleResolution: nodenext`, `noEmit: false`, `rootDir: "."` (TS 6 no longer infers it), `outDir: dist`, `experimentalDecorators` + `emitDecoratorMetadata` (Nest DI reads constructor types at runtime). `tsconfig.build.json` narrows `rootDir` to `src`.
+  - All routes are under the global prefix `/api` (`app.setGlobalPrefix('api')`), port 3000.
 - Web: **Vite + React + Vitest**. No Next.js.
 - Mobile: **Expo** (React Native).
 - Shared UI: one component library written with React Native primitives, rendered on web through **react-native-web**.
@@ -47,7 +50,8 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
 - API validation: the shared Zod schemas, through a `ZodValidationPipe` (custom or `nestjs-zod`). No `class-validator`.
 - TypeScript pinned to `~6.0` (typescript-eslint supports `<6.1`; TS 7's native compiler is not yet supported by the tooling). TS 6 defaults `types` to `[]`, so every tsconfig lists its globals explicitly (e.g. `["jest"]` on mobile, `["node", "jest"]` on the API, `["vite/client"]` on web).
 - Tests: in `src/__tests__/` or next to the code, but never inside Expo Router's `src/app/` (every file there becomes a route).
-- Linting: one root `eslint.config.js` (re-exports `@callsign/config/eslint`) covers the whole repo; `pnpm lint` runs it once from the root, packages need no lint script. `eslint-plugin-react-hooks` (recommended: Rules of Hooks, exhaustive deps, React Compiler rules) applies to `apps/web`, `apps/mobile`, `packages/ui` and `packages/hooks`. Each app/package defines its own `typecheck` script, run through Turbo.
+- Linting: one root `eslint.config.js` (re-exports `@callsign/config/eslint`) covers the whole repo; `pnpm lint` runs it once from the root, packages need no lint script. `eslint-plugin-react-hooks` (recommended: Rules of Hooks, exhaustive deps, React Compiler rules) applies to `apps/web`, `apps/mobile`, `packages/ui` and `packages/hooks`. For `apps/api`, the parser gets `emitDecoratorMetadata` so `consistent-type-imports` never turns an injected class into `import type` (that would break Nest DI at runtime), and `no-extraneous-class` allows decorated empty classes (Nest modules). Each app/package defines its own `typecheck` script, run through Turbo.
+- Install scripts: pnpm only runs them for packages listed `true` under `allowBuilds` in `pnpm-workspace.yaml`. Allow only what needs a native build (e.g. `argon2` in M2); packages with prebuilt binaries stay `false`.
 - Data fetching: **TanStack Query** inside the shared hooks.
 - Routing: **React Router** on web, **Expo Router** on mobile (routing stays in the apps).
 - Testing: **Vitest** (web, shared packages), **Jest + Supertest** (API, against **mongodb-memory-server**: a real throwaway MongoDB per test file, no Docker in CI), **jest-expo + React Native Testing Library** (mobile-only behavior).

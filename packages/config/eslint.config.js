@@ -48,5 +48,17 @@ export default tseslint.config(
       'react-hooks/exhaustive-deps': 'error',
     },
   },
+  {
+    // NestJS DI reads constructor types from decorator metadata at runtime. Telling the parser
+    // keeps `consistent-type-imports` from turning injected classes into `import type`.
+    files: ['apps/api/**/*.ts'],
+    languageOptions: {
+      parserOptions: { emitDecoratorMetadata: true, experimentalDecorators: true },
+    },
+    rules: {
+      // Nest modules are empty classes carrying a @Module() decorator.
+      '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }],
+    },
+  },
   prettier,
 );
