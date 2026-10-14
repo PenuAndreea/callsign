@@ -4,6 +4,8 @@ One short line per commit, newest first.
 
 ## Unreleased
 
+- feat(web): scaffold Vite app with react-native-web alias, dev proxy and Vitest smoke tests
+- chore(config): add react-hooks lint rules and pin shared React versions in a pnpm catalog
 - feat(mobile): scaffold Expo app with Expo Router, jest-expo and a first smoke test
 - fix(config): set nodeLinker hoisted in pnpm-workspace.yaml (pnpm 12 ignores it in .npmrc)
 - chore: enforce Conventional Commits with commitlint

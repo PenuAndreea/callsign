@@ -34,11 +34,12 @@
   },
   "devDependencies": {
     "@callsign/config": "workspace:*",
-    "@testing-library/react-native": "^14.1.0",
+    "@testing-library/react-native": "^13.3.3",
     "@types/jest": "29.5.14",
     "@types/react": "catalog:",
     "jest": "~29.7.0",
     "jest-expo": "~57.0.6",
+    "react-test-renderer": "catalog:",
     "typescript": "~6.0.3"
   },
   "private": true
