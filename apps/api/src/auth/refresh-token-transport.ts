@@ -4,7 +4,7 @@ import type { AuthResponse, ClientType, RefreshRequest } from '@callsign/types';
 import type { CookieOptions, Request, Response } from 'express';
 
 import type { Env } from '../config/env.schema';
-import type { Session } from './auth.service';
+import type { IssuedTokens } from './auth.service';
 
 export const REFRESH_COOKIE = 'refreshToken';
 
@@ -29,8 +29,8 @@ export class RefreshTokenTransport {
   }
 
   /** Builds the response body and, for web, sets the cookie. */
-  send(res: Response, client: ClientType, session: Session): AuthResponse {
-    const { user, accessToken, refreshToken } = session;
+  send(res: Response, client: ClientType, tokens: IssuedTokens): AuthResponse {
+    const { user, accessToken, refreshToken } = tokens;
     if (client === 'mobile') return { user, accessToken, refreshToken: refreshToken.token };
     res.cookie(REFRESH_COOKIE, refreshToken.token, {
       ...this.cookie,

@@ -33,7 +33,7 @@ describe('Auth: register, login, me (e2e)', () => {
 
     it('never returns secrets', async () => {
       const res = await request(server).post('/api/auth/register').send(CREDENTIALS).expect(201);
-      expect(JSON.stringify(res.body)).not.toMatch(/passwordHash|argon2|refreshTokenHash/);
+      expect(JSON.stringify(res.body)).not.toMatch(/passwordHash|argon2|tokenHash/);
     });
 
     it('rejects a taken callsign, case-insensitively', async () => {

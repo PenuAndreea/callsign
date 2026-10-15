@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 
 import type { Env } from '../config/env.schema';
+import { SessionsModule } from '../sessions/sessions.module';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -22,6 +23,7 @@ import { TokensService } from './tokens.service';
         ),
     }),
     UsersModule,
+    SessionsModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, PasswordHasher, RefreshTokenTransport, TokensService],

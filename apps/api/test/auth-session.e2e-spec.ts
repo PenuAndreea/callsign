@@ -23,19 +23,35 @@ describe('Auth: sessions (e2e)', () => {
     const refresh = (refreshToken: string) =>
       request(server).post('/api/auth/refresh').set('X-Client', 'mobile').send({ refreshToken });
 
-    it('rotates: the new token works, the old one is refused', async () => {
+    const nextToken = (res: { body: unknown }) =>
+      (res.body as { refreshToken: string }).refreshToken;
+
+    it('rotates on every refresh', async () => {
       const { body } = await register(server);
-      const first = await refresh(body.refreshToken ?? '').expect(200);
-      const next = (first.body as { refreshToken: string }).refreshToken;
-      expect(next).not.toBe(body.refreshToken);
-      await refresh(body.refreshToken ?? '').expect(401);
-      await refresh(next).expect(200);
+      const second = nextToken(await refresh(body.refreshToken ?? '').expect(200));
+      expect(second).not.toBe(body.refreshToken);
+      const third = nextToken(await refresh(second).expect(200));
+      expect(third).not.toBe(second);
     });
 
-    it('a new login ends the previous session (one session per user)', async () => {
+    it('reuse of an old token revokes the session (stolen-token defense)', async () => {
       const { body } = await register(server);
-      await request(server).post('/api/auth/login').set('X-Client', 'mobile').send(CREDENTIALS);
+      const current = nextToken(await refresh(body.refreshToken ?? '').expect(200));
+
+      // Someone replays the token the client already rotated away from...
       await refresh(body.refreshToken ?? '').expect(401);
+      // ...so the session is gone, for the real client too.
+      await refresh(current).expect(401);
+    });
+
+    it('a login on another device keeps the first one logged in', async () => {
+      const { body } = await register(server);
+      await request(server)
+        .post('/api/auth/login')
+        .set('X-Client', 'mobile')
+        .send(CREDENTIALS)
+        .expect(200);
+      await refresh(body.refreshToken ?? '').expect(200);
     });
 
     it('logout ends the session and is idempotent', async () => {
@@ -90,6 +106,26 @@ describe('Auth: sessions (e2e)', () => {
       // Even a client that kept the old cookie cannot use it any more.
       await request(server).post('/api/auth/refresh').set('Cookie', oldCookie).expect(401);
     });
+  });
+
+  it('web and mobile stay logged in side by side; logging out one keeps the other', async () => {
+    const web = request.agent(server);
+    await web.post('/api/auth/register').send(CREDENTIALS).expect(201);
+    const mobile = await request(server)
+      .post('/api/auth/login')
+      .set('X-Client', 'mobile')
+      .send(CREDENTIALS)
+      .expect(200);
+    const mobileToken = (mobile.body as { refreshToken: string }).refreshToken;
+
+    await web.post('/api/auth/refresh').expect(200);
+    await web.post('/api/auth/logout').expect(204);
+
+    await request(server)
+      .post('/api/auth/refresh')
+      .set('X-Client', 'mobile')
+      .send({ refreshToken: mobileToken })
+      .expect(200);
   });
 
   it('rate limits auth routes to 10 requests a minute', async () => {

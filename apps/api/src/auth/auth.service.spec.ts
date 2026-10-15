@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 
+import type { SessionsService } from '../sessions/sessions.service';
 import type { UserDocument } from '../users/user.schema';
 import type { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
@@ -21,14 +22,8 @@ const userDto = {
 };
 const nextToken: RefreshToken = { token: 'next', hash: 'next-hash', expiresAt: new Date() };
 
-const users = {
-  create: jest.fn(),
-  findById: jest.fn(),
-  findByCallsignWithPassword: jest.fn(),
-  setRefreshToken: jest.fn(),
-  rotateRefreshToken: jest.fn(),
-  clearRefreshToken: jest.fn(),
-};
+const users = { create: jest.fn(), findById: jest.fn(), findByCallsignWithPassword: jest.fn() };
+const sessions = { create: jest.fn(), rotate: jest.fn(), revoke: jest.fn() };
 const hasher = { hash: jest.fn(), verify: jest.fn() };
 const tokens = {
   signAccessToken: jest.fn(),
@@ -38,6 +33,7 @@ const tokens = {
 
 const auth = new AuthService(
   users as unknown as UsersService,
+  sessions as unknown as SessionsService,
   hasher as unknown as PasswordHasher,
   tokens as unknown as TokensService,
 );
@@ -53,20 +49,16 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
-    it('stores the hash, never the passphrase, and starts a session', async () => {
+    it('stores the hash, never the passphrase, and starts a session for the device', async () => {
       hasher.hash.mockResolvedValue('argon-hash');
       users.create.mockResolvedValue(userDoc);
 
-      const session = await auth.register({ callsign: 'wolf-2', passphrase: 'secret12' });
+      const issued = await auth.register({ callsign: 'wolf-2', passphrase: 'secret12' }, 'web');
 
       expect(users.create).toHaveBeenCalledWith('wolf-2', 'argon-hash');
-      expect(users.setRefreshToken).toHaveBeenCalledWith(
-        userDto.id,
-        nextToken.hash,
-        nextToken.expiresAt,
-      );
+      expect(sessions.create).toHaveBeenCalledWith(userDto.id, 'web', nextToken);
       expect(tokens.signAccessToken).toHaveBeenCalledWith({ id: userDto.id, callsign: 'wolf-2' });
-      expect(session).toEqual({ user: userDto, accessToken: 'access', refreshToken: nextToken });
+      expect(issued).toEqual({ user: userDto, accessToken: 'access', refreshToken: nextToken });
     });
   });
 
@@ -75,28 +67,29 @@ describe('AuthService', () => {
       users.findByCallsignWithPassword.mockResolvedValue(userDoc);
       hasher.verify.mockResolvedValue(true);
 
-      const session = await auth.login({ callsign: 'wolf-2', passphrase: 'secret12' });
+      const issued = await auth.login({ callsign: 'wolf-2', passphrase: 'secret12' }, 'mobile');
 
       expect(hasher.verify).toHaveBeenCalledWith('stored-hash', 'secret12');
-      expect(session.user).toEqual(userDto);
+      expect(sessions.create).toHaveBeenCalledWith(userDto.id, 'mobile', nextToken);
+      expect(issued.user).toEqual(userDto);
     });
 
     it('rejects a wrong passphrase with INVALID_CREDENTIALS', async () => {
       users.findByCallsignWithPassword.mockResolvedValue(userDoc);
       hasher.verify.mockResolvedValue(false);
       await expectCode(
-        auth.login({ callsign: 'wolf-2', passphrase: 'x' }),
+        auth.login({ callsign: 'wolf-2', passphrase: 'x' }, 'web'),
         401,
         'INVALID_CREDENTIALS',
       );
-      expect(users.setRefreshToken).not.toHaveBeenCalled();
+      expect(sessions.create).not.toHaveBeenCalled();
     });
 
     it('verifies even for an unknown callsign, then gives the same error', async () => {
       users.findByCallsignWithPassword.mockResolvedValue(null);
       hasher.verify.mockResolvedValue(false);
       await expectCode(
-        auth.login({ callsign: 'nobody', passphrase: 'x' }),
+        auth.login({ callsign: 'nobody', passphrase: 'x' }, 'web'),
         401,
         'INVALID_CREDENTIALS',
       );
@@ -105,39 +98,43 @@ describe('AuthService', () => {
   });
 
   describe('refresh', () => {
-    it('rotates by the hash of the presented token', async () => {
-      users.rotateRefreshToken.mockResolvedValue(userDoc);
+    it('rotates by the hash of the presented token, then loads the user', async () => {
+      sessions.rotate.mockResolvedValue({ userId: _id });
+      users.findById.mockResolvedValue(userDoc);
 
-      const session = await auth.refresh('current');
+      const issued = await auth.refresh('current');
 
-      expect(users.rotateRefreshToken).toHaveBeenCalledWith(
-        'hash(current)',
-        nextToken.hash,
-        nextToken.expiresAt,
-      );
-      expect(session).toEqual({ user: userDto, accessToken: 'access', refreshToken: nextToken });
+      expect(sessions.rotate).toHaveBeenCalledWith('hash(current)', nextToken);
+      expect(users.findById).toHaveBeenCalledWith(userDto.id);
+      expect(issued).toEqual({ user: userDto, accessToken: 'access', refreshToken: nextToken });
     });
 
     it('rejects a missing token without touching the database', async () => {
       await expectCode(auth.refresh(undefined), 401, 'UNAUTHORIZED');
-      expect(users.rotateRefreshToken).not.toHaveBeenCalled();
+      expect(sessions.rotate).not.toHaveBeenCalled();
     });
 
     it('rejects an unknown, reused or expired token', async () => {
-      users.rotateRefreshToken.mockResolvedValue(null);
+      sessions.rotate.mockResolvedValue(null);
       await expectCode(auth.refresh('stale'), 401, 'UNAUTHORIZED');
+    });
+
+    it('rejects a session whose user no longer exists', async () => {
+      sessions.rotate.mockResolvedValue({ userId: _id });
+      users.findById.mockResolvedValue(null);
+      await expectCode(auth.refresh('current'), 401, 'UNAUTHORIZED');
     });
   });
 
   describe('logout', () => {
-    it('clears the session of the presented token', async () => {
+    it('revokes the session of the presented token', async () => {
       await auth.logout('current');
-      expect(users.clearRefreshToken).toHaveBeenCalledWith('hash(current)');
+      expect(sessions.revoke).toHaveBeenCalledWith('hash(current)');
     });
 
     it('is a no-op without a token', async () => {
       await expect(auth.logout(undefined)).resolves.toBeUndefined();
-      expect(users.clearRefreshToken).not.toHaveBeenCalled();
+      expect(sessions.revoke).not.toHaveBeenCalled();
     });
   });
 

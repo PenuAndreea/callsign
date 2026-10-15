@@ -38,7 +38,7 @@ export class AuthController {
     @Client() client: ClientType,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponse> {
-    return this.transport.send(res, client, await this.auth.register(body));
+    return this.transport.send(res, client, await this.auth.register(body, client));
   }
 
   @Public()
@@ -49,7 +49,7 @@ export class AuthController {
     @Client() client: ClientType,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponse> {
-    return this.transport.send(res, client, await this.auth.login(body));
+    return this.transport.send(res, client, await this.auth.login(body, client));
   }
 
   @Public()

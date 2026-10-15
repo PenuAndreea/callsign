@@ -96,7 +96,8 @@ Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `p
 
 ## Data models
 
-- **User (`users`):** `callsign` (unique), `passwordHash` (argon2, never returned), `refreshTokenHash` + `refreshTokenExpiresAt` (both nullable, `select: false`; one active session per user in v1), timestamps. The callsign is both the username and the display name: 3 to 20 characters, no other format rule.
+- **User (`users`):** `callsign` (unique), `passwordHash` (argon2, never returned, `select: false`), timestamps. Identity only: sessions live in `sessions`. The callsign is both the username and the display name: 3 to 20 characters, no other format rule.
+- **Session (`sessions`):** one row per logged-in device: `userId`, `tokenHash` (SHA-256 of the current refresh token), `previousTokenHash` (for reuse detection), `expiresAt` (sliding: every refresh moves it forward), `client` (`web` | `mobile`), timestamps. Login on one device never logs out another. Presenting a rotated-away token revokes that session (it was probably stolen).
 - **Case:** callsigns and net names are trimmed and lowercased by the shared Zod schema, so they are stored lowercase and uniqueness is case-insensitive (`WOLF-2` = `wolf-2`). The UI uppercases them for display.
 - **Room (`rooms`):** `name` (unique, 3 to 30 chars), `createdBy`, `memberCount`, `lastMessage: { content, senderId, createdAt }`, timestamps.
   - `memberCount` is denormalized: `$inc` +1 on join, -1 on leave, only when the membership insert/delete actually succeeds.
@@ -106,14 +107,17 @@ Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `p
 
 **Indexes:**
 
-| Collection  | Index                                                         | Serves                                                                                   |
-| ----------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| users       | `{ callsign: 1 }` unique                                      | login, register                                                                          |
-| users       | `{ refreshTokenHash: 1 }` unique, partial (`$type: 'string'`) | refresh, logout (lookup by token hash; partial, not sparse: sparse still indexes `null`) |
-| rooms       | `{ name: 1 }` unique                                          | create net (duplicate check)                                                             |
-| memberships | `{ userId: 1, roomId: 1 }` unique                             | "my nets", prevents double join                                                          |
-| memberships | `{ roomId: 1 }`                                               | members of a net, socket room sync                                                       |
-| messages    | `{ roomId: 1, _id: -1 }`                                      | paginated history (cursor on `_id`: unique and time-ordered, no ties)                    |
+| Collection  | Index                                                  | Serves                                                                                                |
+| ----------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| users       | `{ callsign: 1 }` unique                               | login, register                                                                                       |
+| sessions    | `{ tokenHash: 1 }` unique                              | refresh, logout (lookup by token hash)                                                                |
+| sessions    | `{ userId: 1 }`                                        | a user's devices ("log out everywhere" later)                                                         |
+| sessions    | `{ expiresAt: 1 }` TTL (`expireAfterSeconds: 0`)       | MongoDB deletes expired sessions itself (about once a minute, so queries still filter on `expiresAt`) |
+| sessions    | `{ previousTokenHash: 1 }` partial (`$type: 'string'`) | reuse detection                                                                                       |
+| rooms       | `{ name: 1 }` unique                                   | create net (duplicate check)                                                                          |
+| memberships | `{ userId: 1, roomId: 1 }` unique                      | "my nets", prevents double join                                                                       |
+| memberships | `{ roomId: 1 }`                                        | members of a net, socket room sync                                                                    |
+| messages    | `{ roomId: 1, _id: -1 }`                               | paginated history (cursor on `_id`: unique and time-ordered, no ties)                                 |
 
 Nets list: joined = the user's memberships → rooms by id; open = rooms whose `_id` is not in that set. Both sorted by name, cursor = last name on the page.
 
@@ -128,7 +132,7 @@ Define shapes once in `packages/types` as Zod schemas and infer the TS types. Th
 - Hash passphrases with argon2id through `PasswordHasher` (`src/auth/`): OWASP parameters (19 MiB, t=2, p=1; the library default of 64 MiB per hash is heavy for concurrent logins). Login with an unknown callsign still verifies against a dummy hash, so timing never reveals which callsigns exist. Never return `passwordHash`; use DTOs or serializers.
 - Tokens:
   - Access token: JWT, ~15 min (`JWT_ACCESS_TTL_SECONDS`), HS256 pinned on sign and verify (`src/auth/jwt-options.ts`), claims `{ sub: userId, callsign }` validated with Zod after verifying.
-  - Refresh token: an opaque random string (`crypto.randomBytes(32)`), not a JWT. Stored as a SHA-256 hash (high-entropy tokens don't need argon2). Rotated on every refresh.
+  - Refresh token: an opaque random string (`crypto.randomBytes(32)`), not a JWT. Stored as a SHA-256 hash (high-entropy tokens don't need argon2). Rotated on every refresh, one session per device (`src/sessions/`).
   - Authenticate the WebSocket handshake with the access token too.
 - Token storage:
   - Access token: in memory only, on both platforms.
