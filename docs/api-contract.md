@@ -111,12 +111,14 @@ type AuthResponse = {
 | ------ | ----------------------- | ---------------------------------- | ---------------------------------------------------------------------- |
 | GET    | `/rooms`                | `?scope=joined\|open&cursor&limit` | 200 `Page<RoomDto>`                                                    |
 | POST   | `/rooms`                | `{ name }`                         | 201 `RoomDto` (creator is joined automatically) · 409 `NET_NAME_TAKEN` |
-| GET    | `/rooms/:id`            |                                    | 200 `RoomDto` · 404                                                    |
-| PUT    | `/rooms/:id/members/me` |                                    | 200 `RoomDto` (join; idempotent)                                       |
-| DELETE | `/rooms/:id/members/me` |                                    | 204 (leave; idempotent)                                                |
+| GET    | `/rooms/:id`            |                                    | 200 `RoomDto` · 404 `NOT_FOUND`                                        |
+| PUT    | `/rooms/:id/members/me` |                                    | 200 `RoomDto` (join; idempotent) · 404 `NOT_FOUND`                     |
+| DELETE | `/rooms/:id/members/me` |                                    | 204 (leave; idempotent) · 404 `NOT_FOUND`                              |
 
 - The nets screen makes two calls: `scope=joined` and `scope=open`. Both are sorted by name; the cursor is the last name of the page.
-- `PUT` / `DELETE` on `members/me`: joining twice or leaving twice is not an error, which matches the unique membership index.
+- `PUT` / `DELETE` on `members/me`: joining twice or leaving twice is not an error, which matches the unique membership index. Leaving a net you never joined is a 204 too.
+- `404 NOT_FOUND` means the net does not exist; a malformed `:id` is a 404 as well (not a 400).
+- When the last member leaves, the net is kept with `memberCount: 0` and shows under `scope=open`.
 
 ### Messages (history only)
 

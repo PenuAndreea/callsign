@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
 import type { HydratedDocument, Types } from 'mongoose';
 
+import { Room } from '../rooms/room.schema';
 import { User } from '../users/user.schema';
 
 /**
@@ -14,8 +15,7 @@ export class Membership {
   @Prop({ type: SchemaTypes.ObjectId, ref: User.name, required: true })
   userId!: Types.ObjectId;
 
-  // `ref` is only used by `populate`, which we don't use; the Room model arrives with the rooms module.
-  @Prop({ type: SchemaTypes.ObjectId, ref: 'Room', required: true })
+  @Prop({ type: SchemaTypes.ObjectId, ref: Room.name, required: true })
   roomId!: Types.ObjectId;
 
   // Set by `timestamps` (renamed from `createdAt`).
