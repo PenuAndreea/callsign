@@ -4,6 +4,14 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+## 0.4.0 (M3: rooms)
+
+- feat(api): GET /rooms with joined/open scopes, sorted by name, cursor pagination
+- feat(api): rooms module (create with auto-join, get, idempotent join/leave keeping memberCount in step, unique name → NET_NAME_TAKEN)
+- feat(api): memberships module (unique { userId, roomId } index; add, remove, isMember, roomIdsFor)
+- feat(api): cursor pagination helpers (opaque base64url cursors validated on decode, toPage with limit + 1 fetch)
+- feat(types): pagination (page query, Page<T>) and room schemas (name, create request, list query, RoomDto)
+
 ## 0.3.1 (sessions per device)
 
 - feat(api): sessions collection, one session per device (sliding expiry, TTL index, refresh-token reuse detection)

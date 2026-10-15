@@ -176,14 +176,14 @@ erDiagram
 - **`senderCallsign`** is copied onto each message, so history pages need no user lookups (callsigns never change).
 - Online status is not stored in the database.
 
-| Collection  | Index                              | Used for                            |
-| ----------- | ---------------------------------- | ----------------------------------- |
-| users       | `{ callsign: 1 }` unique           | login, register                     |
-| sessions    | `{ tokenHash: 1 }` unique          | refresh, logout                     |
-| sessions    | `{ userId: 1 }`                    | a user's devices                    |
-| sessions    | `{ expiresAt: 1 }` TTL             | MongoDB deletes expired sessions    |
-| sessions    | `{ previousTokenHash: 1 }` partial | reuse detection                     |
-| rooms       | `{ name: 1 }` unique               | creating a net (duplicate check)    |
-| memberships | `{ userId: 1, roomId: 1 }` unique  | "my nets", prevents joining twice   |
-| memberships | `{ roomId: 1 }`                    | members of a net, socket room sync  |
-| messages    | `{ roomId: 1, _id: -1 }`           | paginated history (cursor on `_id`) |
+| Collection  | Index                              | Used for                                          |
+| ----------- | ---------------------------------- | ------------------------------------------------- |
+| users       | `{ callsign: 1 }` unique           | login, register                                   |
+| sessions    | `{ tokenHash: 1 }` unique          | refresh, logout                                   |
+| sessions    | `{ userId: 1 }`                    | a user's devices                                  |
+| sessions    | `{ expiresAt: 1 }` TTL             | MongoDB deletes expired sessions                  |
+| sessions    | `{ previousTokenHash: 1 }` partial | reuse detection                                   |
+| rooms       | `{ name: 1 }` unique               | creating a net (duplicate check)                  |
+| memberships | `{ userId: 1, roomId: 1 }` unique  | "my nets" (covered query), prevents joining twice |
+| memberships | `{ roomId: 1 }`                    | members of a net, socket room sync                |
+| messages    | `{ roomId: 1, _id: -1 }`           | paginated history (cursor on `_id`)               |

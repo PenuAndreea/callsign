@@ -54,6 +54,7 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
   - `zod` is in the catalog too (not tied to Expo). Every package that imports `zod` declares it as `"catalog:"`: the hoisted root copy is Zod 3 (pulled in by another dependency), so an undeclared import silently gets the wrong major.
   - Libraries must support that React version: **React Router 7** (v8 needs React ≥19.2.7), **React Native Testing Library 13** with `react-test-renderer` (v14 needs React 19.3).
   - Known harmless peer warning: `@react-native/metro-config` 0.87 vs 0.86 (optional peer of the RN CLI; Expo uses its own Metro config).
+- Pagination (`src/common/pagination/`): `encodeCursor` wraps the sort key (net name, message id) in base64url so cursors are opaque; `decodeCursor(cursor, schema)` only accepts cursors that encode back to themselves and checks the key with a schema (400 `VALIDATION_FAILED` otherwise). Queries fetch `pageFetchLimit(limit)` (= limit + 1) rows and `toPage` drops the extra one to decide `nextCursor`, so no `count` query.
 - API validation: the shared Zod schemas, through our own `ZodValidationPipe` (`src/common/pipes/`, per parameter: `@Body(new ZodValidationPipe(schema))`; returns the parsed, normalized value). No `class-validator`, no `nestjs-zod`.
 - TypeScript pinned to `~6.0` (typescript-eslint supports `<6.1`; TS 7's native compiler is not yet supported by the tooling). TS 6 defaults `types` to `[]`, so every tsconfig lists its globals explicitly (e.g. `["jest"]` on mobile, `["node", "jest"]` on the API, `["vite/client"]` on web).
 - Tests: in `src/__tests__/` or next to the code, but never inside Expo Router's `src/app/` (every file there becomes a route).
@@ -100,7 +101,7 @@ Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `p
 - **Session (`sessions`):** one row per logged-in device: `userId`, `tokenHash` (SHA-256 of the current refresh token), `previousTokenHash` (for reuse detection), `expiresAt` (sliding: every refresh moves it forward), `client` (`web` | `mobile`), timestamps. Login on one device never logs out another. Presenting a rotated-away token revokes that session (it was probably stolen).
 - **Case:** callsigns and net names are trimmed and lowercased by the shared Zod schema, so they are stored lowercase and uniqueness is case-insensitive (`WOLF-2` = `wolf-2`). The UI uppercases them for display.
 - **Room (`rooms`):** `name` (unique, 3 to 30 chars), `createdBy`, `memberCount`, `lastMessage: { content, senderId, createdAt }`, timestamps.
-  - `memberCount` is denormalized: `$inc` +1 on join, -1 on leave, only when the membership insert/delete actually succeeds.
+  - `memberCount` is denormalized: `$inc` +1 on join, -1 on leave, only when the membership insert/delete actually succeeds (`MembershipsService.add`/`remove` return whether a row changed). Two writes, no transaction (needs a replica set): a crash between them leaves the count off by one, which is accepted; access checks always use `memberships`. Creating a net inserts it with 0 members and reuses `join()` for the creator.
   - `lastMessage` is a denormalized preview (`content` cut to ~80 chars), updated by the messages service right after saving a message. Drives the nets list.
 - **Membership (`memberships`):** `userId`, `roomId`, `joinedAt`. Join collection between users and rooms (no members array on the room). No presence/online status in the DB; if presence is ever added, track it in memory from Socket.IO connect/disconnect.
 - **Message (`messages`):** `roomId`, `senderId`, `senderCallsign` (copied at send time; callsigns never change), `content` (1 to 1000 chars), `createdAt`. History is readable by members only.
@@ -115,11 +116,11 @@ Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `p
 | sessions    | `{ expiresAt: 1 }` TTL (`expireAfterSeconds: 0`)       | MongoDB deletes expired sessions itself (about once a minute, so queries still filter on `expiresAt`) |
 | sessions    | `{ previousTokenHash: 1 }` partial (`$type: 'string'`) | reuse detection                                                                                       |
 | rooms       | `{ name: 1 }` unique                                   | create net (duplicate check)                                                                          |
-| memberships | `{ userId: 1, roomId: 1 }` unique                      | "my nets", prevents double join                                                                       |
+| memberships | `{ userId: 1, roomId: 1 }` unique                      | "my nets" (covered query), prevents double join                                                       |
 | memberships | `{ roomId: 1 }`                                        | members of a net, socket room sync                                                                    |
 | messages    | `{ roomId: 1, _id: -1 }`                               | paginated history (cursor on `_id`: unique and time-ordered, no ties)                                 |
 
-Nets list: joined = the user's memberships → rooms by id; open = rooms whose `_id` is not in that set. Both sorted by name, cursor = last name on the page.
+Nets list: joined = the user's memberships → rooms by id; open = rooms whose `_id` is not in that set. Both sorted by name, cursor = last name on the page. `isMember` follows from the scope. Query plans (checked with `explain` on 5,000 rooms): joined uses the `_id` index and sorts the user's few rooms in memory; open walks the `name` index from the cursor and stops after `limit + 1` matches. MongoDB's planner picks both without a `hint`.
 
 **API contract:** REST endpoints, DTOs, error codes and Socket.IO events are in `docs/api-contract.md`.
 
