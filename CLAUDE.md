@@ -95,7 +95,7 @@ Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `p
 
 ## Data models
 
-- **User (`users`):** `callsign` (unique), `passwordHash` (argon2, never returned), `refreshTokenHash` (nullable; one active session per user in v1), timestamps. The callsign is both the username and the display name: 3 to 20 characters, no other format rule.
+- **User (`users`):** `callsign` (unique), `passwordHash` (argon2, never returned), `refreshTokenHash` + `refreshTokenExpiresAt` (both nullable, `select: false`; one active session per user in v1), timestamps. The callsign is both the username and the display name: 3 to 20 characters, no other format rule.
 - **Case:** callsigns and net names are trimmed and lowercased by the shared Zod schema, so they are stored lowercase and uniqueness is case-insensitive (`WOLF-2` = `wolf-2`). The UI uppercases them for display.
 - **Room (`rooms`):** `name` (unique, 3 to 30 chars), `createdBy`, `memberCount`, `lastMessage: { content, senderId, createdAt }`, timestamps.
   - `memberCount` is denormalized: `$inc` +1 on join, -1 on leave, only when the membership insert/delete actually succeeds.
@@ -105,13 +105,14 @@ Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `p
 
 **Indexes:**
 
-| Collection  | Index                             | Serves                                                                |
-| ----------- | --------------------------------- | --------------------------------------------------------------------- |
-| users       | `{ callsign: 1 }` unique          | login, register                                                       |
-| rooms       | `{ name: 1 }` unique              | create net (duplicate check)                                          |
-| memberships | `{ userId: 1, roomId: 1 }` unique | "my nets", prevents double join                                       |
-| memberships | `{ roomId: 1 }`                   | members of a net, socket room sync                                    |
-| messages    | `{ roomId: 1, _id: -1 }`          | paginated history (cursor on `_id`: unique and time-ordered, no ties) |
+| Collection  | Index                                                         | Serves                                                                                   |
+| ----------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| users       | `{ callsign: 1 }` unique                                      | login, register                                                                          |
+| users       | `{ refreshTokenHash: 1 }` unique, partial (`$type: 'string'`) | refresh, logout (lookup by token hash; partial, not sparse: sparse still indexes `null`) |
+| rooms       | `{ name: 1 }` unique                                          | create net (duplicate check)                                                             |
+| memberships | `{ userId: 1, roomId: 1 }` unique                             | "my nets", prevents double join                                                          |
+| memberships | `{ roomId: 1 }`                                               | members of a net, socket room sync                                                       |
+| messages    | `{ roomId: 1, _id: -1 }`                                      | paginated history (cursor on `_id`: unique and time-ordered, no ties)                    |
 
 Nets list: joined = the user's memberships → rooms by id; open = rooms whose `_id` is not in that set. Both sorted by name, cursor = last name on the page.
 
