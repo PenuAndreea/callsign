@@ -14,7 +14,7 @@ describe('isDuplicateKeyError', () => {
   it('matches the failing index key when one is given', () => {
     const error = serverError(11000, { callsign: 1 });
     expect(isDuplicateKeyError(error, 'callsign')).toBe(true);
-    expect(isDuplicateKeyError(error, 'refreshTokenHash')).toBe(false);
+    expect(isDuplicateKeyError(error, 'name')).toBe(false);
   });
 
   it('ignores other server errors and non-Mongo errors', () => {

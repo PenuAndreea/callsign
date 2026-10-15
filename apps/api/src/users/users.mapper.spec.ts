@@ -19,7 +19,7 @@ describe('toUserDto', () => {
       callsign: 'wolf-2',
       createdAt: new Date(),
       passwordHash: '$argon2id$...',
-      refreshTokenHash: 'abc',
+      updatedAt: new Date(),
     };
     expect(Object.keys(toUserDto(user)).sort()).toEqual(['callsign', 'createdAt', 'id']);
   });
