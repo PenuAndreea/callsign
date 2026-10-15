@@ -6,6 +6,7 @@ packages:
 # The ones below ship prebuilt binaries as optional deps; their scripts are only fallbacks/checks.
 allowBuilds:
   '@parcel/watcher': false # Jest 30
+  argon2: true # native addon (falls back to a node-gyp build when no prebuild fits)
   esbuild: false # tsup
   unrs-resolver: false # Jest 30
   mongodb-memory-server: false # postinstall only pre-downloads mongod; it downloads on first use instead (cached in CI)

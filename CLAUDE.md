@@ -124,7 +124,7 @@ Define shapes once in `packages/types` as Zod schemas and infer the TS types. Th
 
 ## Backend practices to follow
 
-- Hash passphrases with argon2 (or bcrypt). Never return `passwordHash`; use DTOs or serializers.
+- Hash passphrases with argon2id through `PasswordHasher` (`src/auth/`): OWASP parameters (19 MiB, t=2, p=1; the library default of 64 MiB per hash is heavy for concurrent logins). Login with an unknown callsign still verifies against a dummy hash, so timing never reveals which callsigns exist. Never return `passwordHash`; use DTOs or serializers.
 - Tokens:
   - Access token: JWT, ~15 min.
   - Refresh token: an opaque random string (`crypto.randomBytes(32)`), not a JWT. Stored as a SHA-256 hash (high-entropy tokens don't need argon2). Rotated on every refresh.

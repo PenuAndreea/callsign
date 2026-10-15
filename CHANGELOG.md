@@ -4,6 +4,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(api): argon2id PasswordHasher (OWASP parameters, dummy verify against callsign enumeration)
 - feat(api): users module (schema with unique callsign and refresh-token indexes, UsersService, toUserDto)
 - feat(api): Helmet, CORS, cookie-parser, rate limiting, ApiError exception filter and ZodValidationPipe; shared configureApp for main and e2e
 - feat(types): INTERNAL_ERROR error code
