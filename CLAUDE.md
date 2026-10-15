@@ -116,7 +116,7 @@ Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `p
 | sessions    | `{ expiresAt: 1 }` TTL (`expireAfterSeconds: 0`)       | MongoDB deletes expired sessions itself (about once a minute, so queries still filter on `expiresAt`) |
 | sessions    | `{ previousTokenHash: 1 }` partial (`$type: 'string'`) | reuse detection                                                                                       |
 | rooms       | `{ name: 1 }` unique                                   | create net (duplicate check)                                                                          |
-| memberships | `{ userId: 1, roomId: 1 }` unique                      | "my nets", prevents double join                                                                       |
+| memberships | `{ userId: 1, roomId: 1 }` unique                      | "my nets" (covered query), prevents double join                                                       |
 | memberships | `{ roomId: 1 }`                                        | members of a net, socket room sync                                                                    |
 | messages    | `{ roomId: 1, _id: -1 }`                               | paginated history (cursor on `_id`: unique and time-ordered, no ties)                                 |
 
