@@ -96,7 +96,9 @@ type AuthResponse = {
 - **Tokens:** the access token is a JWT (~15 min). The refresh token is an opaque random string (32 bytes), stored as a SHA-256 hash.
 - **Refresh token rotation:** every `/auth/refresh` issues a new refresh token and replaces the stored hash. A reused old token fails, which limits the damage of a stolen one. The API client must run only one refresh at a time; concurrent 401s wait for it.
 - **Web cookie:** `refreshToken`, `httpOnly`, `sameSite=strict`, `path=/api/auth`, `secure` from env config (on in production). Requires web and API on the same site (Vite dev proxy locally).
-- **Rate limiting:** stricter on `/auth/*` (e.g. 10 requests/min per IP) than on the rest.
+- **Rate limiting:** 10 requests/min per IP on each `/auth/*` route, 100/min everywhere else.
+- **`X-Client`:** a missing header means `web` (the token stays in the httpOnly cookie); any other value than `web` or `mobile` is a 400.
+- **One session per user (v1):** login or register on another device replaces the stored refresh token, so the other device's next refresh gets 401 and it has to log in again.
 
 ### Nets
 

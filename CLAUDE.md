@@ -135,6 +135,7 @@ Define shapes once in `packages/types` as Zod schemas and infer the TS types. Th
   - Web refresh token: httpOnly cookie set by the API (`sameSite=strict`, `path=/api/auth`, `secure` from env config: on in production, optional on localhost because Safari drops `secure` cookies on `http://localhost`). Never readable from JS, never in `localStorage`. On page load the app calls `/auth/refresh` to get a new access token.
   - `sameSite=strict` needs web and API on the same site: Vite dev proxy (`/api` → API) locally, one domain when deployed.
   - Mobile refresh token: `expo-secure-store`, sent in the request body.
+  - In the API, `AuthService` is transport-agnostic; `RefreshTokenTransport` (`src/auth/`) owns the web/mobile difference (set, read and clear the cookie, or put the token in the body), chosen by the `@Client()` param decorator (`X-Client`, default `web`). Clearing a cookie needs the same `path` it was set with.
   - `/auth/login`, `/auth/refresh` and `/auth/logout` accept the refresh token from the cookie (web) or the body (mobile). `/auth/logout` needs no access token. CORS allows credentials from the web origin.
   - The shared hooks stay platform-agnostic: the injected token storage provider handles the difference.
   - The API client runs at most one refresh at a time; concurrent 401s wait for the same refresh promise (otherwise rotation logs the user out).
