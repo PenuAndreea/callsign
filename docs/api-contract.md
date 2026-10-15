@@ -35,7 +35,8 @@ type ErrorCode =
   | 'NOT_FOUND' // 404
   | 'CALLSIGN_TAKEN' // 409
   | 'NET_NAME_TAKEN' // 409
-  | 'RATE_LIMITED'; // 429
+  | 'RATE_LIMITED' // 429
+  | 'INTERNAL_ERROR'; // 500, or any status without a code of its own (e.g. 503); details only in the server log
 ```
 
 ## Shared field rules
@@ -46,6 +47,8 @@ type ErrorCode =
 | `passphrase`      | 8 to 128 characters (upper bound keeps argon2 hashing cheap to reject) |
 | net `name`        | trimmed, lowercased, 3 to 30 characters                                |
 | message `content` | trimmed, 1 to 1000 characters                                          |
+
+The passphrase rule applies to register. Login only checks 1 to 128 characters, so accounts created under an older, looser policy can still sign in.
 
 "Confirm passphrase" exists only in the register form schema (`RegisterFormSchema = RegisterRequest.extend(...).refine(...)`); the API never receives it.
 
@@ -93,7 +96,9 @@ type AuthResponse = {
 - **Tokens:** the access token is a JWT (~15 min). The refresh token is an opaque random string (32 bytes), stored as a SHA-256 hash.
 - **Refresh token rotation:** every `/auth/refresh` issues a new refresh token and replaces the stored hash. A reused old token fails, which limits the damage of a stolen one. The API client must run only one refresh at a time; concurrent 401s wait for it.
 - **Web cookie:** `refreshToken`, `httpOnly`, `sameSite=strict`, `path=/api/auth`, `secure` from env config (on in production). Requires web and API on the same site (Vite dev proxy locally).
-- **Rate limiting:** stricter on `/auth/*` (e.g. 10 requests/min per IP) than on the rest.
+- **Rate limiting:** 10 requests/min per IP on each `/auth/*` route, 100/min everywhere else.
+- **`X-Client`:** a missing header means `web` (the token stays in the httpOnly cookie); any other value than `web` or `mobile` is a 400.
+- **One session per user (v1):** login or register on another device replaces the stored refresh token, so the other device's next refresh gets 401 and it has to log in again.
 
 ### Nets
 

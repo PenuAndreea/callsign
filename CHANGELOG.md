@@ -4,6 +4,20 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+## 0.3.0 (M2: backend core auth and users modules)
+
+- feat(api): auth endpoints (register, login, refresh with rotation, logout, me), web cookie or mobile body per X-Client, 10/min auth rate limit
+- feat(api): TokensService (HS256 access JWT, opaque refresh tokens), global JwtAuthGuard with @Public() and @CurrentUser()
+- feat(api): argon2id PasswordHasher (OWASP parameters, dummy verify against callsign enumeration)
+- feat(api): users module (schema with unique callsign and refresh-token indexes, UsersService, toUserDto)
+- feat(api): Helmet, CORS, cookie-parser, rate limiting, ApiError exception filter and ZodValidationPipe; shared configureApp for main and e2e
+- feat(types): INTERNAL_ERROR error code
+- feat(api): MongoDB connection (Mongoose), health check reports DB state, e2e on mongodb-memory-server (cached in CI)
+- feat(api): env config validated with Zod at startup (typed ConfigService, fixed e2e env)
+- chore(deps): zod in the pnpm catalog, declared by every package that imports it
+- feat(types): auth request/response schemas and API error codes
+- chore(api): remove Nest template leftovers; GET /api/health
+
 ## 0.2.0 (M1: theme tokens and UI primitives)
 
 - feat(ui): Masthead, ScreenHeader, SectionLabel, RoomListItem, ChatBubble, MessageInput; shared ComponentPreview

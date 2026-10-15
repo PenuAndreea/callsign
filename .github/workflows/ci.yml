@@ -45,6 +45,15 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      # mongodb-memory-server downloads mongod (~80 MB) on first use. The version is pinned
+      # in apps/api/package.json (`config.mongodbMemoryServer`), so that file keys the cache.
+      - name: Cache MongoDB binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('apps/api/package.json') }}
+          restore-keys: mongodb-binaries-${{ runner.os }}-
+
       - name: API e2e tests
         run: pnpm --filter @callsign/api test:e2e
 

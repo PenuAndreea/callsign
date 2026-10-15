@@ -36,6 +36,10 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
   - The API itself compiles to **CommonJS** (`module: nodenext`, no `"type": "module"`), but Nest 12's packages are **ESM-only**. This works because Node can `require()` ES modules natively, hence Node **≥24.9** (`engines`, `.nvmrc`). Jest needs `NODE_OPTIONS=--experimental-vm-modules` for the same reason (set in the API's `test` scripts).
   - API tsconfig: extends the shared base, then `module`/`moduleResolution: nodenext`, `noEmit: false`, `rootDir: "."` (TS 6 no longer infers it), `outDir: dist`, `experimentalDecorators` + `emitDecoratorMetadata` (Nest DI reads constructor types at runtime). `tsconfig.build.json` narrows `rootDir` to `src`.
   - All routes are under the global prefix `/api` (`app.setGlobalPrefix('api')`), port 3000.
+  - `src/configure-app.ts` holds the app-level setup (prefix, Helmet, cookie-parser, CORS) and is called by both `main.ts` and the e2e helper `test/create-test-app.ts`, so tests run the same app. Global guards and filters go in `AppModule` as `APP_GUARD` / `APP_FILTER` (DI), never `app.useGlobal*`.
+  - Errors: services throw `ApiException(status, code, message)` (`src/common/errors/`). The global `ApiExceptionFilter` maps everything to `ApiError`; Nest's own exceptions get a code from their status, unknown errors become a generic 500 `INTERNAL_ERROR` (details only in the log).
+  - Rate limiting: `@nestjs/throttler`, global 100/min per IP, in memory.
+  - Auth: no Passport. `JwtAuthGuard` is a global `APP_GUARD` (after `ThrottlerGuard`), so every route needs a Bearer token unless marked `@Public()` (route or controller). Read the user with `@CurrentUser() user: AuthUser` (`{ userId, callsign }`). `TokensService.verifyAccessToken` is the one token check, for HTTP and (M4) the socket handshake.
 - Web: **Vite + React + Vitest**. No Next.js.
 - Mobile: **Expo** (React Native).
 - Shared UI: one component library written with React Native primitives, rendered on web through **react-native-web**.
@@ -47,19 +51,20 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
   - `exports` maps `require` → `dist/index.cjs` + `.d.cts` (API) and `import` → `dist/index.js` + `.d.ts` (Vite, Metro, Vitest).
   - tsup's declaration build sets `baseUrl` internally, which TS 6 deprecates, so `tsup.config.ts` passes `ignoreDeprecations: '6.0'` to the dts step. tsup is in maintenance mode; **tsdown** is the drop-in successor if it causes more trouble.
 - One React version: `react`, `react-dom`, `react-test-renderer`, `react-native-web`, `react-native-svg`, `@types/react` and `@types/react-dom` live in the default pnpm `catalog:` in `pnpm-workspace.yaml`, pinned to what the Expo SDK expects (React 19.2.3 for SDK 57). Apps reference them as `"catalog:"`. Bump only together with an Expo SDK upgrade.
+  - `zod` is in the catalog too (not tied to Expo). Every package that imports `zod` declares it as `"catalog:"`: the hoisted root copy is Zod 3 (pulled in by another dependency), so an undeclared import silently gets the wrong major.
   - Libraries must support that React version: **React Router 7** (v8 needs React ≥19.2.7), **React Native Testing Library 13** with `react-test-renderer` (v14 needs React 19.3).
   - Known harmless peer warning: `@react-native/metro-config` 0.87 vs 0.86 (optional peer of the RN CLI; Expo uses its own Metro config).
-- API validation: the shared Zod schemas, through a `ZodValidationPipe` (custom or `nestjs-zod`). No `class-validator`.
+- API validation: the shared Zod schemas, through our own `ZodValidationPipe` (`src/common/pipes/`, per parameter: `@Body(new ZodValidationPipe(schema))`; returns the parsed, normalized value). No `class-validator`, no `nestjs-zod`.
 - TypeScript pinned to `~6.0` (typescript-eslint supports `<6.1`; TS 7's native compiler is not yet supported by the tooling). TS 6 defaults `types` to `[]`, so every tsconfig lists its globals explicitly (e.g. `["jest"]` on mobile, `["node", "jest"]` on the API, `["vite/client"]` on web).
 - Tests: in `src/__tests__/` or next to the code, but never inside Expo Router's `src/app/` (every file there becomes a route).
 - Linting: one root `eslint.config.js` (re-exports `@callsign/config/eslint`) covers the whole repo; `pnpm lint` runs it once from the root, packages need no lint script. `eslint-plugin-react-hooks` (recommended: Rules of Hooks, exhaustive deps, React Compiler rules) applies to `apps/web`, `apps/mobile`, `packages/ui` and `packages/hooks`. For `apps/api`, the parser gets `emitDecoratorMetadata` so `consistent-type-imports` never turns an injected class into `import type` (that would break Nest DI at runtime), and `no-extraneous-class` allows decorated empty classes (Nest modules). Each app/package defines its own `typecheck` script, run through Turbo.
 - Install scripts: pnpm only runs them for packages listed `true` under `allowBuilds` in `pnpm-workspace.yaml`. Allow only what needs a native build (e.g. `argon2` in M2); packages with prebuilt binaries stay `false`.
 - Data fetching: **TanStack Query** inside the shared hooks.
 - Routing: **React Router** on web, **Expo Router** on mobile (routing stays in the apps).
-- Testing: **Vitest** (web, shared packages; `packages/ui` runs on jsdom + `@testing-library/react` with a `react-native` → `react-native-web` alias, like web), **Jest + Supertest** (API, against **mongodb-memory-server**: a real throwaway MongoDB per test file, no Docker in CI), **jest-expo + React Native Testing Library** (mobile-only behavior).
+- Testing: **Vitest** (web, shared packages; `packages/ui` runs on jsdom + `@testing-library/react` with a `react-native` → `react-native-web` alias, like web), **Jest + Supertest** (API, against **mongodb-memory-server**: Jest's `globalSetup` starts one real in-memory `mongod` per e2e run and `test/setup-env.ts` gives each test file its own randomly named database, no Docker in CI; `mongod` pinned to the Docker version under `config.mongodbMemoryServer` in `apps/api/package.json`), **jest-expo + React Native Testing Library** (mobile-only behavior).
 - Local MongoDB: `docker-compose.yml` at the root (MongoDB 8.0, named volume, healthcheck, bound to `127.0.0.1` only, no auth). `pnpm db:up` (waits until healthy), then `pnpm dev`; `pnpm db:down` stops it and keeps the data.
-- Env: the API reads `apps/api/.env` (git-ignored); `apps/api/.env.example` is committed and lists every variable. Add new variables to both.
-- Git: **Husky + lint-staged** at the repo root (lint/format staged files, typecheck on pre-commit). CI (`.github/workflows/ci.yml`, on push to `main`/`develop` and on PRs) runs `format:check`, `lint`, `typecheck`, `test`, the API's `test:e2e` and `build`, with Node from `.nvmrc` and pnpm from `packageManager`. When mongodb-memory-server arrives (M2), cache its binary (`~/.cache/mongodb-binaries`) in CI. **Conventional Commits**, enforced by commitlint in a `commit-msg` hook. Optional scope from: `api`, `web`, `mobile`, `types`, `theme`, `ui`, `hooks`, `config`, `deps`, `ci`, `docs`.
+- Env: the API reads `apps/api/.env` (git-ignored); `apps/api/.env.example` is committed and lists every variable. Add new variables to both, and to the Zod `envSchema` (`apps/api/src/config/env.schema.ts`), which `ConfigModule` validates at startup. Inject `ConfigService<Env, true>` and read with `get('X', { infer: true })` for typed values. E2E tests get a fixed env from `apps/api/test/setup-env.ts` (CI has no `.env`).
+- Git: **Husky + lint-staged** at the repo root (lint/format staged files, typecheck on pre-commit). CI (`.github/workflows/ci.yml`, on push to `main`/`develop` and on PRs) runs `format:check`, `lint`, `typecheck`, `test`, the API's `test:e2e` and `build`, with Node from `.nvmrc` and pnpm from `packageManager`. CI caches the mongodb-memory-server binary (`~/.cache/mongodb-binaries`, keyed on `apps/api/package.json`). **Conventional Commits**, enforced by commitlint in a `commit-msg` hook. Optional scope from: `api`, `web`, `mobile`, `types`, `theme`, `ui`, `hooks`, `config`, `deps`, `ci`, `docs`.
 - Reconnect and offline behavior on mobile: handled in M6.
 
 ## Repository layout (planned)
@@ -91,7 +96,7 @@ Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `p
 
 ## Data models
 
-- **User (`users`):** `callsign` (unique), `passwordHash` (argon2, never returned), `refreshTokenHash` (nullable; one active session per user in v1), timestamps. The callsign is both the username and the display name: 3 to 20 characters, no other format rule.
+- **User (`users`):** `callsign` (unique), `passwordHash` (argon2, never returned), `refreshTokenHash` + `refreshTokenExpiresAt` (both nullable, `select: false`; one active session per user in v1), timestamps. The callsign is both the username and the display name: 3 to 20 characters, no other format rule.
 - **Case:** callsigns and net names are trimmed and lowercased by the shared Zod schema, so they are stored lowercase and uniqueness is case-insensitive (`WOLF-2` = `wolf-2`). The UI uppercases them for display.
 - **Room (`rooms`):** `name` (unique, 3 to 30 chars), `createdBy`, `memberCount`, `lastMessage: { content, senderId, createdAt }`, timestamps.
   - `memberCount` is denormalized: `$inc` +1 on join, -1 on leave, only when the membership insert/delete actually succeeds.
@@ -101,13 +106,14 @@ Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `p
 
 **Indexes:**
 
-| Collection  | Index                             | Serves                                                                |
-| ----------- | --------------------------------- | --------------------------------------------------------------------- |
-| users       | `{ callsign: 1 }` unique          | login, register                                                       |
-| rooms       | `{ name: 1 }` unique              | create net (duplicate check)                                          |
-| memberships | `{ userId: 1, roomId: 1 }` unique | "my nets", prevents double join                                       |
-| memberships | `{ roomId: 1 }`                   | members of a net, socket room sync                                    |
-| messages    | `{ roomId: 1, _id: -1 }`          | paginated history (cursor on `_id`: unique and time-ordered, no ties) |
+| Collection  | Index                                                         | Serves                                                                                   |
+| ----------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| users       | `{ callsign: 1 }` unique                                      | login, register                                                                          |
+| users       | `{ refreshTokenHash: 1 }` unique, partial (`$type: 'string'`) | refresh, logout (lookup by token hash; partial, not sparse: sparse still indexes `null`) |
+| rooms       | `{ name: 1 }` unique                                          | create net (duplicate check)                                                             |
+| memberships | `{ userId: 1, roomId: 1 }` unique                             | "my nets", prevents double join                                                          |
+| memberships | `{ roomId: 1 }`                                               | members of a net, socket room sync                                                       |
+| messages    | `{ roomId: 1, _id: -1 }`                                      | paginated history (cursor on `_id`: unique and time-ordered, no ties)                    |
 
 Nets list: joined = the user's memberships → rooms by id; open = rooms whose `_id` is not in that set. Both sorted by name, cursor = last name on the page.
 
@@ -119,9 +125,9 @@ Define shapes once in `packages/types` as Zod schemas and infer the TS types. Th
 
 ## Backend practices to follow
 
-- Hash passphrases with argon2 (or bcrypt). Never return `passwordHash`; use DTOs or serializers.
+- Hash passphrases with argon2id through `PasswordHasher` (`src/auth/`): OWASP parameters (19 MiB, t=2, p=1; the library default of 64 MiB per hash is heavy for concurrent logins). Login with an unknown callsign still verifies against a dummy hash, so timing never reveals which callsigns exist. Never return `passwordHash`; use DTOs or serializers.
 - Tokens:
-  - Access token: JWT, ~15 min.
+  - Access token: JWT, ~15 min (`JWT_ACCESS_TTL_SECONDS`), HS256 pinned on sign and verify (`src/auth/jwt-options.ts`), claims `{ sub: userId, callsign }` validated with Zod after verifying.
   - Refresh token: an opaque random string (`crypto.randomBytes(32)`), not a JWT. Stored as a SHA-256 hash (high-entropy tokens don't need argon2). Rotated on every refresh.
   - Authenticate the WebSocket handshake with the access token too.
 - Token storage:
@@ -129,6 +135,7 @@ Define shapes once in `packages/types` as Zod schemas and infer the TS types. Th
   - Web refresh token: httpOnly cookie set by the API (`sameSite=strict`, `path=/api/auth`, `secure` from env config: on in production, optional on localhost because Safari drops `secure` cookies on `http://localhost`). Never readable from JS, never in `localStorage`. On page load the app calls `/auth/refresh` to get a new access token.
   - `sameSite=strict` needs web and API on the same site: Vite dev proxy (`/api` → API) locally, one domain when deployed.
   - Mobile refresh token: `expo-secure-store`, sent in the request body.
+  - In the API, `AuthService` is transport-agnostic; `RefreshTokenTransport` (`src/auth/`) owns the web/mobile difference (set, read and clear the cookie, or put the token in the body), chosen by the `@Client()` param decorator (`X-Client`, default `web`). Clearing a cookie needs the same `path` it was set with.
   - `/auth/login`, `/auth/refresh` and `/auth/logout` accept the refresh token from the cookie (web) or the body (mobile). `/auth/logout` needs no access token. CORS allows credentials from the web origin.
   - The shared hooks stay platform-agnostic: the injected token storage provider handles the difference.
   - The API client runs at most one refresh at a time; concurrent 401s wait for the same refresh promise (otherwise rotation logs the user out).
