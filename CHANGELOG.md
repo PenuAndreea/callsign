@@ -4,6 +4,9 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(theme): light and dark design tokens with a WCAG contrast test
+- docs: new light/dark mockups and a rewritten design brief (tokens, fonts, components, v1 scope)
+
 ## 0.1.0 - 2026-10-15 (M0: tooling)
 
 - docs: README with setup, how to run each app, the checks and the data model
