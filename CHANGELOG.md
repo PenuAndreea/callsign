@@ -4,6 +4,8 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+## 0.3.0 (M2: backend core auth and users modules)
+
 - feat(api): auth endpoints (register, login, refresh with rotation, logout, me), web cookie or mobile body per X-Client, 10/min auth rate limit
 - feat(api): TokensService (HS256 access JWT, opaque refresh tokens), global JwtAuthGuard with @Public() and @CurrentUser()
 - feat(api): argon2id PasswordHasher (OWASP parameters, dummy verify against callsign enumeration)
