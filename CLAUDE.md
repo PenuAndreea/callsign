@@ -39,6 +39,7 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
   - `src/configure-app.ts` holds the app-level setup (prefix, Helmet, cookie-parser, CORS) and is called by both `main.ts` and the e2e helper `test/create-test-app.ts`, so tests run the same app. Global guards and filters go in `AppModule` as `APP_GUARD` / `APP_FILTER` (DI), never `app.useGlobal*`.
   - Errors: services throw `ApiException(status, code, message)` (`src/common/errors/`). The global `ApiExceptionFilter` maps everything to `ApiError`; Nest's own exceptions get a code from their status, unknown errors become a generic 500 `INTERNAL_ERROR` (details only in the log).
   - Rate limiting: `@nestjs/throttler`, global 100/min per IP, in memory.
+  - Auth: no Passport. `JwtAuthGuard` is a global `APP_GUARD` (after `ThrottlerGuard`), so every route needs a Bearer token unless marked `@Public()` (route or controller). Read the user with `@CurrentUser() user: AuthUser` (`{ userId, callsign }`). `TokensService.verifyAccessToken` is the one token check, for HTTP and (M4) the socket handshake.
 - Web: **Vite + React + Vitest**. No Next.js.
 - Mobile: **Expo** (React Native).
 - Shared UI: one component library written with React Native primitives, rendered on web through **react-native-web**.
@@ -126,7 +127,7 @@ Define shapes once in `packages/types` as Zod schemas and infer the TS types. Th
 
 - Hash passphrases with argon2id through `PasswordHasher` (`src/auth/`): OWASP parameters (19 MiB, t=2, p=1; the library default of 64 MiB per hash is heavy for concurrent logins). Login with an unknown callsign still verifies against a dummy hash, so timing never reveals which callsigns exist. Never return `passwordHash`; use DTOs or serializers.
 - Tokens:
-  - Access token: JWT, ~15 min.
+  - Access token: JWT, ~15 min (`JWT_ACCESS_TTL_SECONDS`), HS256 pinned on sign and verify (`src/auth/jwt-options.ts`), claims `{ sub: userId, callsign }` validated with Zod after verifying.
   - Refresh token: an opaque random string (`crypto.randomBytes(32)`), not a JWT. Stored as a SHA-256 hash (high-entropy tokens don't need argon2). Rotated on every refresh.
   - Authenticate the WebSocket handshake with the access token too.
 - Token storage:

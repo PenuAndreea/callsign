@@ -4,6 +4,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(api): TokensService (HS256 access JWT, opaque refresh tokens), global JwtAuthGuard with @Public() and @CurrentUser()
 - feat(api): argon2id PasswordHasher (OWASP parameters, dummy verify against callsign enumeration)
 - feat(api): users module (schema with unique callsign and refresh-token indexes, UsersService, toUserDto)
 - feat(api): Helmet, CORS, cookie-parser, rate limiting, ApiError exception filter and ZodValidationPipe; shared configureApp for main and e2e
