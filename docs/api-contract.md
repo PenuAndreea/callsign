@@ -47,6 +47,8 @@ type ErrorCode =
 | net `name`        | trimmed, lowercased, 3 to 30 characters                                |
 | message `content` | trimmed, 1 to 1000 characters                                          |
 
+The passphrase rule applies to register. Login only checks 1 to 128 characters, so accounts created under an older, looser policy can still sign in.
+
 "Confirm passphrase" exists only in the register form schema (`RegisterFormSchema = RegisterRequest.extend(...).refine(...)`); the API never receives it.
 
 ## DTOs
