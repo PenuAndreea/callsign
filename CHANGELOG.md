@@ -4,6 +4,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(api): cursor pagination helpers (opaque base64url cursors validated on decode, toPage with limit + 1 fetch)
 - feat(types): pagination (page query, Page<T>) and room schemas (name, create request, list query, RoomDto)
 
 ## 0.3.1 (sessions per device)
