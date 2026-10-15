@@ -3,13 +3,16 @@ import type { ViewStyle } from 'react-native';
 
 const HALO_WIDTH = 6;
 
+/** Only the shadow, so the helpers spread into View, Text and TextInput styles alike. */
+type ShadowStyle = { boxShadow: string };
+
 /** Soft ring around primary actions (Report in, TX). */
-export function haloStyle(colors: ThemeColors): ViewStyle {
+export function haloStyle(colors: ThemeColors): ShadowStyle {
   return { boxShadow: `0 0 0 ${HALO_WIDTH}px ${colors.primaryHalo}` };
 }
 
 /** Low drop shadow for cards and raised surface controls. */
-export function raisedStyle(colors: ThemeColors): ViewStyle {
+export function raisedStyle(colors: ThemeColors): ShadowStyle {
   return { boxShadow: `0 2px 8px ${colors.shadow}` };
 }
 

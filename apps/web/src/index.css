@@ -5,6 +5,8 @@ body,
   margin: 0;
 }
 
+/* Column, like a React Native root view: `flex: 1` children fill the height, stretch the width. */
 #root {
   display: flex;
+  flex-direction: column;
 }

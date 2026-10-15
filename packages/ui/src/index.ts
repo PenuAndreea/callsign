@@ -12,3 +12,7 @@ export * from './components/Icon/Icon';
 export type * from './components/Icon/Icon.types';
 export * from './components/IconButton/IconButton';
 export type * from './components/IconButton/IconButton.types';
+export * from './components/Input/Input';
+export type * from './components/Input/Input.types';
+export * from './components/StatusDot/StatusDot';
+export type * from './components/StatusDot/StatusDot.types';
