@@ -4,6 +4,8 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+## 0.3.1 (sessions per device)
+
 - feat(api): sessions collection, one session per device (sliding expiry, TTL index, refresh-token reuse detection)
 
 ## 0.3.0 (M2: backend core auth and users modules)
