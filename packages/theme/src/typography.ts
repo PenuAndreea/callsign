@@ -19,6 +19,7 @@ export const fontSizes = {
   small: 13, // list preview, buttons
   body: 15, // message text
   input: 16,
+  button: 18, // primary and secondary button labels
   title: 30, // screen titles
   display: 34, // CALLSIGN wordmark
 } as const;
@@ -30,6 +31,7 @@ export const lineHeights: Record<keyof typeof fontSizes, number> = {
   small: 18,
   body: 21,
   input: 22,
+  button: 22,
   title: 34,
   display: 38,
 };

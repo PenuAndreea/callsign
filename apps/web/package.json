@@ -11,7 +11,12 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@callsign/theme": "workspace:*",
     "@callsign/types": "workspace:*",
+    "@callsign/ui": "workspace:*",
+    "@expo-google-fonts/share-tech-mono": "^0.4.1",
+    "@expo-google-fonts/special-elite": "^0.4.1",
+    "@expo-google-fonts/stardos-stencil": "^0.4.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-native-web": "catalog:",

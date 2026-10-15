@@ -4,6 +4,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(ui): ThemeProvider, useTheme, createStyles and the Text, Button and Card primitives; fonts and a preview in both apps
 - feat(theme): light and dark design tokens with a WCAG contrast test
 - docs: new light/dark mockups and a rewritten design brief (tokens, fonts, components, v1 scope)
 
