@@ -4,6 +4,8 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(api): env config validated with Zod at startup (typed ConfigService, fixed e2e env)
+- chore(deps): zod in the pnpm catalog, declared by every package that imports it
 - feat(types): auth request/response schemas and API error codes
 - chore(api): remove Nest template leftovers; GET /api/health
 

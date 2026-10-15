@@ -18,6 +18,8 @@ catalog:
   react-native-svg: 15.15.4
   '@types/react': ~19.2.2
   '@types/react-dom': ~19.2.3
+  # Not tied to Expo: one version for the shared schemas and every package that imports zod.
+  zod: ^4.6.7
 
 # Expo/Metro needs a flat node_modules in a pnpm monorepo
 nodeLinker: hoisted
