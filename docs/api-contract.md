@@ -35,7 +35,8 @@ type ErrorCode =
   | 'NOT_FOUND' // 404
   | 'CALLSIGN_TAKEN' // 409
   | 'NET_NAME_TAKEN' // 409
-  | 'RATE_LIMITED'; // 429
+  | 'RATE_LIMITED' // 429
+  | 'INTERNAL_ERROR'; // 500, or any status without a code of its own (e.g. 503); details only in the server log
 ```
 
 ## Shared field rules

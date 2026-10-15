@@ -8,7 +8,7 @@ import type { Env } from '../config/env.schema';
 @Module({
   imports: [
     MongooseModule.forRootAsync({
-      inject: [ConfigService], // let's connection wait until env has been validated
+      inject: [ConfigService], // lets connection wait until env has been validated
       useFactory: (config: ConfigService<Env, true>) => ({
         uri: config.get('MONGODB_URI', { infer: true }),
         // Fail fast when MongoDB is unreachable instead of hanging for the 30 s default.

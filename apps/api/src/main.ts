@@ -3,10 +3,11 @@ import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
 import type { Env } from './config/env.schema';
+import { configureApp } from './configure-app';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('api');
+  configureApp(app);
   const config = app.get<ConfigService<Env, true>>(ConfigService);
   await app.listen(config.get('PORT', { infer: true }));
 }

@@ -10,6 +10,8 @@ export const errorCodeSchema = z.enum([
   'CALLSIGN_TAKEN',
   'NET_NAME_TAKEN',
   'RATE_LIMITED',
+  // Anything unexpected (500, or a status with no code of its own). Details stay in the server log.
+  'INTERNAL_ERROR',
 ]);
 
 export type ErrorCode = z.infer<typeof errorCodeSchema>;
