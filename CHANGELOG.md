@@ -1,9 +1,12 @@
 # Changelog
 
-One short line per commit, newest first.
+One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0, M1 = 0.2.0, and so on; 1.0.0 is the finished v1 scope.
 
 ## Unreleased
 
+## 0.1.0 - 2026-10-15 (M0: tooling)
+
+- docs: README with setup, how to run each app, the checks and the data model
 - ci: GitHub Actions running format, lint, typecheck, unit and e2e tests and build
 - chore: docker-compose MongoDB for local development and API .env.example
 - feat(types): shared Zod package built with tsup (ESM + CJS), first schema: callsign
