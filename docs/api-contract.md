@@ -20,6 +20,10 @@ Cursor-based everywhere. Query: `?cursor=<opaque>&limit=<n>` (default 20, max 50
 type Page<T> = { items: T[]; nextCursor: string | null }; // null = no more pages
 ```
 
+- `limit` must be a whole number from 1 to 50; anything else is a 400 `VALIDATION_FAILED` (not clamped).
+- `cursor` is opaque (at most 200 characters): send back the previous page's `nextCursor` unchanged. A malformed cursor is a 400.
+- Schemas: `pageQuerySchema` (coerces `limit` from the query string) and `pageSchema(itemSchema)`.
+
 ### Errors
 
 Every error response has the same shape, with a stable `code` the apps map to copy:
