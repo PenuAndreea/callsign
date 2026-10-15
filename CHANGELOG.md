@@ -4,6 +4,8 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- chore(api): remove Nest template leftovers; GET /api/health
+
 ## 0.2.0 (M1: theme tokens and UI primitives)
 
 - feat(ui): Masthead, ScreenHeader, SectionLabel, RoomListItem, ChatBubble, MessageInput; shared ComponentPreview
