@@ -8,9 +8,10 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
-import type { CreateRoomRequest, RoomDto } from '@callsign/types';
-import { createRoomRequestSchema } from '@callsign/types';
+import type { CreateRoomRequest, Page, RoomDto, RoomsQuery } from '@callsign/types';
+import { createRoomRequestSchema, roomsQuerySchema } from '@callsign/types';
 
 import type { AuthUser } from '../auth/auth-user';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -28,6 +29,15 @@ export class RoomsController {
     @Body(new ZodValidationPipe(createRoomRequestSchema)) body: CreateRoomRequest,
   ): Promise<RoomDto> {
     return this.rooms.create(user.userId, body.name);
+  }
+
+  /** `?scope=joined|open&cursor&limit`: the nets screen asks once per section. */
+  @Get()
+  list(
+    @CurrentUser() user: AuthUser,
+    @Query(new ZodValidationPipe(roomsQuerySchema)) query: RoomsQuery,
+  ): Promise<Page<RoomDto>> {
+    return this.rooms.list(user.userId, query);
   }
 
   @Get(':id')

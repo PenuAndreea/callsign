@@ -1,17 +1,21 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import type { RoomDto } from '@callsign/types';
+import type { Page, RoomDto, RoomsQuery } from '@callsign/types';
+import { roomNameSchema } from '@callsign/types';
+import type { QueryFilter } from 'mongoose';
 import { isObjectIdOrHexString, Model } from 'mongoose';
 
 import { ApiException } from '../common/errors/api.exception';
 import { isDuplicateKeyError } from '../common/mongo/is-duplicate-key-error';
+import { decodeCursor } from '../common/pagination/cursor';
+import { pageFetchLimit, toPage } from '../common/pagination/to-page';
 import { MembershipsService } from '../memberships/memberships.service';
 import type { RoomDocument } from './room.schema';
 import { Room } from './room.schema';
 import { toRoomDto } from './rooms.mapper';
 
 /**
- * Nets: create, read, join, leave. Owns `memberCount`: it changes only when
+ * Nets: create, list, read, join, leave. Owns `memberCount`: it changes only when
  * `MembershipsService` reports that a row was really added or removed.
  *
  * Known trade-off: the membership write and the `$inc` are two writes, not one transaction
@@ -40,6 +44,37 @@ export class RoomsService {
       throw error;
     }
     return this.join(userId, room.id);
+  }
+
+  /**
+   * One page of the user's nets (`joined`) or the nets they can join (`open`), sorted by name.
+   * Membership is not stored on the room: the scope splits all rooms by the user's memberships,
+   * which is also why `isMember` follows from the scope without a lookup per room.
+   * @throws ApiException 400 `VALIDATION_FAILED` for a cursor we did not issue.
+   */
+  async list(userId: string, { scope, cursor, limit }: RoomsQuery): Promise<Page<RoomDto>> {
+    // Decode first: a bad cursor fails before any database work.
+    const after = cursor === undefined ? undefined : decodeCursor(cursor, roomNameSchema);
+    const roomIds = await this.memberships.roomIdsFor(userId);
+
+    const filter: QueryFilter<Room> = {
+      _id: scope === 'joined' ? { $in: roomIds } : { $nin: roomIds },
+    };
+    // Names are unique, so "after the last name" never skips or repeats a room.
+    if (after !== undefined) filter.name = { $gt: after };
+
+    const rooms = await this.roomModel
+      .find(filter)
+      .sort({ name: 1 })
+      .limit(pageFetchLimit(limit))
+      .lean()
+      .exec();
+    const isMember = scope === 'joined';
+    return toPage(rooms, {
+      limit,
+      cursorOf: (room) => room.name,
+      toItem: (room) => toRoomDto(room, isMember),
+    });
   }
 
   /** @throws ApiException 404 `NOT_FOUND` */

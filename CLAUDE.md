@@ -120,7 +120,7 @@ Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `p
 | memberships | `{ roomId: 1 }`                                        | members of a net, socket room sync                                                                    |
 | messages    | `{ roomId: 1, _id: -1 }`                               | paginated history (cursor on `_id`: unique and time-ordered, no ties)                                 |
 
-Nets list: joined = the user's memberships → rooms by id; open = rooms whose `_id` is not in that set. Both sorted by name, cursor = last name on the page.
+Nets list: joined = the user's memberships → rooms by id; open = rooms whose `_id` is not in that set. Both sorted by name, cursor = last name on the page. `isMember` follows from the scope. Query plans (checked with `explain` on 5,000 rooms): joined uses the `_id` index and sorts the user's few rooms in memory; open walks the `name` index from the cursor and stops after `limit + 1` matches. MongoDB's planner picks both without a `hint`.
 
 **API contract:** REST endpoints, DTOs, error codes and Socket.IO events are in `docs/api-contract.md`.
 
