@@ -14,7 +14,12 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@callsign/theme": "workspace:*",
     "@callsign/types": "workspace:*",
+    "@callsign/ui": "workspace:*",
+    "@expo-google-fonts/share-tech-mono": "^0.4.1",
+    "@expo-google-fonts/special-elite": "^0.4.1",
+    "@expo-google-fonts/stardos-stencil": "^0.4.0",
     "expo": "~57.0.28",
     "expo-constants": "~57.0.21",
     "expo-font": "~57.0.4",
@@ -30,6 +35,7 @@
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
+    "react-native-svg": "catalog:",
     "react-native-web": "catalog:",
     "react-native-worklets": "0.10.1"
   },

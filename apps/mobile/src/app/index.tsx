@@ -1,17 +1,6 @@
-import { Text, View, StyleSheet } from 'react-native';
+import { ComponentPreview } from '@callsign/ui/preview';
 
+// Temporary M1 component check on native; replaced by the real screens in M5.
 export default function Index() {
-  return (
-    <View style={styles.container}>
-      <Text>Edit src/app/index.tsx to edit this screen.</Text>
-    </View>
-  );
+  return <ComponentPreview />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

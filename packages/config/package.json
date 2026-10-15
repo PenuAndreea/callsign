@@ -7,7 +7,11 @@
   "exports": {
     "./eslint": "./eslint.config.js",
     "./prettier": "./prettier.config.js",
-    "./tsconfig/base.json": "./tsconfig/base.json"
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./vite": {
+      "types": "./vite.d.ts",
+      "default": "./vite.js"
+    }
   },
   "dependencies": {
     "@eslint/js": "^10.0.1",

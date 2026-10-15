@@ -46,7 +46,7 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
 - Shared package builds: `packages/types` is **built with tsup** (ESM + CJS in `dist/`) because the NestJS API runs compiled JS under plain Node and cannot import TS source. `theme`, `ui` and `hooks` stay **source-only** (consumed only by Vite and Metro). Turbo runs `^build` before `typecheck`, `test` and `dev`.
   - `exports` maps `require` → `dist/index.cjs` + `.d.cts` (API) and `import` → `dist/index.js` + `.d.ts` (Vite, Metro, Vitest).
   - tsup's declaration build sets `baseUrl` internally, which TS 6 deprecates, so `tsup.config.ts` passes `ignoreDeprecations: '6.0'` to the dts step. tsup is in maintenance mode; **tsdown** is the drop-in successor if it causes more trouble.
-- One React version: `react`, `react-dom`, `react-test-renderer`, `react-native-web`, `@types/react` and `@types/react-dom` live in the default pnpm `catalog:` in `pnpm-workspace.yaml`, pinned to what the Expo SDK expects (React 19.2.3 for SDK 57). Apps reference them as `"catalog:"`. Bump only together with an Expo SDK upgrade.
+- One React version: `react`, `react-dom`, `react-test-renderer`, `react-native-web`, `react-native-svg`, `@types/react` and `@types/react-dom` live in the default pnpm `catalog:` in `pnpm-workspace.yaml`, pinned to what the Expo SDK expects (React 19.2.3 for SDK 57). Apps reference them as `"catalog:"`. Bump only together with an Expo SDK upgrade.
   - Libraries must support that React version: **React Router 7** (v8 needs React ≥19.2.7), **React Native Testing Library 13** with `react-test-renderer` (v14 needs React 19.3).
   - Known harmless peer warning: `@react-native/metro-config` 0.87 vs 0.86 (optional peer of the RN CLI; Expo uses its own Metro config).
 - API validation: the shared Zod schemas, through a `ZodValidationPipe` (custom or `nestjs-zod`). No `class-validator`.
@@ -56,7 +56,7 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
 - Install scripts: pnpm only runs them for packages listed `true` under `allowBuilds` in `pnpm-workspace.yaml`. Allow only what needs a native build (e.g. `argon2` in M2); packages with prebuilt binaries stay `false`.
 - Data fetching: **TanStack Query** inside the shared hooks.
 - Routing: **React Router** on web, **Expo Router** on mobile (routing stays in the apps).
-- Testing: **Vitest** (web, shared packages), **Jest + Supertest** (API, against **mongodb-memory-server**: a real throwaway MongoDB per test file, no Docker in CI), **jest-expo + React Native Testing Library** (mobile-only behavior).
+- Testing: **Vitest** (web, shared packages; `packages/ui` runs on jsdom + `@testing-library/react` with a `react-native` → `react-native-web` alias, like web), **Jest + Supertest** (API, against **mongodb-memory-server**: a real throwaway MongoDB per test file, no Docker in CI), **jest-expo + React Native Testing Library** (mobile-only behavior).
 - Local MongoDB: `docker-compose.yml` at the root (MongoDB 8.0, named volume, healthcheck, bound to `127.0.0.1` only, no auth). `pnpm db:up` (waits until healthy), then `pnpm dev`; `pnpm db:down` stops it and keeps the data.
 - Env: the API reads `apps/api/.env` (git-ignored); `apps/api/.env.example` is committed and lists every variable. Add new variables to both.
 - Git: **Husky + lint-staged** at the repo root (lint/format staged files, typecheck on pre-commit). CI (`.github/workflows/ci.yml`, on push to `main`/`develop` and on PRs) runs `format:check`, `lint`, `typecheck`, `test`, the API's `test:e2e` and `build`, with Node from `.nvmrc` and pnpm from `packageManager`. When mongodb-memory-server arrives (M2), cache its binary (`~/.cache/mongodb-binaries`) in CI. **Conventional Commits**, enforced by commitlint in a `commit-msg` hook. Optional scope from: `api`, `web`, `mobile`, `types`, `theme`, `ui`, `hooks`, `config`, `deps`, `ci`, `docs`.
@@ -77,12 +77,12 @@ packages/
   config/    shared eslint, tsconfig, prettier
 ```
 
-Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `pnpm-workspace.yaml` (pnpm 11+ ignores pnpm settings in `.npmrc`; that file is only for registry/auth). Recent Expo SDKs configure Metro for monorepos automatically; add a `metro.config.js` only if `@callsign/*` packages fail to resolve. Vite needs an alias from `react-native` to `react-native-web`.
+Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `pnpm-workspace.yaml` (pnpm 11+ ignores pnpm settings in `.npmrc`; that file is only for registry/auth). Recent Expo SDKs configure Metro for monorepos automatically; add a `metro.config.js` only if `@callsign/*` packages fail to resolve. Vite needs an alias from `react-native` to `react-native-web`. Those settings live once in `@callsign/config/vite` (used by `apps/web` and the `packages/ui` tests): the alias, `.web.*`-first extensions, an alias of `react-native-svg` to its ES build, the same extensions for the dev dependency optimizer, and `react-native-svg` inlined in Vitest. Without them, `react-native-svg` resolves its native files and pulls in React Native's Flow source. Install Watchman (`brew install watchman`): without it Metro falls back to a Node file watcher that can miss new folders in shared packages, which shows up as "Element type is invalid … got: undefined". Restart Metro with `--clear` to recover.
 
 ## Milestones
 
 - **M0 Tooling:** workspaces, React version pinning, strict tsconfig base, ESLint with `max-lines: 300` and a no-raw-colors rule, Prettier, Husky + lint-staged, tsup build for `packages/types`, `docker-compose.yml` for MongoDB, `CHANGELOG.md`, one passing test per app, CI.
-- **M1 Theme and UI library:** tokens, primitives, then composed components. Render `Button` and one `Panel` in both apps first to de-risk react-native-web.
+- **M1 Theme and UI library:** tokens, primitives, then composed components. Render `Button` and one `Card` in both apps, in light and dark with fonts loaded, first to de-risk react-native-web.
 - **M2 Backend core:** validated env config, Mongo connection, Helmet, rate limiting. `users` module (unique callsign index, argon2) and `auth` module (register, login, refresh, logout, JWT guard).
 - **M3 Rooms:** `rooms` and `memberships` modules: create, list (paginated), join, leave. Unique room name. When the last member leaves, the room is kept and stays listed under "Open to join" with 0 members (history is kept too).
 - **M4 Messages and realtime:** `messages` module and Socket.IO gateway. Authenticate the socket handshake with the JWT, and keep socket rooms in sync with membership. Cursor-based pagination for history. On socket reconnect, the client invalidates the open chat's messages query (Socket.IO does not replay missed events).
@@ -137,50 +137,56 @@ Define shapes once in `packages/types` as Zod schemas and infer the TS types. Th
 - Add indexes for the query patterns above.
 - Validate env config at startup. Use Helmet and rate limiting.
 
-## Design: simplified WW2 field-radio style
+## Design: modern field-radio style, light and dark
 
-Flat and printed rather than machined. The WW2 feel comes from color, typography and tone, not textures. No gradients, no textures, no shadows or glows, no `.native` / `.web` component splits.
+A clean, modern UI with a field-radio voice. The radio feel comes from typography, the olive/brass palette and the copy tone. Rounded corners and soft shadows are fine, but no gradients and no textures. No `.native` / `.web` component splits.
 
-**Tokens** (in `packages/theme`, components reference names only, never raw values):
+**Mockups** (`docs/design/`, each in `-light` and `-dark`): `signin`, `register`, `chats` (nets list), `chat`. They also show features planned for later versions; build only what is in **Scope (v1)**. Out of scope in the mockups: the role selector, full name and home field, the frequency display and tuner ticks, the "LIVE" indicator, the priority picker and priority badge, signal strength, read receipts ("ROGER"), unread counts, the alert net, the bottom tab bar (Direct/Me), the "carrier online / 17 stations" footer and the compass rose background (nice-to-have for M6).
 
-| Token          | Value     | Use                                                            |
-| -------------- | --------- | -------------------------------------------------------------- |
-| background     | `#3b4630` | olive drab screen background                                   |
-| backgroundDark | `#2c3524` | headers, footers, sidebar                                      |
-| paper          | `#e8dfc0` | cards, other users' messages, inputs                           |
-| ink            | `#1f1a14` | text on paper, all borders                                     |
-| inkMuted       | `#4a4234` | secondary text on paper                                        |
-| brass          | `#c9a24a` | buttons, own-message border, accent bars                       |
-| brown          | `#4a2f20` | own messages                                                   |
-| alert          | `#9e3a26` | stamp badges (darkened from `#b5442e` to reach 4.5:1 on paper) |
-| signalOn       | `#8fd14f` | active status dot                                              |
-| mutedOnOlive   | `#cfc7a6` | secondary text on olive                                        |
-| divider        | `#6b7a58` | dashed dividers                                                |
-| placeholder    | `#655d4a` | input placeholders                                             |
+**Theming:**
 
-- **Fonts:** Stardos Stencil (400/700) for headings and labels, Special Elite for body text. Both from Google Fonts. Two fonts only.
-- **Borders:** 2px solid ink on cards and buttons, 3px brass line under headers and above footers. No border radius.
-- **Labels:** UPPERCASE, letter-spaced (2 to 4px), Stardos Stencil bold.
-- **Stamp badge:** bordered text in alert color, rotated 3 to 4 degrees (one `transform`).
+- Two schemes with the same shape: `light` and `dark`, typed by one `ThemeColors` type so they can't drift apart.
+- The scheme follows the system through `useColorScheme()` (react-native-web supports it via `matchMedia`). `ThemeProvider` takes an optional `scheme` override so a manual toggle can be added later.
+- `packages/theme` is plain TypeScript with no React and is the **source of truth for every value** (colors, fonts, font sizes, letter-spacing, spacing, radii, sizes). Values are not repeated here; read them from the package. Raw hex/rgba values live only in `colors.light.ts` and `colors.dark.ts`. `docs/design/callsign-palette.md` maps the files, lists the deviations from the design canvas and keeps the values of the later-version tokens. A theme test checks text contrast (4.5:1) and status dots (3:1) in both schemes.
+- `packages/ui` owns `ThemeProvider`, `useTheme` and a `createStyles((theme) => ...)` helper. Components reference token names, never raw values.
+
+**Color tokens** (semantic, same keys in both schemes; dark = olive-charcoal + brass, light = cool white-gray + olive drab):
+
+- v1 uses: `background`, `surface` (cards, list rows, inputs, incoming bubbles), `surfaceInset` (composer field), `sheet` (composer bar), `text`, `textMuted` (secondary text, meta, placeholders), `label` (field labels, sender callsign), `primary` / `onPrimary` (primary button, TX, links), `primaryHalo` (ring around primary buttons), `bubbleOut` / `bubbleOutText` / `bubbleOutMeta` (own messages), `lampOn` / `lampOff` (status dot), `danger` / `onDanger` / `dangerText` / `dangerSoft` (errors, destructive actions), `shadow`.
+- Later versions only, not added to the package in v1: `display`, `displayText`, `displayMuted`, `frequency`, `tick`, `needle` (frequency display), `badge` / `onBadge` (unread counts).
+- Brass appears only in dark, olive drab only in light; both live in `primary`. Red only for errors and destructive actions in v1.
+
+- **Shape:** named radii per use (`input`, `card`, `button`, `bubble` with a smaller `tail` corner, `sheet` for the composer's top corners, `pill`), round send button. Soft shadows from the `shadow` token through the `boxShadow` style prop (supported by RN 0.86 and react-native-web 0.21). No glows in v1.
+- **Spacing:** screen gutter 20 (`spacing.xl`), minimum touch target 44 (`sizes.touch`).
+- **Fonts (three):** **Stardos Stencil** (400/700) for headings, short labels and buttons; **Special Elite** (typewriter) for message text and inputs; **Share Tech Mono** for numbers and small tracked meta text (times, counts, subtitles, links). Loaded from `@expo-google-fonts/*` on both platforms: `useFonts` in the root layout on mobile (`apps/mobile/src/fonts.ts`, splash screen held until loaded), the `FontFace` API on web (`apps/web/src/fonts.ts`, `.ttf?url` imports). Custom fonts on native ignore `fontWeight`, so there is **one family token per face**, named after the Expo keys (e.g. `StardosStencil_700Bold`), and web registers the same names. Both font maps are typed by `fontFamilies`, so one `fontFamily` token works everywhere and a missing face is a type error.
+- **Labels and meta:** UPPERCASE, letter-spaced (2 to 4px).
+- **Icons and logo:** `react-native-svg` (works on web through react-native-web) with a few hand-made icons: chevron-left, arrow-right, plus, and the radio logo. No icon font.
 - **Timestamps:** Zulu style, e.g. `22:14Z`.
-- **Copy tone:** "Report in", "Enlist here", "Type message. Over.", "Report for duty", "Log sheet".
-- **Accessibility:** touch targets at least 44px, real labels on inputs, `aria-label` on icon-only buttons, text contrast at least 4.5:1.
+- **Copy tone:** "Report in", "New station? Register here", "Request clearance", "Already on the net? Report in", "Type message. Over.", "Keep the net clear. Be brief. Be kind. Over.".
+- **Accessibility:** touch targets at least 44px, real labels on inputs, `aria-label` / `accessibilityLabel` on icon-only buttons (required by the prop type), text contrast at least 4.5:1 in both schemes (checked by a theme test).
 
-**Planned components** (primitives first, then compose):
+**Planned components** (primitives first, then compose; each in its own folder with `X.tsx`, `X.styles.ts`, `X.types.ts`, `X.test.tsx`):
 
-- `Text`, `Button` (brass primary, outline secondary), `Panel` (paper card), `StatusDot`, `SectionDivider` (label + dashed line).
-- `Input` with a `variant`: `underline` (form cards) and `boxed` (chat input). One component, not two.
-- `Badge` (stamp), e.g. "FORM 1".
-- `ChatBubble`: incoming paper, outgoing brown with brass border. Sender label is the callsign.
-- `RoomListItem`: `selected` state (brass background, web sidebar); trailing slot holds a member count or a Join button. Web sidebar hides the member count on joined nets.
-- `ScreenHeader`: optional brass back button (icon-only, needs `aria-label`), title with an optional subtitle above ("STATION WOLF-2") or below ("12 MEMBERS"), optional outline action on the right. Title truncates in the chat header; room names in lists wrap.
-- `MessageInput`.
+- Primitives:
+  - `Text` with variants `display`, `title`, `label`, `body`, `meta` and a `tone`.
+  - `Button` with variants `primary` (primary fill), `secondary` (outline) and `link` (underlined meta), plus optional trailing icon, `disabled` and `loading`.
+  - `IconButton` (square surface button, e.g. back).
+  - `Input` with label, error and a `variant`: `form` (surface field) and `chat` (pill on `surfaceInset`). One component, not two.
+  - `Card`, `StatusDot` (`on` / `off`), `Icon`.
+- Composed:
+  - `Masthead`: logo + display title + tracked subtitle (sign in, register).
+  - `ScreenHeader`: optional back `IconButton`, meta line above the title ("NET · TOWER AND GROUND"), title, meta line below ("4 STATIONS ON NET"), optional action on the right (e.g. "Leave"). Title truncates in the chat header; net names in lists wrap.
+  - `RoomListItem`: status dot, name, last-message preview, trailing slot (member count or Join button), `selected` state for the web sidebar.
+  - `ChatBubble`: incoming on surface with the sender callsign in `label` color, outgoing on `bubbleOut`; meta line with the Zulu time.
+  - `MessageInput`: chat `Input` + round send `IconButton` ("TX", with `accessibilityLabel="Send"`).
+  - `SectionLabel`: tracked label for list sections ("JOINED", "OPEN TO JOIN").
+- All of them are built (M1). `@callsign/ui/preview` exports `ComponentPreview`, one scrolling screen with every component that both apps render until the real screens replace it in M5. Screens own the safe-area insets (`react-native-safe-area-context`), so components never pad for the notch or home indicator.
 
-**Screens** (mockups in `docs/design/`: `login.png`, `register.png`, `nets.png`, `chat.png`, `newNet.png`, `chatWeb.png`):
+**Screens:**
 
-- Login: callsign + passphrase on a "Report for duty" form card, "Report in" button, "Enlist here" link to register.
-- Register: "Enlistment" form card with a "FORM 1A" stamp; callsign (3 to 20 characters), passphrase (at least 8 characters), confirm passphrase; "Enlist" button; "Already enlisted? Report in" link to login.
-- Nets list: joined nets (green dot = joined, name, member count, last message) and open nets with a Join button. "+ New net" and Log out.
-- Chat: back, "Leave" (same label on web and mobile), member count, "Log sheet <number>" divider (random decorative number, picked once when the chat screen opens; not tied to data), own vs other messages, message input + Send. Typing line only if the optional indicator is built.
-- New net: name field only (3 to 30 characters), note that the net is open to all.
-- Web chat: sidebar with nets next to the chat panel; stacks on narrow widths. Reuses the same components as mobile, only the layout differs.
+- Sign in (`signin`): `Masthead` "CALLSIGN"; callsign + passphrase; "Report in" primary button; "New station? Register here" link.
+- Register (`register`): back button, `Masthead` "REGISTER"; callsign (3 to 20 characters), passphrase (at least 8 characters), confirm passphrase (not in the mockup, kept from the spec); "Request clearance" button; "Already on the net? Report in" link.
+- Nets list (`chats`): header with the user's callsign above the title; joined nets (green dot, name, member count, last message), then open nets with a Join button. "+ New net" and Log out. No mockup for the open-nets section; reuse `RoomListItem`.
+- Chat (`chat`): `ScreenHeader` with back, net name, member count and "Leave"; own vs other messages; `MessageInput`. Typing line only if the optional indicator is built.
+- New net (no mockup): name field only (3 to 30 characters), note that the net is open to all. Built from `ScreenHeader`, `Input`, `Button`.
+- Web chat (no mockup): sidebar with nets next to the chat panel; stacks on narrow widths. Same components as mobile, only the layout differs.

@@ -6,3 +6,4 @@ build
 coverage
 pnpm-lock.yaml
 docs/design
+apps/mobile/expo-env.d.ts

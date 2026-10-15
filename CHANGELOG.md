@@ -4,7 +4,17 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
-## 0.1.0 - 2026-10-15 (M0: tooling)
+## 0.2.0 (M1: theme tokens and UI primitives)
+
+- feat(ui): Masthead, ScreenHeader, SectionLabel, RoomListItem, ChatBubble, MessageInput; shared ComponentPreview
+- feat(ui): Input (form and chat variants, focus and error states) and StatusDot
+- fix(ui): visible pressed feedback (push-in scale, sunken back button, no 50 ms web delay)
+- feat(ui): Icon (react-native-svg) and IconButton; shared react-native-web Vite settings in @callsign/config
+- feat(ui): ThemeProvider, useTheme, createStyles and the Text, Button and Card primitives; fonts and a preview in both apps
+- feat(theme): light and dark design tokens with a WCAG contrast test
+- docs: new light/dark mockups and a rewritten design brief (tokens, fonts, components, v1 scope)
+
+## 0.1.0 (M0: tooling)
 
 - docs: README with setup, how to run each app, the checks and the data model
 - ci: GitHub Actions running format, lint, typecheck, unit and e2e tests and build
