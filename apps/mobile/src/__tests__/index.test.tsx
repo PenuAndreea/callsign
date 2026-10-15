@@ -13,6 +13,8 @@ describe('Index screen', () => {
 
     expect(screen.getByText('Callsign')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Report in' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Back' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeOnTheScreen();
     expect(screen.getByText('Hold at bay four, engines off.')).toBeOnTheScreen();
   });
 });

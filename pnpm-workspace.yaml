@@ -15,6 +15,7 @@ catalog:
   react-dom: 19.2.3
   react-test-renderer: 19.2.3
   react-native-web: ~0.21.0
+  react-native-svg: 15.15.4
   '@types/react': ~19.2.2
   '@types/react-dom': ~19.2.3
 

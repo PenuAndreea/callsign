@@ -46,7 +46,7 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
 - Shared package builds: `packages/types` is **built with tsup** (ESM + CJS in `dist/`) because the NestJS API runs compiled JS under plain Node and cannot import TS source. `theme`, `ui` and `hooks` stay **source-only** (consumed only by Vite and Metro). Turbo runs `^build` before `typecheck`, `test` and `dev`.
   - `exports` maps `require` → `dist/index.cjs` + `.d.cts` (API) and `import` → `dist/index.js` + `.d.ts` (Vite, Metro, Vitest).
   - tsup's declaration build sets `baseUrl` internally, which TS 6 deprecates, so `tsup.config.ts` passes `ignoreDeprecations: '6.0'` to the dts step. tsup is in maintenance mode; **tsdown** is the drop-in successor if it causes more trouble.
-- One React version: `react`, `react-dom`, `react-test-renderer`, `react-native-web`, `@types/react` and `@types/react-dom` live in the default pnpm `catalog:` in `pnpm-workspace.yaml`, pinned to what the Expo SDK expects (React 19.2.3 for SDK 57). Apps reference them as `"catalog:"`. Bump only together with an Expo SDK upgrade.
+- One React version: `react`, `react-dom`, `react-test-renderer`, `react-native-web`, `react-native-svg`, `@types/react` and `@types/react-dom` live in the default pnpm `catalog:` in `pnpm-workspace.yaml`, pinned to what the Expo SDK expects (React 19.2.3 for SDK 57). Apps reference them as `"catalog:"`. Bump only together with an Expo SDK upgrade.
   - Libraries must support that React version: **React Router 7** (v8 needs React ≥19.2.7), **React Native Testing Library 13** with `react-test-renderer` (v14 needs React 19.3).
   - Known harmless peer warning: `@react-native/metro-config` 0.87 vs 0.86 (optional peer of the RN CLI; Expo uses its own Metro config).
 - API validation: the shared Zod schemas, through a `ZodValidationPipe` (custom or `nestjs-zod`). No `class-validator`.
@@ -77,7 +77,7 @@ packages/
   config/    shared eslint, tsconfig, prettier
 ```
 
-Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `pnpm-workspace.yaml` (pnpm 11+ ignores pnpm settings in `.npmrc`; that file is only for registry/auth). Recent Expo SDKs configure Metro for monorepos automatically; add a `metro.config.js` only if `@callsign/*` packages fail to resolve. Vite needs an alias from `react-native` to `react-native-web`.
+Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `pnpm-workspace.yaml` (pnpm 11+ ignores pnpm settings in `.npmrc`; that file is only for registry/auth). Recent Expo SDKs configure Metro for monorepos automatically; add a `metro.config.js` only if `@callsign/*` packages fail to resolve. Vite needs an alias from `react-native` to `react-native-web`. Those settings live once in `@callsign/config/vite` (used by `apps/web` and the `packages/ui` tests): the alias, `.web.*`-first extensions, an alias of `react-native-svg` to its ES build, the same extensions for the dev dependency optimizer, and `react-native-svg` inlined in Vitest. Without them, `react-native-svg` resolves its native files and pulls in React Native's Flow source. After adding files to a shared package, restart Metro with `--clear` if the app shows an undefined component (its watcher can miss new folders).
 
 ## Milestones
 

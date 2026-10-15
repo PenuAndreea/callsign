@@ -8,3 +8,7 @@ export * from './components/Button/Button';
 export type * from './components/Button/Button.types';
 export * from './components/Card/Card';
 export type * from './components/Card/Card.types';
+export * from './components/Icon/Icon';
+export type * from './components/Icon/Icon.types';
+export * from './components/IconButton/IconButton';
+export type * from './components/IconButton/IconButton.types';

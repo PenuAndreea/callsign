@@ -9,6 +9,8 @@ describe('App', () => {
 
     expect(screen.getByRole('heading', { name: /callsign/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Report in' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument();
     expect(screen.getByText('Hold at bay four, engines off.')).toBeInTheDocument();
   });
 });

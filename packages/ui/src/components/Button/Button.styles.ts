@@ -1,8 +1,7 @@
 import { radii, sizes, spacing } from '@callsign/theme';
 
 import { createStyles } from '../../theme/createStyles';
-
-const HALO_WIDTH = 6;
+import { disabledStyle, haloStyle, pressedStyle } from '../../theme/effects';
 
 export const useButtonStyles = createStyles(({ colors }) => ({
   base: {
@@ -16,7 +15,7 @@ export const useButtonStyles = createStyles(({ colors }) => ({
     paddingHorizontal: spacing.xl,
     borderRadius: radii.button,
     backgroundColor: colors.primary,
-    boxShadow: `0 0 0 ${HALO_WIDTH}px ${colors.primaryHalo}`,
+    ...haloStyle(colors),
   },
   secondary: {
     minHeight: sizes.button,
@@ -31,10 +30,6 @@ export const useButtonStyles = createStyles(({ colors }) => ({
   linkLabel: {
     textDecorationLine: 'underline',
   },
-  pressed: {
-    opacity: 0.85,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
+  pressed: pressedStyle,
+  disabled: disabledStyle,
 }));

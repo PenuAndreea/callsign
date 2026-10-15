@@ -1,6 +1,7 @@
-import { ActivityIndicator, Pressable } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 
 import { useTheme } from '../../theme/useTheme';
+import { PressableBase } from '../PressableBase/PressableBase';
 import { Text } from '../Text/Text';
 import type { TextTone, TextVariant } from '../Text/Text.types';
 import { useButtonStyles } from './Button.styles';
@@ -26,7 +27,7 @@ export function Button({
   const { tone } = labelProps[variant];
 
   return (
-    <Pressable
+    <PressableBase
       role="button"
       {...props}
       disabled={inactive}
@@ -48,6 +49,6 @@ export function Button({
           {label}
         </Text>
       )}
-    </Pressable>
+    </PressableBase>
   );
 }

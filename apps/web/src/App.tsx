@@ -1,5 +1,5 @@
 import { spacing } from '@callsign/theme';
-import { Button, Card, createStyles, Text, ThemeProvider } from '@callsign/ui';
+import { Button, Card, createStyles, Icon, IconButton, Text, ThemeProvider } from '@callsign/ui';
 import { View } from 'react-native';
 
 // Temporary M1 check that the shared UI renders through react-native-web; replaced by
@@ -13,6 +13,7 @@ const useStyles = createStyles(({ colors }) => ({
     backgroundColor: colors.background,
   },
   card: { gap: spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 }));
 
 function Preview() {
@@ -20,6 +21,11 @@ function Preview() {
 
   return (
     <View style={styles.screen}>
+      <View style={styles.row}>
+        <IconButton icon="chevronLeft" aria-label="Back" onPress={() => undefined} />
+        <Icon name="radio" size={56} tone="primary" />
+        <IconButton text="TX" variant="primary" aria-label="Send" onPress={() => undefined} />
+      </View>
       <Text variant="display" role="heading">
         Callsign
       </Text>
