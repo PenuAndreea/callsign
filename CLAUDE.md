@@ -180,6 +180,7 @@ A clean, modern UI with a field-radio voice. The radio feel comes from typograph
   - `ChatBubble`: incoming on surface with the sender callsign in `label` color, outgoing on `bubbleOut`; meta line with the Zulu time.
   - `MessageInput`: chat `Input` + round send `IconButton` ("TX", with `accessibilityLabel="Send"`).
   - `SectionLabel`: tracked label for list sections ("JOINED", "OPEN TO JOIN").
+- All of them are built (M1). `@callsign/ui/preview` exports `ComponentPreview`, one scrolling screen with every component that both apps render until the real screens replace it in M5. Screens own the safe-area insets (`react-native-safe-area-context`), so components never pad for the notch or home indicator.
 
 **Screens:**
 

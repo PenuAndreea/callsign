@@ -1,7 +1,8 @@
 import type { ThemeColors } from '@callsign/theme';
 import type { TextProps as RNTextProps } from 'react-native';
 
-export type TextVariant = 'display' | 'title' | 'button' | 'label' | 'body' | 'meta';
+export type TextVariant =
+  'display' | 'title' | 'heading' | 'button' | 'label' | 'body' | 'small' | 'meta';
 
 /** Color keys that are meant for text. */
 export type TextTone = Extract<

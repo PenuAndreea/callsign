@@ -19,6 +19,13 @@ export const variantStyles: Record<TextVariant, TextStyle> = {
     letterSpacing: letterSpacing.normal,
     textTransform: 'uppercase',
   },
+  heading: {
+    fontFamily: fontFamilies.stencilBold,
+    fontSize: fontSizes.heading,
+    lineHeight: lineHeights.heading,
+    letterSpacing: letterSpacing.normal,
+    textTransform: 'uppercase',
+  },
   button: {
     fontFamily: fontFamilies.stencilBold,
     fontSize: fontSizes.button,
@@ -38,6 +45,11 @@ export const variantStyles: Record<TextVariant, TextStyle> = {
     fontSize: fontSizes.body,
     lineHeight: lineHeights.body,
   },
+  small: {
+    fontFamily: fontFamilies.typewriter,
+    fontSize: fontSizes.small,
+    lineHeight: lineHeights.small,
+  },
   meta: {
     fontFamily: fontFamilies.mono,
     fontSize: fontSizes.caption,
@@ -50,8 +62,10 @@ export const variantStyles: Record<TextVariant, TextStyle> = {
 export const defaultTone: Record<TextVariant, TextTone> = {
   display: 'text',
   title: 'text',
+  heading: 'text',
   button: 'onPrimary',
   label: 'label',
   body: 'text',
+  small: 'textMuted',
   meta: 'textMuted',
 };
