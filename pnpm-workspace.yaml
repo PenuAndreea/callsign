@@ -1,0 +1,22 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# Packages allowed to run install scripts. Only allow what really needs a native build.
+# The ones below ship prebuilt binaries as optional deps; their scripts are only fallbacks/checks.
+allowBuilds:
+  '@parcel/watcher': false # Jest 30
+  esbuild: false # tsup
+  unrs-resolver: false # Jest 30
+
+# Pinned to what the Expo SDK expects. Bump only together with an Expo SDK upgrade.
+catalog:
+  react: 19.2.3
+  react-dom: 19.2.3
+  react-test-renderer: 19.2.3
+  react-native-web: ~0.21.0
+  '@types/react': ~19.2.2
+  '@types/react-dom': ~19.2.3
+
+# Expo/Metro needs a flat node_modules in a pnpm monorepo
+nodeLinker: hoisted

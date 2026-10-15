@@ -1,0 +1,41 @@
+{
+  "name": "callsign",
+  "private": true,
+  "description": "Callsign: real-time chat nets (Aviobook assignment)",
+  "type": "module",
+  "scripts": {
+    "prepare": "husky",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "prettier": "@callsign/config/prettier",
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs,cjs}": [
+      "eslint --fix --max-warnings=0 --no-warn-ignored",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,css,html}": "prettier --write"
+  },
+  "devDependencies": {
+    "@callsign/config": "workspace:*",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "eslint": "^10.12.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
+    "turbo": "^2.5.0",
+    "typescript": "~6.0.3"
+  },
+  "engines": {
+    "node": ">=24.9"
+  },
+  "packageManager": "pnpm@12.11.2+sha512.25a51652a196785af5f28bda6dfe8dc582ebefa4ac1d180221ce1390231c5fb76637822ea4b6e4633ce74acdcb0a77f725af11bad38177fdeddaee818a955cb9"
+}

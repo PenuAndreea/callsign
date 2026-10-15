@@ -1,0 +1,12 @@
+CLAUDE.local.md
+node_modules
+.turbo
+
+# Build output and test coverage
+dist
+coverage
+*.tsbuildinfo
+
+.env
+.env.*
+!.env.example
