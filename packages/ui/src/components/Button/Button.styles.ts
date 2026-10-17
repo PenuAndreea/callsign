@@ -9,6 +9,7 @@ export const useButtonStyles = createStyles(({ colors }) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.md,
   },
   primary: {
     minHeight: sizes.button,

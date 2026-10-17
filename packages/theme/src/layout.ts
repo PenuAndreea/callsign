@@ -23,4 +23,5 @@ export const sizes = {
   button: 58,
   tx: 56, // round transmit button
   lamp: 12, // status dot
+  form: 440, // max width of the sign-in and register column (wide web windows)
 } as const;
