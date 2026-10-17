@@ -1,6 +1,10 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import type { ApiClient } from '../api/createApiClient';
+import type { PendingStore } from '../messages/pendingStore';
+import { createPendingStore } from '../messages/pendingStore';
+import { newClientMessageId } from '../messages/newClientMessageId';
+import { transmit } from '../messages/transmit';
 import { netKeys } from '../nets/netKeys';
 import type { SessionStore } from '../session/sessionStore';
 import { applyNewMessage, applyRoomUpdate } from './liveCache';
@@ -24,8 +28,16 @@ export interface Realtime {
   subscribe(listener: () => void): () => void;
   /** Follows the session: one socket while signed in, none otherwise. Returns the cleanup. */
   start(): () => void;
-  /** The open socket, for sending (`null` while signed out). */
+  /** The open socket (`null` while signed out). */
   getSocket(): RealtimeSocket | null;
+  /** This device's unconfirmed sends. */
+  pending: PendingStore;
+  /** Shows the message as pending at once and sends it with a new idempotency key. */
+  send(roomId: string, content: string): Promise<void>;
+  /** Sends a failed message again with the same key (never saved twice). */
+  retry(clientMessageId: string): Promise<void>;
+  /** Drops a failed message from the screen. */
+  discard(clientMessageId: string): void;
 }
 
 /**
@@ -48,6 +60,7 @@ export function createRealtime({
   let socket: RealtimeSocket | null = null;
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
   let authRetries = 0;
+  const pending = createPendingStore();
 
   function setStatus(next: RealtimeStatus): void {
     if (next === status) return;
@@ -101,7 +114,11 @@ export function createRealtime({
     current.on('connect', onConnect);
     current.on('disconnect', () => setStatus(current.active ? 'connecting' : 'disconnected'));
     current.on('connect_error', (error) => onConnectError(current, error));
-    current.on('message:new', (message) => applyNewMessage(queryClient, message));
+    current.on('message:new', (message) => {
+      applyNewMessage(queryClient, message);
+      // The broadcast of our own send can arrive when the ack was lost (timeout).
+      if (message.clientMessageId !== undefined) pending.remove(message.clientMessageId);
+    });
     current.on('room:updated', (room) => applyRoomUpdate(queryClient, room));
     socket = current;
     setStatus('connecting');
@@ -114,6 +131,7 @@ export function createRealtime({
     socket?.disconnect();
     socket = null;
     authRetries = 0;
+    pending.clear();
     setStatus('disconnected');
   }
 
@@ -136,5 +154,23 @@ export function createRealtime({
       };
     },
     getSocket: () => socket,
+    pending,
+    send(roomId, content) {
+      const message = {
+        clientMessageId: newClientMessageId(),
+        roomId,
+        content,
+        createdAt: new Date().toISOString(),
+        status: 'sending',
+        error: null,
+      } as const;
+      pending.add(message);
+      return transmit(socket, queryClient, pending, message);
+    },
+    retry(clientMessageId) {
+      const message = pending.get(clientMessageId);
+      return message ? transmit(socket, queryClient, pending, message) : Promise.resolve();
+    },
+    discard: (clientMessageId) => pending.remove(clientMessageId),
   };
 }

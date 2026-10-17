@@ -2,6 +2,7 @@ import type { MessageDto, RoomDto, RoomUpdatedEvent } from '@callsign/types';
 import { toMessagePreview } from '@callsign/types';
 import type { QueryClient } from '@tanstack/react-query';
 
+import { insertMessage } from '../messages/messageCache';
 import { updateNetInCaches } from '../nets/updateNetInCaches';
 
 /** Newer than the net's preview? ISO timestamps from the API compare as strings. */
@@ -10,10 +11,12 @@ function isNewer(message: MessageDto, net: RoomDto): boolean {
 }
 
 /**
- * `message:new` → the net's preview in the nets list, cut like the API cuts it. An older
- * message (events can arrive out of order) never replaces a newer preview.
+ * `message:new` → the net's open history (deduplicated by id) and its preview in the nets list,
+ * cut like the API cuts it. An older message (events can arrive out of order) never replaces a
+ * newer preview.
  */
 export function applyNewMessage(queryClient: QueryClient, message: MessageDto): void {
+  insertMessage(queryClient, message);
   updateNetInCaches(queryClient, message.roomId, (net) =>
     isNewer(message, net)
       ? {
