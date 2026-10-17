@@ -25,6 +25,8 @@ export function FormInput<TValues extends FieldValues, TOutput>({
       render={({ field, fieldState }) => (
         <Input
           {...inputProps}
+          // Lets `setFocus` move to this field, and the form focus the first invalid one.
+          ref={field.ref}
           value={typeof field.value === 'string' ? field.value : ''}
           onChangeText={field.onChange}
           onBlur={field.onBlur}

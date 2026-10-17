@@ -65,6 +65,16 @@ describe('RegisterScreen', () => {
     );
   });
 
+  it('moves through the fields with the next key', async () => {
+    const user = userEvent.setup();
+    renderRegister();
+
+    await user.type(screen.getByRole('textbox', { name: 'Callsign' }), 'eagle-1{Enter}');
+    expect(screen.getByLabelText('Passphrase')).toHaveFocus();
+    await user.type(screen.getByLabelText('Passphrase'), 'correct horse{Enter}');
+    expect(screen.getByLabelText('Confirm passphrase')).toHaveFocus();
+  });
+
   it('goes back and to sign in', async () => {
     const onBack = vi.fn();
     const onSignIn = vi.fn();

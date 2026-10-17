@@ -25,6 +25,7 @@
   "peerDependencies": {
     "react": "*",
     "react-native": "*",
+    "react-native-safe-area-context": "*",
     "react-native-svg": "*"
   },
   "devDependencies": {
@@ -38,6 +39,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
     "react-native-svg": "catalog:",
     "react-native-web": "catalog:",
     "socket.io": "^4.8.4",

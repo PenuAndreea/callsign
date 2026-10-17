@@ -3,7 +3,8 @@ import { createStyles } from '@callsign/ui';
 
 export const useChatStyles = createStyles(({ colors }) => ({
   screen: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.md },
+  // `paddingTop` comes from `useInsetPadding` (safe area).
+  header: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
   list: { flex: 1 },
   messages: { padding: spacing.xl, gap: spacing.md },
   center: {

@@ -8,14 +8,16 @@ import {
   useSendMessage,
   useSignedInUser,
 } from '@callsign/hooks';
+import { spacing } from '@callsign/theme';
 import { MESSAGE_CONTENT_MAX } from '@callsign/types';
 import { Button, MessageInput, ScreenHeader } from '@callsign/ui';
 import type { ChatEntry } from '@callsign/hooks';
 import { useRef, useState } from 'react';
 import type { FlatList } from 'react-native';
-import { View } from 'react-native';
 
 import { stationsLabel } from '../../format/stations';
+import { KeyboardFrame } from '../../layout/KeyboardFrame';
+import { useInsetPadding } from '../../layout/useInsetPadding';
 import { ChatBody } from './ChatBody';
 import { useChatStyles } from './ChatScreen.styles';
 import type { ChatScreenProps } from './ChatScreen.types';
@@ -35,14 +37,17 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
   const realtime = useRealtimeStatus();
   const [draft, setDraft] = useState('');
   const listRef = useRef<FlatList<ChatEntry>>(null);
+  const headerPadding = useInsetPadding({ top: spacing.xl });
+  // The composer sheet runs under the home indicator; its field stays above it.
+  const composerPadding = useInsetPadding({ bottom: spacing.xl });
 
   const notMember = isApiClientError(chat.error, 'NOT_A_MEMBER');
   const live = realtime === 'connected' ? '' : ' · reconnecting';
 
   return (
-    <View style={styles.screen}>
+    <KeyboardFrame style={styles.screen}>
       <ScreenHeader
-        style={styles.header}
+        style={[styles.header, headerPadding]}
         {...(onBack && { onBack })}
         eyebrow="Net"
         title={net?.name ?? ''}
@@ -86,7 +91,8 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
         }}
         disabled={notMember || net === undefined}
         maxLength={MESSAGE_CONTENT_MAX}
+        style={composerPadding}
       />
-    </View>
+    </KeyboardFrame>
   );
 }
