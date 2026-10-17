@@ -36,7 +36,8 @@ export function page<T>(items: T[], nextCursor: string | null = null): Page<T> {
   return { items, nextCursor };
 }
 
-export const webPlatform: ApiPlatform = { apiUrl: API_URL, client: 'web' };
+/** Realtime off (`createSocket: false`): HTTP-only tests open no socket. */
+export const webPlatform: ApiPlatform = { apiUrl: API_URL, client: 'web', createSocket: false };
 
 /** An in-memory secure store, so tests can read what the client wrote. */
 export class MemoryTokenStore implements RefreshTokenStore {
@@ -58,5 +59,5 @@ export class MemoryTokenStore implements RefreshTokenStore {
 }
 
 export function mobilePlatform(store: RefreshTokenStore): ApiPlatform {
-  return { apiUrl: API_URL, client: 'mobile', refreshTokenStore: store };
+  return { apiUrl: API_URL, client: 'mobile', refreshTokenStore: store, createSocket: false };
 }

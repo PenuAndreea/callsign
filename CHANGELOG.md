@@ -4,6 +4,9 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(hooks): realtime socket per signed-in session (token per handshake, refresh on a refused handshake, catch-up after reconnects), live preview and member count in the cache, useRealtimeStatus, Socket.IO test server
+- refactor(types): toMessagePreview moves from the API to the shared types, for the apps' live previews
+
 - feat(web): nets list, new net and a temporary net page with Leave (/nets/new, /nets/:netId)
 - feat(screens): NetsScreen (joined and open sections, paged, join opens the net) and NewNetScreen; FormLayout, formErrorExcept, stationsLabel
 - feat(ui): trailingLabel on RoomListItem, so a trailing count is part of the row's accessible name
