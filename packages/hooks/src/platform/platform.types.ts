@@ -1,3 +1,5 @@
+import type { SocketFactory } from '../realtime/realtime.types';
+
 /**
  * Where the mobile app keeps its refresh token (`expo-secure-store` in the app). The hooks
  * never import a storage library themselves: each app passes its own implementation.
@@ -19,6 +21,11 @@ interface PlatformBase {
   /** Origin of the API, without `/api`. Empty on web: Vite proxies `/api` on the same origin. */
   apiUrl: string;
   runExclusive?: ExclusiveRunner;
+  /**
+   * How to open the socket. Omitted: `io()` on `apiUrl`. A platform may add options (React
+   * Native: `transports: ['websocket']`). `false` turns realtime off (tests that only use HTTP).
+   */
+  createSocket?: SocketFactory | false;
 }
 
 /**

@@ -16,3 +16,10 @@ export { netKeys } from './nets/netKeys';
 export { useNet } from './nets/useNet';
 export { useCreateNet, useJoinNet, useLeaveNet } from './nets/useNetMutations';
 export { useNets } from './nets/useNets';
+export type {
+  RealtimeSocket,
+  RealtimeSocketOptions,
+  RealtimeStatus,
+  SocketFactory,
+} from './realtime/realtime.types';
+export { useRealtimeStatus } from './realtime/useRealtimeStatus';

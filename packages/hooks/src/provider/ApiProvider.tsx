@@ -7,6 +7,9 @@ import type { ApiClient } from '../api/createApiClient';
 import { createApiClient } from '../api/createApiClient';
 import type { ApiPlatform } from '../platform/platform.types';
 import { createQueryClient } from '../query/createQueryClient';
+import { createRealtime } from '../realtime/createRealtime';
+import { RealtimeContext } from '../realtime/RealtimeContext';
+import { resolveSocketFactory } from '../realtime/resolveSocketFactory';
 import { SessionContext } from '../session/SessionContext';
 import { createSessionStore } from '../session/sessionStore';
 import { ApiClientContext } from './ApiClientContext';
@@ -22,22 +25,34 @@ export interface ApiProviderProps {
 
 /**
  * Root of everything the shared hooks need: the API client (with its in-memory access token),
- * the TanStack Query cache and the session. All are created once and live as long as the app.
- * On mount the session restores itself from the refresh token (cookie or secure store).
+ * the TanStack Query cache, the session and the realtime socket. All are created once and live
+ * as long as the app. On mount the session restores itself from the refresh token (cookie or
+ * secure store); while signed in, one socket feeds live events into the cache.
  */
 export function ApiProvider({ platform, apiClient, queryClient, children }: ApiProviderProps) {
   const [client] = useState(() => apiClient ?? createApiClient(platform));
   const [cache] = useState(() => queryClient ?? createQueryClient());
   const [session] = useState(() => createSessionStore(client, cache));
+  const [realtime] = useState(() =>
+    createRealtime({
+      api: client,
+      queryClient: cache,
+      session,
+      createSocket: resolveSocketFactory(platform),
+    }),
+  );
 
   // Subscribing is an effect, not part of creating the store: StrictMode runs initializers
   // twice, and only an effect gets a cleanup. A second `start` reuses the restore in flight.
   useEffect(() => session.start(), [session]);
+  useEffect(() => realtime.start(), [realtime]);
 
   return (
     <ApiClientContext value={client}>
       <QueryClientProvider client={cache}>
-        <SessionContext value={session}>{children}</SessionContext>
+        <SessionContext value={session}>
+          <RealtimeContext value={realtime}>{children}</RealtimeContext>
+        </SessionContext>
       </QueryClientProvider>
     </ApiClientContext>
   );
