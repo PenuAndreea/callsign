@@ -2,7 +2,7 @@ import type { AuthResponse } from '@callsign/types';
 import { authResponseSchema } from '@callsign/types';
 import type { z } from 'zod';
 
-import type { CallsignPlatform } from '../platform/platform.types';
+import type { ApiPlatform } from '../platform/platform.types';
 import { ApiClientError, isApiClientError } from './ApiClientError';
 import type { ApiRequest, HttpConfig, HttpResponse } from './http';
 import { parseResponse, sendHttp } from './http';
@@ -14,8 +14,14 @@ export interface ApiClient {
   requestNoContent(request: ApiRequest): Promise<void>;
   /** Keeps the tokens of a login, register or refresh response. */
   startSession(auth: AuthResponse): Promise<void>;
-  /** Forgets this device's tokens. Logout calls the API first. */
+  /** Forgets this device's tokens, without telling the API. */
   endSession(): Promise<void>;
+  /**
+   * Ends this device's session on the API (`/auth/logout`), then forgets the tokens. The API call
+   * is best effort: offline or failing, the device is still signed out, and the server session
+   * expires on its own. Waits for a refresh in flight, so it revokes the newest token.
+   */
+  logout(): Promise<void>;
   /**
    * New tokens from `/auth/refresh`. Concurrent callers share one request: rotation replaces the
    * refresh token, so a second request with the old one would be taken for a stolen token and
@@ -40,10 +46,7 @@ const REFRESH_LOCK = 'callsign:auth-refresh';
  * state (no re-render per refresh) and never in storage. Requests send it as a Bearer token;
  * a 401 refreshes once and retries the request once.
  */
-export function createApiClient(
-  platform: CallsignPlatform,
-  options: ApiClientOptions = {},
-): ApiClient {
+export function createApiClient(platform: ApiPlatform, options: ApiClientOptions = {}): ApiClient {
   const config: HttpConfig = {
     apiUrl: platform.apiUrl,
     client: platform.client,
@@ -52,6 +55,8 @@ export function createApiClient(
   const sessionEndListeners = new Set<() => void>();
   let accessToken: string | null = null;
   let refreshing: Promise<AuthResponse | null> | null = null;
+  /** Bumped on every sign-in and sign-out, so a late refresh answer can tell it is stale. */
+  let generation = 0;
 
   async function startSession(auth: AuthResponse): Promise<void> {
     if (platform.client === 'mobile') {
@@ -61,10 +66,12 @@ export function createApiClient(
       await platform.refreshTokenStore.write(auth.refreshToken);
     }
     accessToken = auth.accessToken;
+    generation += 1;
   }
 
   async function endSession(): Promise<void> {
     accessToken = null;
+    generation += 1;
     if (platform.client === 'mobile') await platform.refreshTokenStore.clear();
   }
 
@@ -82,6 +89,7 @@ export function createApiClient(
   }
 
   async function runRefresh(): Promise<AuthResponse | null> {
+    const startedIn = generation;
     const body = await refreshBody();
     if (body === null) return sessionOver();
     try {
@@ -91,12 +99,28 @@ export function createApiClient(
         null,
       );
       const auth = parseResponse(authResponseSchema, response);
+      // A login that finished meanwhile started a newer session: keep it, drop this answer.
+      if (generation !== startedIn) return null;
       await startSession(auth);
       return auth;
     } catch (error) {
-      if (isApiClientError(error, 'UNAUTHORIZED')) return sessionOver();
-      throw error;
+      if (!isApiClientError(error, 'UNAUTHORIZED')) throw error;
+      // Same here: this 401 is about the session before that login.
+      return generation === startedIn ? sessionOver() : null;
     }
+  }
+
+  async function logout(): Promise<void> {
+    await refreshing?.catch(() => null);
+    const body = await refreshBody();
+    if (body !== null) {
+      await sendHttp(
+        config,
+        { method: 'POST', path: '/auth/logout', body, auth: false },
+        null,
+      ).catch(() => undefined);
+    }
+    await endSession();
   }
 
   function refresh(): Promise<AuthResponse | null> {
@@ -115,12 +139,11 @@ export function createApiClient(
       return await sendHttp(config, request, sentWith);
     } catch (error) {
       if (!isApiClientError(error, 'UNAUTHORIZED')) throw error;
-      // Another call may have refreshed while this one was in flight: reuse its token.
-      const fresh =
-        accessToken !== null && accessToken !== sentWith
-          ? accessToken
-          : ((await refresh())?.accessToken ?? null);
-      if (fresh === null) throw error;
+      // Another call may have refreshed (or a login finished) while this one was in flight:
+      // then reuse that token instead of rotating again.
+      if (accessToken === null || accessToken === sentWith) await refresh();
+      const fresh = accessToken;
+      if (fresh === null || fresh === sentWith) throw error;
       return sendHttp(config, request, fresh);
     }
   }
@@ -134,6 +157,7 @@ export function createApiClient(
     },
     startSession,
     endSession,
+    logout,
     refresh,
     getAccessToken: () => accessToken,
     onSessionEnd(listener) {

@@ -3,12 +3,12 @@ export { ApiClientError, isApiClientError } from './api/ApiClientError';
 export type { ApiClient, ApiClientOptions } from './api/createApiClient';
 export { createApiClient } from './api/createApiClient';
 export type { ApiRequest, HttpMethod, QueryParams } from './api/http';
-export type {
-  CallsignPlatform,
-  ExclusiveRunner,
-  RefreshTokenStore,
-} from './platform/platform.types';
-export type { CallsignProviderProps } from './provider/CallsignProvider';
-export { CallsignProvider } from './provider/CallsignProvider';
+export type { ApiPlatform, ExclusiveRunner, RefreshTokenStore } from './platform/platform.types';
+export type { ApiProviderProps } from './provider/ApiProvider';
+export { ApiProvider } from './provider/ApiProvider';
 export { useApiClient } from './provider/useApiClient';
 export { createQueryClient } from './query/createQueryClient';
+export type { SessionState, SessionStatus } from './session/sessionStore';
+export { useLogin, useLogout, useRegister } from './session/useAuthMutations';
+export type { UseSessionResult } from './session/useSession';
+export { useSession, useSignedInUser } from './session/useSession';
