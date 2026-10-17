@@ -4,18 +4,19 @@ import { Button, IconButton, Masthead, Text } from '@callsign/ui';
 import { View } from 'react-native';
 
 import { errorMessage } from '../../errors/errorMessage';
+import { formErrorExcept } from '../../errors/formErrorExcept';
 import { FormError } from '../../form/FormError';
 import { FormInput } from '../../form/FormInput';
 import { useZodForm } from '../../form/useZodForm';
-import { AuthLayout } from '../../layout/AuthLayout/AuthLayout';
-import { useAuthFormStyles } from '../authForm.styles';
+import { FormLayout } from '../../layout/FormLayout/FormLayout';
+import { useFormStyles } from '../../form/form.styles';
 import { useRegisterStyles } from './RegisterScreen.styles';
 import type { RegisterScreenProps } from './RegisterScreen.types';
 
 /** "Request clearance": a new station. Registering signs in, like login. */
 export function RegisterScreen({ onBack, onSignIn }: RegisterScreenProps) {
   const styles = useRegisterStyles();
-  const formStyles = useAuthFormStyles();
+  const formStyles = useFormStyles();
   const register = useRegister();
   const { control, handleSubmit, setError } = useZodForm(registerFormSchema, {
     callsign: '',
@@ -37,13 +38,10 @@ export function RegisterScreen({ onBack, onSignIn }: RegisterScreenProps) {
     ),
   );
   // A taken callsign shows under its field instead.
-  const formError =
-    register.error && !isApiClientError(register.error, 'CALLSIGN_TAKEN')
-      ? errorMessage(register.error)
-      : undefined;
+  const formError = formErrorExcept(register.error, 'CALLSIGN_TAKEN');
 
   return (
-    <AuthLayout
+    <FormLayout
       header={
         <View style={styles.header}>
           <IconButton icon="chevronLeft" aria-label="Back" onPress={onBack} />
@@ -96,6 +94,6 @@ export function RegisterScreen({ onBack, onSignIn }: RegisterScreenProps) {
         />
         <Button label="Already on the net? Report in" variant="link" onPress={onSignIn} />
       </View>
-    </AuthLayout>
+    </FormLayout>
   );
 }

@@ -1,7 +1,7 @@
 import { sizes, spacing } from '@callsign/theme';
 import { createStyles } from '@callsign/ui';
 
-export const useAuthLayoutStyles = createStyles(({ colors }) => ({
+export const useFormLayoutStyles = createStyles(({ colors }) => ({
   screen: { flex: 1, backgroundColor: colors.background },
   content: {
     flexGrow: 1,

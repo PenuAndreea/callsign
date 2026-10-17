@@ -1,6 +1,6 @@
 import { Button, Masthead, Text } from '@callsign/ui';
 
-import { AuthLayout } from '../../layout/AuthLayout/AuthLayout';
+import { FormLayout } from '../../layout/FormLayout/FormLayout';
 import type { UnreachableScreenProps } from './UnreachableScreen.types';
 
 /**
@@ -9,12 +9,12 @@ import type { UnreachableScreenProps } from './UnreachableScreen.types';
  */
 export function UnreachableScreen({ onRetry }: UnreachableScreenProps) {
   return (
-    <AuthLayout>
+    <FormLayout>
       <Masthead title="No contact" subtitle="The net is not answering" />
       <Text variant="body" role="alert">
         Check your connection, then try again. Over.
       </Text>
       <Button label="Try again" onPress={onRetry} />
-    </AuthLayout>
+    </FormLayout>
   );
 }
