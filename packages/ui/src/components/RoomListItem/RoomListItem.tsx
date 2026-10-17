@@ -12,6 +12,7 @@ export function RoomListItem({
   joined,
   preview,
   trailing,
+  trailingLabel,
   selected = false,
   onPress,
   style,
@@ -39,7 +40,9 @@ export function RoomListItem({
   return (
     <PressableBase
       role="button"
-      aria-label={[name, joined ? 'joined' : 'not joined', preview].filter(Boolean).join(', ')}
+      aria-label={[name, joined ? 'joined' : 'not joined', preview, trailingLabel]
+        .filter(Boolean)
+        .join(', ')}
       aria-selected={selected}
       onPress={onPress}
       style={({ pressed }) => [
