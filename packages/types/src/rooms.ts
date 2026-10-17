@@ -1,9 +1,14 @@
 import { z } from 'zod';
 
-import { pageQuerySchema, pageSchema } from './common';
+import { atLeastChars, atMostChars, pageQuerySchema, pageSchema } from './common';
 
 /** Net name. Stored lowercase so uniqueness is case-insensitive; the UI uppercases it. */
-export const roomNameSchema = z.string().trim().toLowerCase().min(3).max(30);
+export const roomNameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3, atLeastChars(3))
+  .max(30, atMostChars(30));
 
 export const createRoomRequestSchema = z.object({
   name: roomNameSchema,

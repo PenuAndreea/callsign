@@ -1,7 +1,14 @@
 import { z } from 'zod';
 
+import { atLeastChars, atMostChars } from './common';
+
 /** Username and display name. Stored lowercase so uniqueness is case-insensitive; the UI uppercases it. */
-export const callsignSchema = z.string().trim().toLowerCase().min(3).max(20);
+export const callsignSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3, atLeastChars(3))
+  .max(20, atMostChars(20));
 
 export type Callsign = z.infer<typeof callsignSchema>;
 
@@ -11,7 +18,10 @@ const PASSPHRASE_MAX = 128;
  * Passphrase policy for new accounts. Not trimmed: spaces can be part of the secret.
  * The upper bound rejects huge inputs before argon2 hashes them.
  */
-export const passphraseSchema = z.string().min(8).max(PASSPHRASE_MAX);
+export const passphraseSchema = z
+  .string()
+  .min(8, atLeastChars(8))
+  .max(PASSPHRASE_MAX, atMostChars(PASSPHRASE_MAX));
 
 /** `X-Client` header: decides whether the refresh token travels in a cookie (web) or the body (mobile). */
 export const clientTypeSchema = z.enum(['web', 'mobile']);
@@ -28,7 +38,10 @@ export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 /** Login checks presence only, so accounts made under an older, looser policy can still sign in. */
 export const loginRequestSchema = z.object({
   callsign: callsignSchema,
-  passphrase: z.string().min(1).max(PASSPHRASE_MAX),
+  passphrase: z
+    .string()
+    .min(1, 'Enter your passphrase')
+    .max(PASSPHRASE_MAX, atMostChars(PASSPHRASE_MAX)),
 });
 
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
