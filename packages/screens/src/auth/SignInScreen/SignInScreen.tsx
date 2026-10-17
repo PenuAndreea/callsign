@@ -15,7 +15,7 @@ import type { SignInScreenProps } from './SignInScreen.types';
 export function SignInScreen({ onRegister }: SignInScreenProps) {
   const styles = useFormStyles();
   const login = useLogin();
-  const { control, handleSubmit } = useZodForm(loginRequestSchema, {
+  const { control, handleSubmit, setFocus } = useZodForm(loginRequestSchema, {
     callsign: '',
     passphrase: '',
   });
@@ -34,6 +34,9 @@ export function SignInScreen({ onRegister }: SignInScreenProps) {
           autoCorrect={false}
           autoComplete="username"
           returnKeyType="next"
+          // Keep the keyboard up while moving to the passphrase.
+          submitBehavior="submit"
+          onSubmitEditing={() => setFocus('passphrase')}
         />
         <FormInput
           control={control}
@@ -41,6 +44,9 @@ export function SignInScreen({ onRegister }: SignInScreenProps) {
           label="Passphrase"
           placeholder="Enter passphrase"
           secureTextEntry
+          // Android keyboards capitalize the first letter otherwise; a passphrase is exact.
+          autoCapitalize="none"
+          autoCorrect={false}
           autoComplete="current-password"
           returnKeyType="go"
           onSubmitEditing={() => void submit()}

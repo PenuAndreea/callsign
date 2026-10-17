@@ -1,4 +1,5 @@
 import { useJoinNet, useLogout, useNets, useSignedInUser } from '@callsign/hooks';
+import { spacing } from '@callsign/theme';
 import type { RoomDto, RoomScope } from '@callsign/types';
 import { Button, ScreenHeader, SectionLabel } from '@callsign/ui';
 import type { SectionListData } from 'react-native';
@@ -6,6 +7,7 @@ import { SectionList, View } from 'react-native';
 
 import { errorMessage } from '../../errors/errorMessage';
 import { FormError } from '../../form/FormError';
+import { useInsetPadding } from '../../layout/useInsetPadding';
 import { JoinedNetRow, OpenNetRow } from './NetRows';
 import { useNetsStyles } from './NetsScreen.styles';
 import type { NetsScreenProps } from './NetsScreen.types';
@@ -30,6 +32,7 @@ export function NetsScreen({ onOpenNet, onNewNet, selectedNetId }: NetsScreenPro
   const open = useNets('open');
   const join = useJoinNet();
   const logout = useLogout();
+  const insetPadding = useInsetPadding({ top: spacing.xl, bottom: spacing.xxl * 2 });
 
   const sections: SectionListData<RoomDto, NetSection>[] = [
     {
@@ -58,7 +61,7 @@ export function NetsScreen({ onOpenNet, onNewNet, selectedNetId }: NetsScreenPro
   return (
     <SectionList
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, insetPadding]}
       sections={sections}
       keyExtractor={(net) => net.id}
       stickySectionHeadersEnabled={false}

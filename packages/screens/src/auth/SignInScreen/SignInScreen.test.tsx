@@ -57,6 +57,29 @@ describe('SignInScreen', () => {
     );
   });
 
+  it('never lets the keyboard capitalize or correct the passphrase', () => {
+    renderScreen(<SignInScreen onRegister={vi.fn()} />);
+    const passphrase = screen.getByLabelText('Passphrase');
+    expect(passphrase).toHaveAttribute('autocapitalize', 'none');
+    expect(passphrase).toHaveAttribute('autocorrect', 'off');
+  });
+
+  it('moves from the callsign to the passphrase with the next key', async () => {
+    const user = userEvent.setup();
+    renderScreen(<SignInScreen onRegister={vi.fn()} />);
+
+    await user.type(screen.getByRole('textbox', { name: 'Callsign' }), 'wolf-2{Enter}');
+    expect(screen.getByLabelText('Passphrase')).toHaveFocus();
+  });
+
+  it('focuses the first invalid field on submit', async () => {
+    const user = userEvent.setup();
+    renderScreen(<SignInScreen onRegister={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: 'Report in' }));
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Callsign' })).toHaveFocus());
+  });
+
   it('opens register from the link', async () => {
     const onRegister = vi.fn();
     renderScreen(<SignInScreen onRegister={onRegister} />);

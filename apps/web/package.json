@@ -21,6 +21,7 @@
     "@expo-google-fonts/stardos-stencil": "^0.4.0",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-native-safe-area-context": "~5.7.0",
     "react-native-svg": "catalog:",
     "react-native-web": "catalog:",
     "react-router": "^7.18.4"

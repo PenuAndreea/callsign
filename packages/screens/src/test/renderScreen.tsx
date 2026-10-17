@@ -12,6 +12,13 @@ import { ThemeProvider } from '@callsign/ui';
 import { render } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import type { ReactElement, ReactNode } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+/** No notch in tests: zero insets, a phone-sized frame, available on the first render. */
+const TEST_METRICS = {
+  frame: { x: 0, y: 0, width: 375, height: 812 },
+  insets: { top: 0, left: 0, right: 0, bottom: 0 },
+};
 
 export interface RenderScreenOptions {
   /** What `/auth/refresh` answers when the provider restores on mount. Default `signedOut`. */
@@ -43,11 +50,13 @@ export function renderScreen(
   );
   const clients = createTestClients(platform);
   const result = render(
-    <ThemeProvider>
-      <ApiProvider platform={platform} {...clients}>
-        {session === 'signedIn' ? <SignedInOnly>{ui}</SignedInOnly> : ui}
-      </ApiProvider>
-    </ThemeProvider>,
+    <SafeAreaProvider initialMetrics={TEST_METRICS}>
+      <ThemeProvider>
+        <ApiProvider platform={platform} {...clients}>
+          {session === 'signedIn' ? <SignedInOnly>{ui}</SignedInOnly> : ui}
+        </ApiProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>,
   );
   return { ...result, ...clients };
 }

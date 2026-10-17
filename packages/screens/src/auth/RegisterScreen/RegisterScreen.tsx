@@ -18,7 +18,7 @@ export function RegisterScreen({ onBack, onSignIn }: RegisterScreenProps) {
   const styles = useRegisterStyles();
   const formStyles = useFormStyles();
   const register = useRegister();
-  const { control, handleSubmit, setError } = useZodForm(registerFormSchema, {
+  const { control, handleSubmit, setError, setFocus } = useZodForm(registerFormSchema, {
     callsign: '',
     passphrase: '',
     confirmPassphrase: '',
@@ -63,6 +63,8 @@ export function RegisterScreen({ onBack, onSignIn }: RegisterScreenProps) {
           autoCorrect={false}
           autoComplete="username"
           returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => setFocus('passphrase')}
         />
         <FormInput
           control={control}
@@ -70,8 +72,13 @@ export function RegisterScreen({ onBack, onSignIn }: RegisterScreenProps) {
           label="Passphrase"
           placeholder="At least 8 characters"
           secureTextEntry
+          // Android keyboards capitalize the first letter otherwise; a passphrase is exact.
+          autoCapitalize="none"
+          autoCorrect={false}
           autoComplete="new-password"
           returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => setFocus('confirmPassphrase')}
         />
         <FormInput
           control={control}
@@ -79,6 +86,8 @@ export function RegisterScreen({ onBack, onSignIn }: RegisterScreenProps) {
           label="Confirm passphrase"
           placeholder="Repeat passphrase"
           secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
           autoComplete="new-password"
           returnKeyType="go"
           onSubmitEditing={() => void submit()}

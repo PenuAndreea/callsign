@@ -11,8 +11,6 @@ export const useFormLayoutStyles = createStyles(({ colors }) => ({
     padding: spacing.xl,
     gap: spacing.xl,
   },
-  // Without a header row the masthead sits lower, as in the mockups.
-  noHeader: { paddingTop: spacing.xxl * 2 },
   body: { flexGrow: 1, gap: spacing.xl },
   footer: { textAlign: 'center' },
 }));
