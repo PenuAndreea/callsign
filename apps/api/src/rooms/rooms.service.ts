@@ -12,6 +12,7 @@ import { pageFetchLimit, toPage } from '../common/pagination/to-page';
 import { MembershipsService } from '../memberships/memberships.service';
 import type { RoomDocument } from './room.schema';
 import { Room } from './room.schema';
+import { netNotFound } from './net-not-found';
 import { toRoomDto } from './rooms.mapper';
 
 /**
@@ -94,7 +95,7 @@ export class RoomsService {
     const updated = await this.roomModel
       .findByIdAndUpdate(room._id, { $inc: { memberCount: 1 } }, { returnDocument: 'after' })
       .exec();
-    if (!updated) throw notFound();
+    if (!updated) throw netNotFound();
     return toRoomDto(updated, true);
   }
 
@@ -114,11 +115,7 @@ export class RoomsService {
     const room = isObjectIdOrHexString(roomId)
       ? await this.roomModel.findById(roomId).exec()
       : null;
-    if (!room) throw notFound();
+    if (!room) throw netNotFound();
     return room;
   }
-}
-
-function notFound(): ApiException {
-  return new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Net not found');
 }

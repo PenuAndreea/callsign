@@ -9,6 +9,7 @@ import { ApiExceptionFilter } from './common/errors/api-exception.filter';
 import { validateEnv } from './config/validate-env';
 import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health/health.controller';
+import { MessagesModule } from './messages/messages.module';
 import { RoomsModule } from './rooms/rooms.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { RoomsModule } from './rooms/rooms.module';
     }),
     AuthModule,
     RoomsModule,
+    MessagesModule,
   ],
   controllers: [HealthController],
   providers: [

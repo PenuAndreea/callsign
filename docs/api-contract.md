@@ -123,11 +123,12 @@ type AuthResponse = {
 
 ### Messages (history only)
 
-| Method | Path                  | Query           | Response                                                  |
-| ------ | --------------------- | --------------- | --------------------------------------------------------- |
-| GET    | `/rooms/:id/messages` | `?cursor&limit` | 200 `Page<MessageDto>`, newest first · 403 `NOT_A_MEMBER` |
+| Method | Path                  | Query           | Response                                                                    |
+| ------ | --------------------- | --------------- | --------------------------------------------------------------------------- |
+| GET    | `/rooms/:id/messages` | `?cursor&limit` | 200 `Page<MessageDto>`, newest first · 403 `NOT_A_MEMBER` · 404 `NOT_FOUND` |
 
-- Only members can read history (join first).
+- Only members can read history (join first). History includes messages sent before you joined.
+- One membership lookup answers access: a well-formed id of a net that does not exist is a 403 `NOT_A_MEMBER` too (there is no membership without a net). A malformed `:id` is a 404, as on the other net routes.
 - There is no POST: messages are sent over the socket.
 - Cursor = the `id` of the oldest message on the page; the next page is `_id < cursor`, sorted `_id: -1` (index `{ roomId: 1, _id: -1 }`).
 - `sender.callsign` comes from the `senderCallsign` copy stored on the message, so no user lookup is needed.
