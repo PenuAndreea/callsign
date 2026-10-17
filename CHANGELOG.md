@@ -4,6 +4,11 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(web): nets list, new net and a temporary net page with Leave (/nets/new, /nets/:netId)
+- feat(screens): NetsScreen (joined and open sections, paged, join opens the net) and NewNetScreen; FormLayout, formErrorExcept, stationsLabel
+- feat(ui): trailingLabel on RoomListItem, so a trailing count is part of the row's accessible name
+- feat(hooks): nets hooks (useNets, useNet, useCreateNet, useJoinNet, useLeaveNet) with netKeys and net fixtures
+
 - feat(web): routes with SessionGate, GuestOnly and RequireAuth, sign in and register through the shared screens, Web Locks platform, temporary home with log out
 - feat(screens): screens package with SignInScreen, RegisterScreen, UnreachableScreen, RestoringScreen, react-hook-form helpers (useZodForm, FormInput, FormError) and error copy
 - feat(hooks): @callsign/hooks/testing entry (MSW server, fixtures, test clients) shared by the packages that test against the API

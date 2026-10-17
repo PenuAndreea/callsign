@@ -1,9 +1,17 @@
-import { api, apiError, authResponse, server, webPlatform } from '@callsign/hooks/testing';
+import {
+  api,
+  apiError,
+  authResponse,
+  net,
+  page,
+  server,
+  webPlatform,
+} from '@callsign/hooks/testing';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { createMemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import App from '../App';
 import { routes } from '../routes';
@@ -17,6 +25,20 @@ const refreshAnswers = (session: 'signedIn' | 'signedOut' | 'offline') =>
         : apiError(401, 'UNAUTHORIZED');
     }),
   );
+
+const tower = net('tower', { memberCount: 2 });
+
+// Signed-in pages load the nets list: tower is joined, nothing is open.
+beforeEach(() => {
+  server.use(
+    http.get(api('/rooms'), ({ request }) =>
+      HttpResponse.json(
+        page(new URL(request.url).searchParams.get('scope') === 'joined' ? [tower] : []),
+      ),
+    ),
+    http.get(api(`/rooms/${tower.id}`), () => HttpResponse.json(tower)),
+  );
+});
 
 /** The real routes in a memory router, against MSW (the test platform has an absolute API URL). */
 function renderApp(path = '/') {
@@ -42,7 +64,7 @@ describe('App routing', () => {
     renderApp('/');
 
     expect(await homeHeading()).toBeInTheDocument();
-    expect(screen.getByText('Station WOLF-2')).toBeInTheDocument();
+    expect(screen.getByText('Station wolf-2')).toBeInTheDocument();
   });
 
   it('keeps a signed-in station away from sign in', async () => {
@@ -106,6 +128,46 @@ describe('App routing', () => {
     const retry = await screen.findByRole('button', { name: 'Try again' });
     refreshAnswers('signedIn');
     await user.click(retry);
+    expect(await homeHeading()).toBeInTheDocument();
+  });
+
+  it('opens a net from the list and leaves it back to the list', async () => {
+    refreshAnswers('signedIn');
+    server.use(
+      http.delete(
+        api(`/rooms/${tower.id}/members/me`),
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const user = userEvent.setup();
+    const router = renderApp('/');
+
+    await user.click(await screen.findByRole('button', { name: /^tower, joined/ }));
+    expect(await screen.findByText('2 stations on net')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(`/nets/${tower.id}`);
+
+    await user.click(screen.getByRole('button', { name: 'Leave' }));
+    expect(await homeHeading()).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/');
+  });
+
+  it('opens a new net and lands in it, with back going to the list', async () => {
+    refreshAnswers('signedIn');
+    const ops = net('ops');
+    server.use(
+      http.post(api('/rooms'), () => HttpResponse.json(ops, { status: 201 })),
+      http.get(api(`/rooms/${ops.id}`), () => HttpResponse.json(ops)),
+    );
+    const user = userEvent.setup();
+    const router = renderApp('/');
+
+    await user.click(await screen.findByRole('button', { name: 'New net' }));
+    await user.type(await screen.findByRole('textbox', { name: 'Net name' }), 'ops');
+    await user.click(screen.getByRole('button', { name: 'Open the net' }));
+
+    expect(await screen.findByText('1 station on net')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(`/nets/${ops.id}`);
+    await user.click(screen.getByRole('button', { name: 'Back' }));
     expect(await homeHeading()).toBeInTheDocument();
   });
 });
