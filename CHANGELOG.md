@@ -4,6 +4,8 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+## 0.5.0 (M4: messages and realtime)
+
 - feat(api): RealtimeService; REST join/leave moves the user's open sockets and sends room:updated with the new member count
 - feat(api): message:send over the socket (validate, membership check, save, conditional lastMessage preview, ack, broadcast), 5 per 5 s per socket
 - feat(api): Socket.IO gateway with JWT handshake, joins user and net rooms on connect; CORS adapter; global guards skip socket events
