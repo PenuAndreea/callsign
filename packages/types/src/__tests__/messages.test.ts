@@ -9,6 +9,7 @@ import {
 } from '../messages';
 
 const ROOM_ID = '6650c0ffee0000000000abcd';
+const CLIENT_MESSAGE_ID = '8f14e45f-ceea-4e7a-9c1d-2b3f1a6e7d90';
 
 const message = {
   id: '6650c0ffee0000000000beef',
@@ -49,6 +50,20 @@ describe('sendMessageRequestSchema', () => {
     );
   });
 
+  it('accepts an optional client message id and lowercases it', () => {
+    const parsed = sendMessageRequestSchema.parse({
+      roomId: ROOM_ID,
+      content: 'Over.',
+      clientMessageId: CLIENT_MESSAGE_ID.toUpperCase(),
+    });
+    expect(parsed.clientMessageId).toBe(CLIENT_MESSAGE_ID);
+  });
+
+  it('rejects a client message id that is not a UUID', () => {
+    const payload = { roomId: ROOM_ID, content: 'Over.', clientMessageId: 'msg-1' };
+    expect(sendMessageRequestSchema.safeParse(payload).success).toBe(false);
+  });
+
   it('drops a sender sent by the client', () => {
     const parsed = sendMessageRequestSchema.parse({
       roomId: ROOM_ID,
@@ -62,6 +77,11 @@ describe('sendMessageRequestSchema', () => {
 describe('messageDtoSchema', () => {
   it('accepts a message', () => {
     expect(messageDtoSchema.parse(message)).toEqual(message);
+  });
+
+  it('accepts a message with the client message id of its send', () => {
+    const withKey = { ...message, clientMessageId: CLIENT_MESSAGE_ID };
+    expect(messageDtoSchema.parse(withKey)).toEqual(withKey);
   });
 
   it('rejects a date that is not ISO 8601', () => {

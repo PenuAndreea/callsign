@@ -105,21 +105,22 @@ Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `p
   - `memberCount` is denormalized: `$inc` +1 on join, -1 on leave, only when the membership insert/delete actually succeeds (`MembershipsService.add`/`remove` return whether a row changed). Two writes, no transaction (needs a replica set): a crash between them leaves the count off by one, which is accepted; access checks always use `memberships`. Creating a net inserts it with 0 members and reuses `join()` for the creator.
   - `lastMessage` is a denormalized preview (`content` cut to 80 code points, `…` when cut), set by `RoomsService.recordLastMessage` right after a message is saved. One atomic `updateOne` that only matches when the stored `messageId` is older (or there is none), so out-of-order sends keep the newest preview. Best effort: a failed write is logged, the send still succeeds. Drives the nets list.
 - **Membership (`memberships`):** `userId`, `roomId`, `joinedAt`. Join collection between users and rooms (no members array on the room). No presence/online status in the DB; if presence is ever added, track it in memory from Socket.IO connect/disconnect.
-- **Message (`messages`):** `roomId`, `senderId`, `senderCallsign` (copied at send time; callsigns never change), `content` (1 to 1000 chars), `createdAt`. History is readable by members only.
+- **Message (`messages`):** `roomId`, `senderId`, `senderCallsign` (copied at send time; callsigns never change), `content` (1 to 1000 chars), `clientMessageId` (optional UUID from the client, the idempotency key of a send), `createdAt`. History is readable by members only. A `message:send` whose key is already saved (same sender, same net) is acked with the saved message and not broadcast again; the saved content wins.
 
 **Indexes:**
 
-| Collection  | Index                                                  | Serves                                                                                                |
-| ----------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| users       | `{ callsign: 1 }` unique                               | login, register                                                                                       |
-| sessions    | `{ tokenHash: 1 }` unique                              | refresh, logout (lookup by token hash)                                                                |
-| sessions    | `{ userId: 1 }`                                        | a user's devices ("log out everywhere" later)                                                         |
-| sessions    | `{ expiresAt: 1 }` TTL (`expireAfterSeconds: 0`)       | MongoDB deletes expired sessions itself (about once a minute, so queries still filter on `expiresAt`) |
-| sessions    | `{ previousTokenHash: 1 }` partial (`$type: 'string'`) | reuse detection                                                                                       |
-| rooms       | `{ name: 1 }` unique                                   | create net (duplicate check)                                                                          |
-| memberships | `{ userId: 1, roomId: 1 }` unique                      | "my nets" (covered query), prevents double join                                                       |
-| memberships | `{ roomId: 1 }`                                        | members of a net, socket room sync                                                                    |
-| messages    | `{ roomId: 1, _id: -1 }`                               | paginated history (cursor on `_id`: unique and time-ordered, no ties)                                 |
+| Collection  | Index                                                                                | Serves                                                                                                |
+| ----------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| users       | `{ callsign: 1 }` unique                                                             | login, register                                                                                       |
+| sessions    | `{ tokenHash: 1 }` unique                                                            | refresh, logout (lookup by token hash)                                                                |
+| sessions    | `{ userId: 1 }`                                                                      | a user's devices ("log out everywhere" later)                                                         |
+| sessions    | `{ expiresAt: 1 }` TTL (`expireAfterSeconds: 0`)                                     | MongoDB deletes expired sessions itself (about once a minute, so queries still filter on `expiresAt`) |
+| sessions    | `{ previousTokenHash: 1 }` partial (`$type: 'string'`)                               | reuse detection                                                                                       |
+| rooms       | `{ name: 1 }` unique                                                                 | create net (duplicate check)                                                                          |
+| memberships | `{ userId: 1, roomId: 1 }` unique                                                    | "my nets" (covered query), prevents double join                                                       |
+| memberships | `{ roomId: 1 }`                                                                      | members of a net, socket room sync                                                                    |
+| messages    | `{ roomId: 1, _id: -1 }`                                                             | paginated history (cursor on `_id`: unique and time-ordered, no ties)                                 |
+| messages    | `{ senderId: 1, roomId: 1, clientMessageId: 1 }` unique, partial (`$type: 'string'`) | idempotent sends: a retry (or racing retries) inserts no second copy                                  |
 
 Nets list: joined = the user's memberships → rooms by id; open = rooms whose `_id` is not in that set. Both sorted by name, cursor = last name on the page. `isMember` follows from the scope. Query plans (checked with `explain` on 5,000 rooms): joined uses the `_id` index and sorts the user's few rooms in memory; open walks the `name` index from the cursor and stops after `limit + 1` matches. MongoDB's planner picks both without a `hint`.
 

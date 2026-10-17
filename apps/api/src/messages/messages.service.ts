@@ -7,13 +7,21 @@ import { isObjectIdOrHexString, Model, Types } from 'mongoose';
 
 import type { AuthUser } from '../auth/auth-user';
 import { ApiException } from '../common/errors/api.exception';
+import { isDuplicateKeyError } from '../common/mongo/is-duplicate-key-error';
 import { decodeCursor } from '../common/pagination/cursor';
 import { pageFetchLimit, toPage } from '../common/pagination/to-page';
 import { MembershipsService } from '../memberships/memberships.service';
 import { netNotFound } from '../rooms/net-not-found';
 import { RoomsService } from '../rooms/rooms.service';
+import type { MessageDocument } from './message.schema';
 import { Message } from './message.schema';
 import { toMessageDto } from './messages.mapper';
+
+/** `created: false` when the send was a retry of a message that is already saved. */
+export interface SendResult {
+  message: MessageDto;
+  created: boolean;
+}
 
 /**
  * Sending (over the socket) and net history (REST). Members only: access is always checked
@@ -69,16 +77,35 @@ export class MessagesService {
    * and updates the net's preview. The preview is best effort: once the message is saved the
    * send has succeeded, so a failed preview write is logged, not reported to the client (who
    * would otherwise retry and post the message twice). The next message fixes the preview.
+   *
+   * A retry with a `clientMessageId` that is already saved (in this net, from this sender) returns
+   * the saved message with `created: false`: no second copy, no preview write, and the caller
+   * does not broadcast it again. The saved content wins if the retry's content differs.
    * @throws ApiException 403 `NOT_A_MEMBER`, also for a net that does not exist.
    */
-  async send(sender: AuthUser, { roomId, content }: SendMessageRequest): Promise<MessageDto> {
+  async send(
+    sender: AuthUser,
+    { roomId, content, clientMessageId }: SendMessageRequest,
+  ): Promise<SendResult> {
     await this.assertMember(sender.userId, roomId);
-    const message = await this.messageModel.create({
-      roomId,
-      senderId: sender.userId,
-      senderCallsign: sender.callsign,
-      content,
-    });
+    let message: MessageDocument;
+    try {
+      message = await this.messageModel.create({
+        roomId,
+        senderId: sender.userId,
+        senderCallsign: sender.callsign,
+        content,
+        ...(clientMessageId !== undefined && { clientMessageId }),
+      });
+    } catch (error) {
+      if (clientMessageId === undefined || !isDuplicateKeyError(error, 'clientMessageId')) {
+        throw error;
+      }
+      return {
+        message: await this.findSent(sender.userId, roomId, clientMessageId),
+        created: false,
+      };
+    }
 
     await this.rooms
       .recordLastMessage({
@@ -95,6 +122,20 @@ export class MessagesService {
         );
       });
 
+    return { message: toMessageDto(message), created: true };
+  }
+
+  /** The message an earlier send with this key saved. It exists: the unique index just said so. */
+  private async findSent(
+    senderId: string,
+    roomId: string,
+    clientMessageId: string,
+  ): Promise<MessageDto> {
+    const message = await this.messageModel
+      .findOne({ senderId, roomId, clientMessageId })
+      .orFail()
+      .lean()
+      .exec();
     return toMessageDto(message);
   }
 
