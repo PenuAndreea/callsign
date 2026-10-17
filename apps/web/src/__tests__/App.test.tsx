@@ -7,11 +7,11 @@ import {
   server,
   webPlatform,
 } from '@callsign/hooks/testing';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { createMemoryRouter } from 'react-router';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import App from '../App';
 import { routes } from '../routes';
@@ -37,8 +37,36 @@ beforeEach(() => {
       ),
     ),
     http.get(api(`/rooms/${tower.id}`), () => HttpResponse.json(tower)),
+    http.get(api(`/rooms/${tower.id}/messages`), () =>
+      HttpResponse.json(
+        page([
+          {
+            id: 'aa00000000000000000000aa',
+            roomId: tower.id,
+            sender: { id: 'other', callsign: 'twr-ops' },
+            content: 'Radio check. Over.',
+            createdAt: '2026-10-17T22:14:00.000Z',
+          },
+        ]),
+      ),
+    ),
   );
 });
+
+/**
+ * react-native-web measures `documentElement.clientWidth` (jsdom has no layout: always 0) and
+ * re-reads it on `resize`. Tests start wide (split view) unless they narrow the window.
+ */
+function setWindowWidth(width: number) {
+  Object.defineProperty(document.documentElement, 'clientWidth', {
+    configurable: true,
+    value: width,
+  });
+  window.dispatchEvent(new Event('resize'));
+}
+
+beforeEach(() => setWindowWidth(1024));
+afterEach(() => setWindowWidth(0));
 
 /** The real routes in a memory router, against MSW (the test platform has an absolute API URL). */
 function renderApp(path = '/') {
@@ -131,7 +159,41 @@ describe('App routing', () => {
     expect(await homeHeading()).toBeInTheDocument();
   });
 
-  it('opens a net from the list and leaves it back to the list', async () => {
+  it('shows the nets sidebar next to the chat panel on wide windows', async () => {
+    refreshAnswers('signedIn');
+    const user = userEvent.setup();
+    const router = renderApp('/');
+
+    expect(await screen.findByText(/Pick a net from the list/)).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: /^tower, joined/ }));
+
+    expect(await screen.findByText('Radio check. Over.')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(`/nets/${tower.id}`);
+    // The list stays on screen, with the open net selected, so the chat has no back button.
+    expect(screen.getByRole('button', { name: /^tower, joined/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+  });
+
+  it('stacks the list and the chat on narrow windows, with back to the list', async () => {
+    setWindowWidth(375);
+    refreshAnswers('signedIn');
+    const user = userEvent.setup();
+    renderApp('/');
+
+    expect(await homeHeading()).toBeInTheDocument();
+    expect(screen.queryByText(/Pick a net from the list/)).not.toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: /^tower, joined/ }));
+    expect(await screen.findByText('Radio check. Over.')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Nets' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+    expect(await homeHeading()).toBeInTheDocument();
+  });
+
+  it('leaves a net back to the list', async () => {
     refreshAnswers('signedIn');
     server.use(
       http.delete(
@@ -140,23 +202,19 @@ describe('App routing', () => {
       ),
     );
     const user = userEvent.setup();
-    const router = renderApp('/');
+    const router = renderApp(`/nets/${tower.id}`);
 
-    await user.click(await screen.findByRole('button', { name: /^tower, joined/ }));
-    expect(await screen.findByText('2 stations on net')).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe(`/nets/${tower.id}`);
-
-    await user.click(screen.getByRole('button', { name: 'Leave' }));
-    expect(await homeHeading()).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe('/');
+    await user.click(await screen.findByRole('button', { name: 'Leave' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
   });
 
-  it('opens a new net and lands in it, with back going to the list', async () => {
+  it('opens a new net and lands in its chat', async () => {
     refreshAnswers('signedIn');
     const ops = net('ops');
     server.use(
       http.post(api('/rooms'), () => HttpResponse.json(ops, { status: 201 })),
       http.get(api(`/rooms/${ops.id}`), () => HttpResponse.json(ops)),
+      http.get(api(`/rooms/${ops.id}/messages`), () => HttpResponse.json(page([]))),
     );
     const user = userEvent.setup();
     const router = renderApp('/');
@@ -165,9 +223,7 @@ describe('App routing', () => {
     await user.type(await screen.findByRole('textbox', { name: 'Net name' }), 'ops');
     await user.click(screen.getByRole('button', { name: 'Open the net' }));
 
-    expect(await screen.findByText('1 station on net')).toBeInTheDocument();
+    expect(await screen.findByText('No traffic yet. Open the net. Over.')).toBeInTheDocument();
     expect(router.state.location.pathname).toBe(`/nets/${ops.id}`);
-    await user.click(screen.getByRole('button', { name: 'Back' }));
-    expect(await homeHeading()).toBeInTheDocument();
   });
 });

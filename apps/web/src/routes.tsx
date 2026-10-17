@@ -3,8 +3,8 @@ import { Navigate } from 'react-router';
 
 import { RegisterRoute, SignInRoute } from './routes/authRoutes';
 import { GuestOnly } from './routes/GuestOnly';
-import { NetRoute } from './routes/NetRoute';
-import { NetsRoute, NewNetRoute } from './routes/netsRoutes';
+import { NetsLayout, NoNetSelected } from './routes/NetsLayout';
+import { ChatRoute, NewNetRoute } from './routes/netsRoutes';
 import { RequireAuth } from './routes/RequireAuth';
 import { SessionGate } from './routes/SessionGate';
 
@@ -23,9 +23,14 @@ export const routes: RouteObject[] = [
       {
         element: <RequireAuth />,
         children: [
-          { path: '/', element: <NetsRoute /> },
-          { path: '/nets/new', element: <NewNetRoute /> },
-          { path: '/nets/:netId', element: <NetRoute /> },
+          {
+            element: <NetsLayout />,
+            children: [
+              { path: '/', element: <NoNetSelected /> },
+              { path: '/nets/new', element: <NewNetRoute /> },
+              { path: '/nets/:netId', element: <ChatRoute /> },
+            ],
+          },
         ],
       },
       { path: '*', element: <Navigate to="/" replace /> },
