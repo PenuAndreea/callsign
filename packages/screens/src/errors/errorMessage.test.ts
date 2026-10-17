@@ -1,7 +1,7 @@
 import { ApiClientError } from '@callsign/hooks';
 import { describe, expect, it } from 'vitest';
 
-import { errorMessage } from './errorMessage';
+import { errorMessage, errorMessageForCode } from './errorMessage';
 
 describe('errorMessage', () => {
   it('maps API codes to copy', () => {
@@ -20,6 +20,14 @@ describe('errorMessage', () => {
   it('never shows details of an unknown error', () => {
     expect(errorMessage(new TypeError('cannot read x of undefined'))).toBe(
       'Something went wrong. Try again.',
+    );
+  });
+});
+
+describe('errorMessageForCode', () => {
+  it('gives the same copy as errorMessage', () => {
+    expect(errorMessageForCode('RATE_LIMITED')).toBe(
+      errorMessage(new ApiClientError(429, 'RATE_LIMITED', 'x')),
     );
   });
 });

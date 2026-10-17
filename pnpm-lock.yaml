@@ -636,6 +636,9 @@ importers:
       react-native-web:
         specifier: 'catalog:'
         version: 0.21.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      socket.io:
+        specifier: ^4.8.4
+        version: 4.8.4(supports-color@8.1.1)
       typescript:
         specifier: ~6.0.3
         version: 6.0.3

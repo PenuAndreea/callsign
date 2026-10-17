@@ -18,7 +18,12 @@ const messages: Record<ClientErrorCode, string> = {
   INTERNAL_ERROR: GENERIC,
 };
 
+/** The copy of one code, e.g. for a pending message that only carries its error code. */
+export function errorMessageForCode(code: ClientErrorCode): string {
+  return messages[code];
+}
+
 /** One line for the user. Unknown errors (bugs) get the generic line; details stay in the log. */
 export function errorMessage(error: unknown): string {
-  return isApiClientError(error) ? messages[error.code] : GENERIC;
+  return isApiClientError(error) ? errorMessageForCode(error.code) : GENERIC;
 }

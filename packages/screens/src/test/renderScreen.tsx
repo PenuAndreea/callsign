@@ -1,3 +1,4 @@
+import type { ApiPlatform } from '@callsign/hooks';
 import { ApiProvider, useSession } from '@callsign/hooks';
 import {
   api,
@@ -15,6 +16,8 @@ import type { ReactElement, ReactNode } from 'react';
 export interface RenderScreenOptions {
   /** What `/auth/refresh` answers when the provider restores on mount. Default `signedOut`. */
   session?: 'signedOut' | 'signedIn';
+  /** Default: the web fixture with realtime off. Pass a socket test server's factory to go live. */
+  platform?: ApiPlatform;
 }
 
 /** Like the apps' guards: signed-in screens render only once the restore signed in. */
@@ -29,7 +32,7 @@ function SignedInOnly({ children }: { children: ReactNode }) {
  */
 export function renderScreen(
   ui: ReactElement,
-  { session = 'signedOut' }: RenderScreenOptions = {},
+  { session = 'signedOut', platform = webPlatform }: RenderScreenOptions = {},
 ) {
   server.use(
     http.post(api('/auth/refresh'), () =>
@@ -38,10 +41,10 @@ export function renderScreen(
         : apiError(401, 'UNAUTHORIZED'),
     ),
   );
-  const clients = createTestClients();
+  const clients = createTestClients(platform);
   const result = render(
     <ThemeProvider>
-      <ApiProvider platform={webPlatform} {...clients}>
+      <ApiProvider platform={platform} {...clients}>
         {session === 'signedIn' ? <SignedInOnly>{ui}</SignedInOnly> : ui}
       </ApiProvider>
     </ThemeProvider>,
