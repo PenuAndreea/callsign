@@ -11,3 +11,5 @@ export * from './nets/NetsScreen/NetsScreen';
 export type * from './nets/NetsScreen/NetsScreen.types';
 export * from './nets/NewNetScreen/NewNetScreen';
 export type * from './nets/NewNetScreen/NewNetScreen.types';
+export * from './chat/ChatScreen/ChatScreen';
+export type * from './chat/ChatScreen/ChatScreen.types';
