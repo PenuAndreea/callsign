@@ -13,6 +13,13 @@ export const reactNativeWebResolve = {
       find: /^react-native-svg$/,
       replacement: fileURLToPath(import.meta.resolve('react-native-svg/lib/module/index.js')),
     },
+    // Same for safe areas: the CommonJS build `require()`s the native views.
+    {
+      find: /^react-native-safe-area-context$/,
+      replacement: fileURLToPath(
+        import.meta.resolve('react-native-safe-area-context/lib/module/index.js'),
+      ),
+    },
   ],
   extensions: ['.web.tsx', '.web.ts', '.tsx', '.ts', '.web.js', '.js', '.json'],
 };
@@ -26,4 +33,4 @@ export const reactNativeWebOptimizeDeps = {
 };
 
 /** Vitest: transform these like source code so their imports get the aliases above. */
-export const reactNativeWebInlineDeps = ['react-native-svg'];
+export const reactNativeWebInlineDeps = ['react-native-svg', 'react-native-safe-area-context'];
