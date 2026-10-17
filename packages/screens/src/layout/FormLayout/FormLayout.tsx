@@ -1,16 +1,16 @@
 import { Text } from '@callsign/ui';
 import { ScrollView, View } from 'react-native';
 
-import { useAuthLayoutStyles } from './AuthLayout.styles';
-import type { AuthLayoutProps } from './AuthLayout.types';
+import { useFormLayoutStyles } from './FormLayout.styles';
+import type { FormLayoutProps } from './FormLayout.types';
 
 /**
- * Frame of the signed-out screens: one centered column (capped on wide web windows) that
+ * Frame of the form screens (sign in, register, new net, status): one centered column (capped on wide web windows) that
  * scrolls when the keyboard or a small screen needs it. Taps on buttons still land while the
  * keyboard is open (`handled`).
  */
-export function AuthLayout({ header, footer, children }: AuthLayoutProps) {
-  const styles = useAuthLayoutStyles();
+export function FormLayout({ header, footer, children }: FormLayoutProps) {
+  const styles = useFormLayoutStyles();
 
   return (
     <ScrollView

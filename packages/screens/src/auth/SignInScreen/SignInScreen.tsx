@@ -7,13 +7,13 @@ import { errorMessage } from '../../errors/errorMessage';
 import { FormError } from '../../form/FormError';
 import { FormInput } from '../../form/FormInput';
 import { useZodForm } from '../../form/useZodForm';
-import { AuthLayout } from '../../layout/AuthLayout/AuthLayout';
-import { useAuthFormStyles } from '../authForm.styles';
+import { FormLayout } from '../../layout/FormLayout/FormLayout';
+import { useFormStyles } from '../../form/form.styles';
 import type { SignInScreenProps } from './SignInScreen.types';
 
 /** "Report in": callsign + passphrase. On success the session is signed in; the app's guard moves on. */
 export function SignInScreen({ onRegister }: SignInScreenProps) {
-  const styles = useAuthFormStyles();
+  const styles = useFormStyles();
   const login = useLogin();
   const { control, handleSubmit } = useZodForm(loginRequestSchema, {
     callsign: '',
@@ -22,7 +22,7 @@ export function SignInScreen({ onRegister }: SignInScreenProps) {
   const submit = handleSubmit((values) => login.mutate(values));
 
   return (
-    <AuthLayout>
+    <FormLayout>
       <Masthead title="Callsign" subtitle="Field radio · Flight and ground" />
       <View style={styles.fields}>
         <FormInput
@@ -56,6 +56,6 @@ export function SignInScreen({ onRegister }: SignInScreenProps) {
         />
         <Button label="New station? Register here" variant="link" onPress={onRegister} />
       </View>
-    </AuthLayout>
+    </FormLayout>
   );
 }
