@@ -8,6 +8,7 @@ allowBuilds:
   '@parcel/watcher': false # Jest 30
   argon2: true # native addon (falls back to a node-gyp build when no prebuild fits)
   esbuild: false # tsup
+  msw: false # postinstall only copies the browser worker; the hooks tests use msw/node
   unrs-resolver: false # Jest 30
   mongodb-memory-server: false # postinstall only pre-downloads mongod; it downloads on first use instead (cached in CI)
 
