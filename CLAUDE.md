@@ -99,7 +99,7 @@ Expo in a pnpm monorepo needs a flat `node_modules`: `nodeLinker: hoisted` in `p
 ## Data models
 
 - **User (`users`):** `callsign` (unique), `passwordHash` (argon2, never returned, `select: false`), timestamps. Identity only: sessions live in `sessions`. The callsign is both the username and the display name: 3 to 20 characters, no other format rule.
-- **Session (`sessions`):** one row per logged-in device: `userId`, `tokenHash` (SHA-256 of the current refresh token), `previousTokenHash` (for reuse detection), `expiresAt` (sliding: every refresh moves it forward), `client` (`web` | `mobile`), timestamps. Login on one device never logs out another. Presenting a rotated-away token revokes that session (it was probably stolen).
+- **Session (`sessions`):** one row per logged-in device: `userId`, `tokenHash` (SHA-256 of the current refresh token), `previousTokenHash` (for reuse detection), `rotatedAt` (when it was rotated away), `expiresAt` (sliding: every refresh moves it forward), `client` (`web` | `mobile`), timestamps. Login on one device never logs out another. Within `REFRESH_REUSE_GRACE_SECONDS` (default 10, `0` = off) of a rotation the previous token still refreshes (a lost response, or two tabs at once); the window is not extended by retries. Later, presenting a rotated-away token revokes that session (it was probably stolen).
 - **Case:** callsigns and net names are trimmed and lowercased by the shared Zod schema, so they are stored lowercase and uniqueness is case-insensitive (`WOLF-2` = `wolf-2`). The UI uppercases them for display.
 - **Room (`rooms`):** `name` (unique, 3 to 30 chars), `createdBy`, `memberCount`, `lastMessage: { messageId, content, senderId, createdAt }`, timestamps.
   - `memberCount` is denormalized: `$inc` +1 on join, -1 on leave, only when the membership insert/delete actually succeeds (`MembershipsService.add`/`remove` return whether a row changed). Two writes, no transaction (needs a replica set): a crash between them leaves the count off by one, which is accepted; access checks always use `memberships`. Creating a net inserts it with 0 members and reuses `join()` for the creator.
@@ -135,7 +135,7 @@ Define shapes once in `packages/types` as Zod schemas and infer the TS types. Th
 - Hash passphrases with argon2id through `PasswordHasher` (`src/auth/`): OWASP parameters (19 MiB, t=2, p=1; the library default of 64 MiB per hash is heavy for concurrent logins). Login with an unknown callsign still verifies against a dummy hash, so timing never reveals which callsigns exist. Never return `passwordHash`; use DTOs or serializers.
 - Tokens:
   - Access token: JWT, ~15 min (`JWT_ACCESS_TTL_SECONDS`), HS256 pinned on sign and verify (`src/auth/jwt-options.ts`), claims `{ sub: userId, callsign }` validated with Zod after verifying.
-  - Refresh token: an opaque random string (`crypto.randomBytes(32)`), not a JWT. Stored as a SHA-256 hash (high-entropy tokens don't need argon2). Rotated on every refresh, one session per device (`src/sessions/`).
+  - Refresh token: an opaque random string (`crypto.randomBytes(32)`), not a JWT. Stored as a SHA-256 hash (high-entropy tokens don't need argon2). Rotated on every refresh, one session per device (`src/sessions/`), with a short reuse grace window (`TokensService.refreshReuseGraceMs()` → `SessionsService.rotate(hash, next, graceMs)`).
   - Authenticate the WebSocket handshake with the access token too.
 - Token storage:
   - Access token: in memory only, on both platforms.

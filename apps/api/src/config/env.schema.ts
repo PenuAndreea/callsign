@@ -17,6 +17,11 @@ export const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
+  /**
+   * Seconds after a rotation in which the previous refresh token still refreshes instead of
+   * counting as stolen (a client that lost the response, or two tabs at once). 0 turns it off.
+   */
+  REFRESH_REUSE_GRACE_SECONDS: z.coerce.number().int().min(0).max(60).default(10),
   /** Secure by default; set `false` only for http://localhost (Safari drops secure cookies there). */
   COOKIE_SECURE: z.stringbool().default(true),
 });

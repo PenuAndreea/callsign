@@ -26,21 +26,50 @@ export class SessionsService {
 
   /**
    * Swaps a valid, unexpired token for the next one in one atomic write, and slides the expiry.
-   * Two concurrent refreshes with the same token: only one matches, the other gets `null`.
    *
-   * Reuse detection: if the token is the session's *previous* one, the real client already
-   * rotated past it, so someone else holds a copy. The whole session is revoked: the thief
-   * and the user are both logged out, and the user logs in again.
+   * Grace window (`graceMs` after a rotation): the *previous* token still refreshes. That is a
+   * client that never got the last response (a reload mid-refresh), or the loser of two
+   * concurrent refreshes with the same token. It gets a new token too; the window is not
+   * extended (`rotatedAt` and `previousTokenHash` stay), so an old token cannot be kept alive.
+   *
+   * Reuse detection, after the window: the previous token means the real client rotated past it
+   * long ago, so someone else holds a copy. The whole session is revoked: the thief and the
+   * user are both logged out, and the user logs in again.
    */
-  async rotate(currentHash: string, next: RefreshToken): Promise<SessionDocument | null> {
+  async rotate(
+    currentHash: string,
+    next: RefreshToken,
+    graceMs = 0,
+  ): Promise<SessionDocument | null> {
+    const now = new Date();
     const session = await this.sessionModel
       .findOneAndUpdate(
-        { tokenHash: currentHash, expiresAt: { $gt: new Date() } },
-        { tokenHash: next.hash, previousTokenHash: currentHash, expiresAt: next.expiresAt },
+        { tokenHash: currentHash, expiresAt: { $gt: now } },
+        {
+          tokenHash: next.hash,
+          previousTokenHash: currentHash,
+          rotatedAt: now,
+          expiresAt: next.expiresAt,
+        },
         { returnDocument: 'after' },
       )
       .exec();
     if (session) return session;
+
+    if (graceMs > 0) {
+      const retried = await this.sessionModel
+        .findOneAndUpdate(
+          {
+            previousTokenHash: currentHash,
+            rotatedAt: { $gt: new Date(now.getTime() - graceMs) },
+            expiresAt: { $gt: now },
+          },
+          { tokenHash: next.hash, expiresAt: next.expiresAt },
+          { returnDocument: 'after' },
+        )
+        .exec();
+      if (retried) return retried;
+    }
 
     const reused = await this.sessionModel
       .findOneAndDelete({ previousTokenHash: currentHash })
