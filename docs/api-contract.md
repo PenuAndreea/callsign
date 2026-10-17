@@ -102,7 +102,8 @@ type AuthResponse = {
 - **Tokens:** the access token is a JWT (~15 min). The refresh token is an opaque random string (32 bytes), stored as a SHA-256 hash.
 - **Sessions:** one per device. Login or register on one device never logs out another; logout ends only that device's session.
 - **Refresh token rotation:** every `/auth/refresh` issues a new refresh token, replaces the stored hash and moves the session's expiry 30 days forward (sliding). The API client must run only one refresh at a time; concurrent 401s wait for it.
-- **Reuse detection:** presenting a token that was already rotated away revokes that session (401, and the next refresh with the newer token is 401 too). It means someone else holds a copy, so the user logs in again. Side effect: a client that lost a refresh response and retries with the old token is logged out once.
+- **Grace window:** for `REFRESH_REUSE_GRACE_SECONDS` (default 10) after a rotation, the previous token still refreshes and gets a new token. That covers a client that lost the response (a reload mid-refresh) and two concurrent refreshes with the same token (two tabs). The window counts from the real rotation and retries do not extend it. The token in the lost response stops working (401, no revocation).
+- **Reuse detection:** after the window, presenting a token that was already rotated away revokes that session (401, and the next refresh with the newer token is 401 too). It means someone else holds a copy, so the user logs in again.
 - **Web cookie:** `refreshToken`, `httpOnly`, `sameSite=strict`, `path=/api/auth`, `secure` from env config (on in production). Requires web and API on the same site (Vite dev proxy locally).
 - **Rate limiting:** 10 requests/min per IP on each `/auth/*` route, 100/min everywhere else.
 - **`X-Client`:** a missing header means `web` (the token stays in the httpOnly cookie); any other value than `web` or `mobile` is a 400.

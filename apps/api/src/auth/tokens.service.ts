@@ -51,6 +51,11 @@ export class TokensService {
   }
 
   /** 32 random bytes: unguessable, so a fast SHA-256 is enough to store it (no argon2 needed). */
+  /** How long a rotated-away refresh token still refreshes (`REFRESH_REUSE_GRACE_SECONDS`). */
+  refreshReuseGraceMs(): number {
+    return this.config.get('REFRESH_REUSE_GRACE_SECONDS', { infer: true }) * 1000;
+  }
+
   createRefreshToken(): RefreshToken {
     const token = randomBytes(32).toString('base64url');
     const days = this.config.get('REFRESH_TOKEN_TTL_DAYS', { infer: true });

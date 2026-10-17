@@ -157,6 +157,7 @@ erDiagram
     ObjectId userId FK
     string tokenHash UK "SHA-256 of the refresh token"
     string previousTokenHash "reuse detection, nullable"
+    Date rotatedAt "start of the reuse grace window, nullable"
     Date expiresAt "sliding, TTL-deleted"
     string client "web or mobile"
     Date createdAt
@@ -203,7 +204,7 @@ erDiagram
 | sessions    | `{ tokenHash: 1 }` unique                                        | refresh, logout                                   |
 | sessions    | `{ userId: 1 }`                                                  | a user's devices                                  |
 | sessions    | `{ expiresAt: 1 }` TTL                                           | MongoDB deletes expired sessions                  |
-| sessions    | `{ previousTokenHash: 1 }` partial                               | reuse detection                                   |
+| sessions    | `{ previousTokenHash: 1 }` partial                               | reuse detection, grace retry                      |
 | rooms       | `{ name: 1 }` unique                                             | creating a net (duplicate check)                  |
 | memberships | `{ userId: 1, roomId: 1 }` unique                                | "my nets" (covered query), prevents joining twice |
 | memberships | `{ roomId: 1 }`                                                  | members of a net, socket room sync                |

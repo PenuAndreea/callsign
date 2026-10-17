@@ -61,7 +61,11 @@ export class AuthService {
   async refresh(refreshToken: string | undefined): Promise<IssuedTokens> {
     if (!refreshToken) throw unauthorized('Missing refresh token');
     const next = this.tokens.createRefreshToken();
-    const session = await this.sessions.rotate(this.tokens.hashRefreshToken(refreshToken), next);
+    const session = await this.sessions.rotate(
+      this.tokens.hashRefreshToken(refreshToken),
+      next,
+      this.tokens.refreshReuseGraceMs(),
+    );
     if (!session) throw unauthorized('Invalid or expired refresh token');
     const user = await this.users.findById(session.userId.toHexString());
     if (!user) throw unauthorized('User not found');

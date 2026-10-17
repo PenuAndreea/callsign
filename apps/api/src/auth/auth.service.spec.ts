@@ -29,6 +29,7 @@ const tokens = {
   signAccessToken: jest.fn(),
   createRefreshToken: jest.fn(),
   hashRefreshToken: jest.fn((token: string) => `hash(${token})`),
+  refreshReuseGraceMs: jest.fn(() => 10_000),
 };
 
 const auth = new AuthService(
@@ -104,7 +105,7 @@ describe('AuthService', () => {
 
       const issued = await auth.refresh('current');
 
-      expect(sessions.rotate).toHaveBeenCalledWith('hash(current)', nextToken);
+      expect(sessions.rotate).toHaveBeenCalledWith('hash(current)', nextToken, 10_000);
       expect(users.findById).toHaveBeenCalledWith(userDto.id);
       expect(issued).toEqual({ user: userDto, accessToken: 'access', refreshToken: nextToken });
     });
