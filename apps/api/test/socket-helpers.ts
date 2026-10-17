@@ -5,6 +5,7 @@ import type {
   ApiError,
   ClientToServerEvents,
   MessageDto,
+  RoomUpdatedEvent,
   SendMessageAck,
   SendMessageRequest,
   ServerToClientEvents,
@@ -80,6 +81,18 @@ export function collectMessages(socket: ClientSocket): MessageDto[] {
 /** Resolves on the next `message:new`. */
 export function nextMessage(socket: ClientSocket): Promise<MessageDto> {
   return new Promise((resolve) => socket.once('message:new', resolve));
+}
+
+/** Collects every `room:updated` a socket receives, in order. */
+export function collectRoomUpdates(socket: ClientSocket): RoomUpdatedEvent[] {
+  const received: RoomUpdatedEvent[] = [];
+  socket.on('room:updated', (room) => received.push(room));
+  return received;
+}
+
+/** Resolves on the next `room:updated`. */
+export function nextRoomUpdate(socket: ClientSocket): Promise<RoomUpdatedEvent> {
+  return new Promise((resolve) => socket.once('room:updated', resolve));
 }
 
 /** Lets in-flight socket events arrive before asserting that something did *not* happen. */

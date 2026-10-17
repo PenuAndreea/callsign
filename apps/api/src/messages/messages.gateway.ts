@@ -18,8 +18,8 @@ import { parseOrThrow } from '../common/pipes/zod-validation.pipe';
 import { MembershipsService } from '../memberships/memberships.service';
 import type { ChatServer, ChatSocket } from '../realtime/chat-server.types';
 import { authenticateSocket, joinRoomsOnConnect } from '../realtime/handshake';
+import { RealtimeService } from '../realtime/realtime.service';
 import { SlidingWindowLimiter } from '../realtime/sliding-window-limiter';
-import { netRoom } from '../realtime/socket-rooms';
 import { MessagesService } from './messages.service';
 
 /** `message:send` per socket: 5 messages in any 5 seconds. */
@@ -32,6 +32,7 @@ export const SEND_LIMIT = { limit: 5, windowMs: 5000 };
  */
 @WebSocketGateway()
 export class MessagesGateway implements OnGatewayInit<ChatServer>, OnGatewayDisconnect<ChatSocket> {
+  /** For inspecting sockets (tests). Emit and move sockets through `RealtimeService`. */
   @WebSocketServer()
   readonly server!: ChatServer;
 
@@ -42,10 +43,12 @@ export class MessagesGateway implements OnGatewayInit<ChatServer>, OnGatewayDisc
     private readonly tokens: TokensService,
     private readonly memberships: MembershipsService,
     private readonly messages: MessagesService,
+    private readonly realtime: RealtimeService,
   ) {}
 
   /** Handshake middleware runs in order, before a socket counts as connected. */
   afterInit(server: ChatServer): void {
+    this.realtime.attach(server);
     server.use(authenticateSocket(this.tokens));
     server.use(joinRoomsOnConnect(this.memberships));
   }
@@ -79,6 +82,6 @@ export class MessagesGateway implements OnGatewayInit<ChatServer>, OnGatewayDisc
     }
     // Saved: from here on the send has succeeded, whatever happens to the broadcast.
     ack?.({ ok: true, message });
-    this.server.to(netRoom(message.roomId)).emit('message:new', message);
+    this.realtime.broadcastMessage(message);
   }
 }

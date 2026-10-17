@@ -146,7 +146,8 @@ io(API_URL, { auth: { token: accessToken } });
 - During the handshake (so before the client sees `connect`), the server joins the socket to:
   - `user:<userId>` first, for events aimed at all of one user's devices
   - `room:<roomId>` for every net the user is a member of
-- **Membership stays in sync on the server:** when the REST join or leave succeeds, the service calls `server.in('user:<userId>').socketsJoin('room:<roomId>')` (or `socketsLeave`). Clients never send join or leave events.
+- **Membership stays in sync on the server:** every REST join or leave (creating a net too) calls `server.in('user:<userId>').socketsJoin('room:<roomId>')` (or `socketsLeave`), so all of that user's open sockets start or stop receiving the net, without reconnecting. Clients never send join or leave events. This also runs on a repeated join or leave, which repairs a socket that missed an earlier sync.
+- **`room:updated`** goes out only when the member count really changed: after a join to the whole net, the joiner's sockets included (they are moved in first); after a leave to the remaining members only (the leaver's sockets are moved out first). The leaver's other devices learn about it when they refetch the nets list.
 - The token is only checked at the handshake. An open connection survives the access token expiring; the next reconnect needs a fresh token.
 - **Known gap (accepted for v1):** if a leave over REST lands in the moment between a connecting socket reading its nets and joining their rooms, that socket still joins the net it just left (`socketsLeave` ran before it was in the room). Until it reconnects it keeps **receiving** that net's `message:new`; sending and history are still refused, because both check `memberships`. Nets are public, so nothing private leaks. If private nets ever exist, re-read the memberships after the joins and leave any room no longer listed.
 - Socket.IO does not replay events missed while disconnected. On reconnect the client invalidates the open chat's messages query so the latest page is refetched.
@@ -165,7 +166,7 @@ interface ClientToServerEvents {
 
 interface ServerToClientEvents {
   'message:new': (message: MessageDto) => void; // to room:<roomId>, sender included
-  'room:updated': (room: { id: string; memberCount: number }) => void; // to room:<roomId> on join/leave
+  'room:updated': (room: { id: string; memberCount: number }) => void; // to room:<roomId> when a join/leave changes the count
 }
 ```
 

@@ -11,6 +11,7 @@ import { isDuplicateKeyError } from '../common/mongo/is-duplicate-key-error';
 import { decodeCursor } from '../common/pagination/cursor';
 import { pageFetchLimit, toPage } from '../common/pagination/to-page';
 import { MembershipsService } from '../memberships/memberships.service';
+import { RealtimeService } from '../realtime/realtime.service';
 import { toMessagePreview } from './message-preview';
 import type { RoomDocument, RoomLastMessage } from './room.schema';
 import { Room } from './room.schema';
@@ -30,6 +31,7 @@ export class RoomsService {
   constructor(
     @InjectModel(Room.name) private readonly roomModel: Model<Room>,
     private readonly memberships: MembershipsService,
+    private readonly realtime: RealtimeService,
   ) {}
 
   /**
@@ -87,29 +89,44 @@ export class RoomsService {
   }
 
   /**
-   * Idempotent: joining a net you are already in returns it unchanged.
+   * Idempotent: joining a net you are already in returns it unchanged. Moves every socket of
+   * the user into the net, then tells the net's sockets (the joiner's too) the new count.
    * @throws ApiException 404 `NOT_FOUND`
    */
   async join(userId: string, roomId: string): Promise<RoomDto> {
     const room = await this.findRoom(roomId);
-    if (!(await this.memberships.add(userId, room.id))) return toRoomDto(room, true);
+    const added = await this.memberships.add(userId, room.id);
+    // Also on a repeated join: cheap, and repairs a socket that missed an earlier sync.
+    this.realtime.joinUserToNet(userId, room.id);
+    if (!added) return toRoomDto(room, true);
 
     const updated = await this.roomModel
       .findByIdAndUpdate(room._id, { $inc: { memberCount: 1 } }, { returnDocument: 'after' })
       .exec();
     if (!updated) throw netNotFound();
+    this.realtime.broadcastRoomUpdate({ id: updated.id, memberCount: updated.memberCount });
     return toRoomDto(updated, true);
   }
 
   /**
    * Idempotent: leaving a net you are not in is a no-op. The net is kept when the last
-   * member leaves (0 members, still listed under "Open to join").
+   * member leaves (0 members, still listed under "Open to join"). Takes every socket of the
+   * user out of the net, then tells the remaining members the new count.
    * @throws ApiException 404 `NOT_FOUND`
    */
   async leave(userId: string, roomId: string): Promise<void> {
     const room = await this.findRoom(roomId);
-    if (!(await this.memberships.remove(userId, room.id))) return;
-    await this.roomModel.updateOne({ _id: room._id }, { $inc: { memberCount: -1 } }).exec();
+    const removed = await this.memberships.remove(userId, room.id);
+    // Also on a repeated leave: repairs a socket still in a net the user is not in.
+    this.realtime.removeUserFromNet(userId, room.id);
+    if (!removed) return;
+
+    const updated = await this.roomModel
+      .findByIdAndUpdate(room._id, { $inc: { memberCount: -1 } }, { returnDocument: 'after' })
+      .exec();
+    if (updated) {
+      this.realtime.broadcastRoomUpdate({ id: updated.id, memberCount: updated.memberCount });
+    }
   }
 
   /**
