@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import type { ExtendedError } from 'socket.io';
 
-import { toApiError } from '../common/errors/to-api-error';
+import { toLoggedApiError } from '../common/errors/to-logged-api-error';
 import type { ChatMiddleware, ChatSocket } from './chat-server.types';
 
 const logger = new Logger('SocketHandshake');
@@ -17,10 +17,7 @@ export function toSocketMiddleware(step: (socket: ChatSocket) => Promise<void>):
     step(socket).then(
       () => next(),
       (error: unknown) => {
-        const apiError = toApiError(error);
-        if (apiError.statusCode >= 500) {
-          logger.error(error instanceof Error ? (error.stack ?? error.message) : error);
-        }
+        const apiError = toLoggedApiError(error, logger);
         const refusal: ExtendedError = Object.assign(new Error(apiError.code), { data: apiError });
         next(refusal);
       },

@@ -1,7 +1,14 @@
 import type { AddressInfo } from 'node:net';
 
 import type { INestApplication } from '@nestjs/common';
-import type { ApiError, ClientToServerEvents, ServerToClientEvents } from '@callsign/types';
+import type {
+  ApiError,
+  ClientToServerEvents,
+  MessageDto,
+  SendMessageAck,
+  SendMessageRequest,
+  ServerToClientEvents,
+} from '@callsign/types';
 import type { Socket } from 'socket.io-client';
 import { io } from 'socket.io-client';
 
@@ -42,7 +49,40 @@ export class SocketClients {
     });
   }
 
+  /** Opens a socket for a station and waits until it is connected. */
+  connectAs(token: string): Promise<ClientSocket> {
+    return this.connect({ token });
+  }
+
   closeAll(): void {
     for (const socket of this.sockets.splice(0)) socket.close();
   }
+}
+
+/** Emits `message:send` and resolves with the ack (fails the test after 2 s without one). */
+export function sendMessage(socket: ClientSocket, payload: unknown): Promise<SendMessageAck> {
+  // Payloads in tests are often deliberately invalid, so they are typed `unknown` here.
+  return socket.timeout(2000).emitWithAck('message:send', payload as SendMessageRequest);
+}
+
+/** Emits with no callback at all, which the typed `emit` does not allow (the ack is required there). */
+export function emitWithoutAck(socket: ClientSocket, event: string, payload: unknown): void {
+  (socket as unknown as { emit: (event: string, payload: unknown) => void }).emit(event, payload);
+}
+
+/** Collects every `message:new` a socket receives, in order. */
+export function collectMessages(socket: ClientSocket): MessageDto[] {
+  const received: MessageDto[] = [];
+  socket.on('message:new', (message) => received.push(message));
+  return received;
+}
+
+/** Resolves on the next `message:new`. */
+export function nextMessage(socket: ClientSocket): Promise<MessageDto> {
+  return new Promise((resolve) => socket.once('message:new', resolve));
+}
+
+/** Lets in-flight socket events arrive before asserting that something did *not* happen. */
+export function settle(ms = 100): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

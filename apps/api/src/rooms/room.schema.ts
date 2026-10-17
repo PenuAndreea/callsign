@@ -4,10 +4,17 @@ import type { HydratedDocument, Types } from 'mongoose';
 
 import { User } from '../users/user.schema';
 
-/** Denormalized preview of the newest message, for the nets list. Written by the messages service (M4). */
+/** Denormalized preview of the newest message, for the nets list. Written by `RoomsService.recordLastMessage`. */
 @Schema({ _id: false })
 export class RoomLastMessage {
-  /** Cut to ~80 characters: a preview, not the message. */
+  /**
+   * The message this preview shows. Only a newer message (higher id) may replace it, so two
+   * sends that finish out of order never leave the older one as the preview.
+   */
+  @Prop({ type: SchemaTypes.ObjectId, required: true })
+  messageId!: Types.ObjectId;
+
+  /** Cut to 80 characters: a preview, not the message. */
   @Prop({ type: String, required: true })
   content!: string;
 

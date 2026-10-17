@@ -148,6 +148,7 @@ io(API_URL, { auth: { token: accessToken } });
   - `room:<roomId>` for every net the user is a member of
 - **Membership stays in sync on the server:** when the REST join or leave succeeds, the service calls `server.in('user:<userId>').socketsJoin('room:<roomId>')` (or `socketsLeave`). Clients never send join or leave events.
 - The token is only checked at the handshake. An open connection survives the access token expiring; the next reconnect needs a fresh token.
+- **Known gap (accepted for v1):** if a leave over REST lands in the moment between a connecting socket reading its nets and joining their rooms, that socket still joins the net it just left (`socketsLeave` ran before it was in the room). Until it reconnects it keeps **receiving** that net's `message:new`; sending and history are still refused, because both check `memberships`. Nets are public, so nothing private leaks. If private nets ever exist, re-read the memberships after the joins and leave any room no longer listed.
 - Socket.IO does not replay events missed while disconnected. On reconnect the client invalidates the open chat's messages query so the latest page is refetched.
 
 ### Events
@@ -168,9 +169,10 @@ interface ServerToClientEvents {
 }
 ```
 
-- **`message:send` flow:** validate payload → check membership (else `NOT_A_MEMBER`) → save the message with `senderId` and `senderCallsign` from the socket's token → update `rooms.lastMessage` → ack the sender → broadcast `message:new` to `room:<roomId>`.
-- The sender receives both the ack and `message:new`; the client deduplicates by message `id`.
-- Rate limit `message:send` per socket (e.g. 5 messages per 5 seconds) → ack with `RATE_LIMITED`.
+- **`message:send` flow:** rate limit (5 messages in any 5 seconds per socket, else `RATE_LIMITED`) → validate the payload with `sendMessageRequestSchema` (else `VALIDATION_FAILED`) → check membership in the database (else `NOT_A_MEMBER`, also for a net that does not exist) → save the message with `senderId` and `senderCallsign` from the socket's token (any sender in the payload is ignored) → update `rooms.lastMessage` → ack the sender → broadcast `message:new` to `room:<roomId>`.
+- **The preview update** sets `lastMessage` only if the room has none or holds an older message (compared by message id, in one atomic update), so sends that finish out of order keep the newest preview. It is best effort: once the message is saved the send has succeeded, so a failed preview write is logged and the ack is still `ok`. The preview is cut to 80 characters (code points), ending in `…`.
+- The sender receives the ack first, then `message:new` like every other member's socket; the client deduplicates by message `id`. A client may emit without an ack callback; the message is still saved and broadcast.
+- Errors in the ack use the same `ApiError` shape and codes as REST; unexpected failures are `INTERNAL_ERROR` with details only in the server log.
 
 ### Optional: typing indicator
 

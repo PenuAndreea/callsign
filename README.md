@@ -168,7 +168,7 @@ erDiagram
     string name UK "lowercase, 3 to 30 chars"
     ObjectId createdBy FK
     number memberCount "kept in sync on join and leave"
-    object lastMessage "content, senderId, createdAt"
+    object lastMessage "messageId, content, senderId, createdAt"
     Date createdAt
     Date updatedAt
   }

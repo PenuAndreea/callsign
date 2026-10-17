@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import type { Page, RoomDto, RoomsQuery } from '@callsign/types';
 import { roomNameSchema } from '@callsign/types';
 import type { QueryFilter } from 'mongoose';
+import type { Types } from 'mongoose';
 import { isObjectIdOrHexString, Model } from 'mongoose';
 
 import { ApiException } from '../common/errors/api.exception';
@@ -10,13 +11,14 @@ import { isDuplicateKeyError } from '../common/mongo/is-duplicate-key-error';
 import { decodeCursor } from '../common/pagination/cursor';
 import { pageFetchLimit, toPage } from '../common/pagination/to-page';
 import { MembershipsService } from '../memberships/memberships.service';
-import type { RoomDocument } from './room.schema';
+import { toMessagePreview } from './message-preview';
+import type { RoomDocument, RoomLastMessage } from './room.schema';
 import { Room } from './room.schema';
 import { netNotFound } from './net-not-found';
 import { toRoomDto } from './rooms.mapper';
 
 /**
- * Nets: create, list, read, join, leave. Owns `memberCount`: it changes only when
+ * Nets: create, list, read, join, leave, and the last-message preview. Owns `memberCount`: it changes only when
  * `MembershipsService` reports that a row was really added or removed.
  *
  * Known trade-off: the membership write and the `$inc` are two writes, not one transaction
@@ -108,6 +110,40 @@ export class RoomsService {
     const room = await this.findRoom(roomId);
     if (!(await this.memberships.remove(userId, room.id))) return;
     await this.roomModel.updateOne({ _id: room._id }, { $inc: { memberCount: -1 } }).exec();
+  }
+
+  /**
+   * Sets the net's preview to this message, unless a newer one is already there. The filter
+   * and the write are one atomic `updateOne`, so two sends finishing out of order cannot
+   * overwrite the newer preview with the older one. ObjectIds grow with time, so "newer"
+   * is a plain id comparison (no ties, unlike `createdAt`).
+   * @returns whether the preview changed.
+   */
+  async recordLastMessage(message: {
+    messageId: Types.ObjectId;
+    roomId: Types.ObjectId;
+    senderId: Types.ObjectId;
+    content: string;
+    createdAt: Date;
+  }): Promise<boolean> {
+    const { messageId, roomId, senderId, content, createdAt } = message;
+    const lastMessage: RoomLastMessage = {
+      messageId,
+      senderId,
+      content: toMessagePreview(content),
+      createdAt,
+    };
+    const { modifiedCount } = await this.roomModel
+      .updateOne(
+        {
+          _id: roomId,
+          // `null` also matches a room created before the field existed.
+          $or: [{ lastMessage: null }, { 'lastMessage.messageId': { $lt: messageId } }],
+        },
+        { $set: { lastMessage } },
+      )
+      .exec();
+    return modifiedCount === 1;
   }
 
   /** A malformed id is a 404 too: an id that cannot exist does not exist. */
