@@ -23,3 +23,7 @@ export type {
   SocketFactory,
 } from './realtime/realtime.types';
 export { useRealtimeStatus } from './realtime/useRealtimeStatus';
+export type { ChatEntry, PendingMessage } from './messages/messages.types';
+export { useNetMessages } from './messages/useNetMessages';
+export type { SendMessageActions } from './messages/useSendMessage';
+export { useSendMessage } from './messages/useSendMessage';
