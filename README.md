@@ -38,6 +38,25 @@ pnpm db:up
 
 Starts MongoDB 8 in Docker on `localhost:27017` and waits until it is healthy. Data is kept in a Docker volume. `pnpm db:down` stops it and keeps the data.
 
+#### Viewing the data
+
+With the database running, open a shell on the `callsign` database (the container ships `mongosh`, nothing to install):
+
+```bash
+docker compose exec mongo mongosh callsign
+```
+
+| What                          | Command                                         |
+| ----------------------------- | ----------------------------------------------- |
+| list the collections          | `show collections`                              |
+| stations (without the hashes) | `db.users.find({}, { passwordHash: 0 })`        |
+| nets                          | `db.rooms.find()`                               |
+| who is in which net           | `db.memberships.find()`                         |
+| the 5 newest messages         | `db.messages.find().sort({ _id: -1 }).limit(5)` |
+| indexes of a collection       | `db.messages.getIndexes()`                      |
+
+`exit` leaves the shell. For a GUI, install [MongoDB Compass](https://www.mongodb.com/products/tools/compass) (`brew install --cask mongodb-compass`) and connect to `mongodb://localhost:27017`. It also shows each collection's indexes and query plans (Explain).
+
 ### API
 
 ```bash
@@ -149,7 +168,7 @@ erDiagram
     string name UK "lowercase, 3 to 30 chars"
     ObjectId createdBy FK
     number memberCount "kept in sync on join and leave"
-    object lastMessage "content, senderId, createdAt"
+    object lastMessage "messageId, content, senderId, createdAt"
     Date createdAt
     Date updatedAt
   }

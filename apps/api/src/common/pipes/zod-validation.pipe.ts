@@ -14,6 +14,21 @@ function formatIssues(error: z.ZodError): string {
 }
 
 /**
+ * Parses with a shared schema and returns the normalized value.
+ * @throws ApiException 400 `VALIDATION_FAILED` listing the failing fields.
+ */
+export function parseOrThrow<TSchema extends z.ZodType>(
+  schema: TSchema,
+  value: unknown,
+): z.output<TSchema> {
+  const result = schema.safeParse(value);
+  if (!result.success) {
+    throw new ApiException(HttpStatus.BAD_REQUEST, 'VALIDATION_FAILED', formatIssues(result.error));
+  }
+  return result.data;
+}
+
+/**
  * Validates with a shared schema and returns the *parsed* value (trimmed, lowercased, defaulted),
  * so handlers only ever see normalized data. Usage: `@Body(new ZodValidationPipe(loginRequestSchema))`.
  */
@@ -24,14 +39,6 @@ export class ZodValidationPipe<TSchema extends z.ZodType> implements PipeTransfo
   constructor(private readonly schema: TSchema) {}
 
   transform(value: unknown): z.output<TSchema> {
-    const result = this.schema.safeParse(value);
-    if (!result.success) {
-      throw new ApiException(
-        HttpStatus.BAD_REQUEST,
-        'VALIDATION_FAILED',
-        formatIssues(result.error),
-      );
-    }
-    return result.data;
+    return parseOrThrow(this.schema, value);
   }
 }

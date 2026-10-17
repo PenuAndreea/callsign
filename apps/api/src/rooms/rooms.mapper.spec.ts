@@ -19,8 +19,9 @@ describe('toRoomDto', () => {
     });
   });
 
-  it('maps the last message preview and leaves the sender id out', () => {
+  it('maps the last message preview and leaves the message and sender ids out', () => {
     const lastMessage = {
+      messageId: new Types.ObjectId(),
       content: 'Radio check. Over.',
       senderId: new Types.ObjectId(),
       createdAt: new Date('2026-10-15T22:14:00.000Z'),

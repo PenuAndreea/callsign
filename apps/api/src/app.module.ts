@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { minutes, ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { minutes, ThrottlerModule } from '@nestjs/throttler';
 
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ApiExceptionFilter } from './common/errors/api-exception.filter';
+import { HttpThrottlerGuard } from './common/throttling/http-throttler.guard';
 import { validateEnv } from './config/validate-env';
 import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health/health.controller';
+import { MessagesModule } from './messages/messages.module';
 import { RoomsModule } from './rooms/rooms.module';
 
 @Module({
@@ -23,13 +25,14 @@ import { RoomsModule } from './rooms/rooms.module';
     }),
     AuthModule,
     RoomsModule,
+    MessagesModule,
   ],
   controllers: [HealthController],
   providers: [
     // Registered through DI (not `app.useGlobal*`), so e2e tests get them from the module too.
     // Global guards run in this order: throttle first, so unauthenticated floods are cut off
     // before any token work.
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: HttpThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
   ],
