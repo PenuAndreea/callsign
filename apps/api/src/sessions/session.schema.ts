@@ -24,6 +24,13 @@ export class Session {
   @Prop({ type: String, default: null })
   previousTokenHash!: string | null;
 
+  /**
+   * When `previousTokenHash` was rotated away. Within the grace window after it, presenting the
+   * previous token refreshes again instead of revoking (`SessionsService.rotate`).
+   */
+  @Prop({ type: Date, default: null })
+  rotatedAt!: Date | null;
+
   /** Sliding: every refresh moves it forward. MongoDB deletes the row once it passes (TTL index). */
   @Prop({ type: Date, required: true })
   expiresAt!: Date;
@@ -43,7 +50,8 @@ export const SessionSchema = SchemaFactory.createForClass(Session);
 // TTL index: a background job in MongoDB deletes rows whose `expiresAt` has passed (it runs
 // about once a minute, so queries still filter on `expiresAt` themselves).
 SessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-// Reuse detection looks sessions up by the previous hash. Partial: most rows start with `null`.
+// Reuse detection and the grace retry look sessions up by the previous hash. Partial: most rows
+// start with `null`.
 SessionSchema.index(
   { previousTokenHash: 1 },
   { partialFilterExpression: { previousTokenHash: { $type: 'string' } } },

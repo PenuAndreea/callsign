@@ -5,7 +5,10 @@ import type { Message } from './message.schema';
 
 /** Document → API shape. The sender is built from the stored copy, without a user lookup. */
 export function toMessageDto(
-  message: Pick<Message, 'roomId' | 'senderId' | 'senderCallsign' | 'content' | 'createdAt'> & {
+  message: Pick<
+    Message,
+    'roomId' | 'senderId' | 'senderCallsign' | 'content' | 'clientMessageId' | 'createdAt'
+  > & {
     _id: Types.ObjectId;
   },
 ): MessageDto {
@@ -14,6 +17,8 @@ export function toMessageDto(
     roomId: message.roomId.toHexString(),
     sender: { id: message.senderId.toHexString(), callsign: message.senderCallsign },
     content: message.content,
+    // Left out, not `undefined`, when the send had no key.
+    ...(message.clientMessageId !== undefined && { clientMessageId: message.clientMessageId }),
     createdAt: message.createdAt.toISOString(),
   };
 }

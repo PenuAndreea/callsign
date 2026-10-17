@@ -1,8 +1,11 @@
 import type { INestApplication } from '@nestjs/common';
+import { getModelToken } from '@nestjs/mongoose';
+import type { Model } from 'mongoose';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 
 import { CREDENTIALS, refreshCookie, register, setCookies } from './auth-helpers';
+import { Session } from '../src/sessions/session.schema';
 import { clearDatabase, createTestApp } from './create-test-app';
 
 describe('Auth: sessions (e2e)', () => {
@@ -18,6 +21,13 @@ describe('Auth: sessions (e2e)', () => {
     await clearDatabase(app);
     await app.close();
   });
+
+  /** Moves every rotation a minute into the past, beyond the reuse grace window. */
+  const ageRotations = () =>
+    app
+      .get<Model<Session>>(getModelToken(Session.name))
+      .updateMany({}, { rotatedAt: new Date(Date.now() - 60_000) })
+      .exec();
 
   describe('mobile (refresh token in the body)', () => {
     const refresh = (refreshToken: string) =>
@@ -37,11 +47,42 @@ describe('Auth: sessions (e2e)', () => {
     it('reuse of an old token revokes the session (stolen-token defense)', async () => {
       const { body } = await register(server);
       const current = nextToken(await refresh(body.refreshToken ?? '').expect(200));
+      await ageRotations();
 
       // Someone replays the token the client already rotated away from...
       await refresh(body.refreshToken ?? '').expect(401);
       // ...so the session is gone, for the real client too.
       await refresh(current).expect(401);
+    });
+
+    it('a retry with the previous token right after a rotation still refreshes (lost response)', async () => {
+      const { body } = await register(server);
+      // The client never received this response (a reload mid-refresh)...
+      const lost = nextToken(await refresh(body.refreshToken ?? '').expect(200));
+      // ...so it retries with the token it still has, inside the grace window.
+      const recovered = nextToken(await refresh(body.refreshToken ?? '').expect(200));
+
+      expect(recovered).not.toBe(lost);
+      await refresh(recovered).expect(200);
+    });
+
+    it('the token of the lost response no longer works, but does not revoke', async () => {
+      const { body } = await register(server);
+      const lost = nextToken(await refresh(body.refreshToken ?? '').expect(200));
+      const recovered = nextToken(await refresh(body.refreshToken ?? '').expect(200));
+
+      await refresh(lost).expect(401);
+      await refresh(recovered).expect(200);
+    });
+
+    it('the grace window is not extended by retries', async () => {
+      const { body } = await register(server);
+      await refresh(body.refreshToken ?? '').expect(200);
+      await refresh(body.refreshToken ?? '').expect(200);
+      await ageRotations();
+
+      // Past the window measured from the real rotation: reuse detection again.
+      await refresh(body.refreshToken ?? '').expect(401);
     });
 
     it('a login on another device keeps the first one logged in', async () => {

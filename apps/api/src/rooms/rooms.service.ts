@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Page, RoomDto, RoomsQuery } from '@callsign/types';
-import { roomNameSchema } from '@callsign/types';
+import { roomNameSchema, toMessagePreview } from '@callsign/types';
 import type { QueryFilter } from 'mongoose';
 import type { Types } from 'mongoose';
 import { isObjectIdOrHexString, Model } from 'mongoose';
@@ -12,7 +12,6 @@ import { decodeCursor } from '../common/pagination/cursor';
 import { pageFetchLimit, toPage } from '../common/pagination/to-page';
 import { MembershipsService } from '../memberships/memberships.service';
 import { RealtimeService } from '../realtime/realtime.service';
-import { toMessagePreview } from './message-preview';
 import type { RoomDocument, RoomLastMessage } from './room.schema';
 import { Room } from './room.schema';
 import { netNotFound } from './net-not-found';

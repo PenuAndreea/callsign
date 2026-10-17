@@ -4,6 +4,39 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+## 0.6.0 (M5: frontend integration)
+
+- feat(mobile): real app on Expo Router (Stack.Protected auth and app groups, splash until the session is known), secure-store refresh token, emulator API URLs, AppState focus
+- feat(screens): safe-area insets and keyboard avoidance in the form, nets and chat screens; next key moves between fields; passphrases never auto-capitalized
+- feat(ui): Input forwards its ref to the TextInput
+- feat(hooks): socket factory options (websocket-only on React Native); focusManager re-export
+- chore(config): alias react-native-safe-area-context to its ES build for Vite and Vitest
+
+- feat(web): split layout (nets sidebar next to the chat from 900 px, stacked below) and the chat route
+- feat(screens): ChatScreen (inverted history with older pages, pending and failed sends with Retry, join offer, live traffic)
+- feat(hooks): useNetMessages and useSendMessage with pending sends, idempotent retry and live insert into the history
+- feat(ui): delivery status on ChatBubble; sizes.sidebar and breakpoints.split tokens
+
+- feat(api): refresh reuse grace window (REFRESH_REUSE_GRACE_SECONDS, default 10): the previous token still refreshes right after a rotation instead of revoking the session
+
+- feat(hooks): realtime socket per signed-in session (token per handshake, refresh on a refused handshake, catch-up after reconnects), live preview and member count in the cache, useRealtimeStatus, Socket.IO test server
+- refactor(types): toMessagePreview moves from the API to the shared types, for the apps' live previews
+
+- feat(web): nets list, new net and a temporary net page with Leave (/nets/new, /nets/:netId)
+- feat(screens): NetsScreen (joined and open sections, paged, join opens the net) and NewNetScreen; FormLayout, formErrorExcept, stationsLabel
+- feat(ui): trailingLabel on RoomListItem, so a trailing count is part of the row's accessible name
+- feat(hooks): nets hooks (useNets, useNet, useCreateNet, useJoinNet, useLeaveNet) with netKeys and net fixtures
+
+- feat(web): routes with SessionGate, GuestOnly and RequireAuth, sign in and register through the shared screens, Web Locks platform, temporary home with log out
+- feat(screens): screens package with SignInScreen, RegisterScreen, UnreachableScreen, RestoringScreen, react-hook-form helpers (useZodForm, FormInput, FormError) and error copy
+- feat(hooks): @callsign/hooks/testing entry (MSW server, fixtures, test clients) shared by the packages that test against the API
+- feat(ui): trailing icon on Button; sizes.form token for the auth column
+- feat(types): field messages on the callsign, passphrase and net name schemas
+
+- feat(hooks): session store (restore on start, unreachable state, sign in/out with cache clear), useSession, useLogin, useRegister, useLogout; client logout and stale-refresh guard; rename CallsignProvider → ApiProvider, CallsignPlatform → ApiPlatform
+- feat(hooks): hooks package with CallsignProvider (injected platform), typed fetch client (Zod-parsed responses, ApiClientError, single-flight refresh with one retry) and query defaults
+- feat(api): idempotent message:send with an optional clientMessageId (unique partial index, retry acks the saved message without a rebroadcast)
+
 ## 0.5.0 (M4: messages and realtime)
 
 - feat(api): RealtimeService; REST join/leave moves the user's open sockets and sends room:updated with the new member count

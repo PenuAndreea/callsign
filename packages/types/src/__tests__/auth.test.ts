@@ -147,3 +147,19 @@ describe('registerFormSchema', () => {
     expect(result.error?.issues[0]?.path).toEqual(['confirmPassphrase']);
   });
 });
+
+describe('field messages (shown under form fields)', () => {
+  const firstMessage = (result: { error?: { issues: { message: string }[] } }) =>
+    result.error?.issues[0]?.message;
+
+  it('gives the callsign length rule', () => {
+    expect(firstMessage(callsignSchema.safeParse('ab'))).toBe('At least 3 characters');
+    expect(firstMessage(callsignSchema.safeParse('a'.repeat(21)))).toBe('At most 20 characters');
+  });
+
+  it('gives the passphrase rules for register and login', () => {
+    expect(firstMessage(passphraseSchema.safeParse('short'))).toBe('At least 8 characters');
+    const login = loginRequestSchema.safeParse({ callsign: 'wolf-2', passphrase: '' });
+    expect(firstMessage(login)).toBe('Enter your passphrase');
+  });
+});

@@ -11,6 +11,7 @@ export function ChatBubble({
   senderCallsign,
   sentAt,
   own = false,
+  status,
   style,
 }: ChatBubbleProps) {
   const styles = useChatBubbleStyles();
@@ -23,7 +24,7 @@ export function ChatBubble({
         {content}
       </Text>
       <Text variant="meta" tone={own ? 'bubbleOutMeta' : 'textMuted'} style={own && styles.ownTime}>
-        {time}
+        {status === undefined ? time : `${time} · ${status}`}
       </Text>
     </View>
   );

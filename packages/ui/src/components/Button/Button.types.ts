@@ -1,5 +1,7 @@
 import type { PressableProps, StyleProp, ViewStyle } from 'react-native';
 
+import type { IconName } from '../Icon/Icon.types';
+
 export type ButtonVariant = 'primary' | 'secondary' | 'link';
 
 export interface ButtonProps extends Omit<PressableProps, 'children' | 'style' | 'disabled'> {
@@ -8,6 +10,8 @@ export interface ButtonProps extends Omit<PressableProps, 'children' | 'style' |
   /** `primary`: filled with a halo; `secondary`: outline; `link`: underlined meta text. */
   variant?: ButtonVariant;
   disabled?: boolean;
+  /** Decorative glyph after the label, e.g. `arrowRight` on "Report in". Hidden from screen readers. */
+  icon?: IconName;
   /** Shows a spinner in place of the label and blocks presses. */
   loading?: boolean;
   /** Layout only (margins, alignment); colors come from the variant. */

@@ -36,6 +36,22 @@ describe('RoomListItem', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it('adds the trailing label to the accessible name', () => {
+    renderWithTheme(
+      <RoomListItem
+        name="Flight ops"
+        joined
+        trailing={<Text variant="meta">4</Text>}
+        trailingLabel="4 stations"
+        onPress={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole('button', { name: 'Flight ops, joined, 4 stations' }),
+    ).toBeInTheDocument();
+  });
+
   it('is not a button without onPress, so a trailing Join button does not nest', () => {
     renderWithTheme(
       <RoomListItem

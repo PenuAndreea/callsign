@@ -1,3 +1,5 @@
+import { createRef } from 'react';
+import type { TextInput } from 'react-native';
 import { darkColors, lightColors } from '@callsign/theme';
 import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -68,5 +70,13 @@ describe('Input', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Callsign taken');
     expect(screen.getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByRole('textbox')).toHaveStyle({ borderColor: lightColors.danger });
+  });
+
+  it('passes its ref to the field, so another field can focus it', () => {
+    const ref = createRef<TextInput>();
+    renderWithTheme(<Input label="Passphrase" ref={ref} />);
+
+    ref.current?.focus();
+    expect(screen.getByLabelText('Passphrase')).toHaveFocus();
   });
 });

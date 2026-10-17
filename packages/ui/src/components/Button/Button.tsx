@@ -1,11 +1,15 @@
 import { ActivityIndicator } from 'react-native';
 
 import { useTheme } from '../../theme/useTheme';
+import { Icon } from '../Icon/Icon';
 import { PressableBase } from '../PressableBase/PressableBase';
 import { Text } from '../Text/Text';
 import type { TextTone, TextVariant } from '../Text/Text.types';
 import { useButtonStyles } from './Button.styles';
 import type { ButtonProps, ButtonVariant } from './Button.types';
+
+/** Matches the button label's cap height. */
+const ICON_SIZE = 20;
 
 const labelProps: Record<ButtonVariant, { variant: TextVariant; tone: TextTone }> = {
   primary: { variant: 'button', tone: 'onPrimary' },
@@ -16,6 +20,7 @@ const labelProps: Record<ButtonVariant, { variant: TextVariant; tone: TextTone }
 export function Button({
   label,
   variant = 'primary',
+  icon,
   disabled = false,
   loading = false,
   style,
@@ -45,9 +50,12 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={colors[tone]} />
       ) : (
-        <Text {...labelProps[variant]} style={variant === 'link' && styles.linkLabel}>
-          {label}
-        </Text>
+        <>
+          <Text {...labelProps[variant]} style={variant === 'link' && styles.linkLabel}>
+            {label}
+          </Text>
+          {icon && <Icon name={icon} size={ICON_SIZE} tone={tone} testID="button-icon" />}
+        </>
       )}
     </PressableBase>
   );

@@ -10,6 +10,11 @@ export interface RoomListItemProps {
   preview?: string;
   /** Right-hand slot: a member count, or a Join button for open nets. */
   trailing?: ReactNode;
+  /**
+   * Spoken part of a `trailing` that is not a control, e.g. "4 stations" for a bare count.
+   * Joins the row's accessible name, which otherwise skips the trailing slot.
+   */
+  trailingLabel?: string;
   /** Highlighted row (the open net in the web sidebar). */
   selected?: boolean;
   /**

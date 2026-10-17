@@ -11,6 +11,7 @@ import { SessionsModule } from '../src/sessions/sessions.module';
 import { SessionsService } from '../src/sessions/sessions.service';
 
 const HOUR_MS = 60 * 60 * 1000;
+const GRACE_MS = 10_000;
 
 /** A token whose hash is `name` (hashing is TokensService's job; here only the hash matters). */
 function token(name: string, expiresInMs = HOUR_MS): RefreshToken {
@@ -68,12 +69,44 @@ describe('SessionsService (Mongo)', () => {
       expect(rotated?.expiresAt).toEqual(next.expiresAt);
     });
 
-    it('lets only one of two concurrent rotations win', async () => {
+    it('lets only one of two concurrent rotations win without a grace window', async () => {
       const results = await Promise.all([
         sessions.rotate('t1', token('a')),
         sessions.rotate('t1', token('b')),
       ]);
       expect(results.filter((session) => session !== null)).toHaveLength(1);
+    });
+
+    it('lets both concurrent rotations through within the grace window, without revoking', async () => {
+      const results = await Promise.all([
+        sessions.rotate('t1', token('a'), GRACE_MS),
+        sessions.rotate('t1', token('b'), GRACE_MS),
+      ]);
+      expect(results.every((session) => session !== null)).toBe(true);
+      await expect(sessionModel.countDocuments({ userId })).resolves.toBe(1);
+    });
+
+    it('records when the previous token was rotated away', async () => {
+      const before = Date.now();
+      const rotated = await sessions.rotate('t1', token('t2'));
+      expect(rotated?.rotatedAt?.getTime()).toBeGreaterThanOrEqual(before);
+    });
+
+    it('refreshes the previous token within the window and keeps the window where it was', async () => {
+      const first = await sessions.rotate('t1', token('t2'), GRACE_MS);
+      const retried = await sessions.rotate('t1', token('t3'), GRACE_MS);
+
+      expect(retried).toMatchObject({ tokenHash: 't3', previousTokenHash: 't1' });
+      expect(retried?.rotatedAt).toEqual(first?.rotatedAt);
+      expect(Logger.prototype.warn).not.toHaveBeenCalled();
+    });
+
+    it('revokes the previous token after the window', async () => {
+      await sessions.rotate('t1', token('t2'), GRACE_MS);
+      await sessionModel.updateMany({}, { rotatedAt: new Date(Date.now() - 2 * GRACE_MS) });
+
+      await expect(sessions.rotate('t1', token('attacker'), GRACE_MS)).resolves.toBeNull();
+      await expect(sessionModel.countDocuments({ userId })).resolves.toBe(0);
     });
 
     it('refuses an expired token (before the TTL job deletes it)', async () => {
