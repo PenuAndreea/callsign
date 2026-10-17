@@ -1,7 +1,7 @@
 import type { ApiError, AuthResponse, ErrorCode, UserDto } from '@callsign/types';
 import { HttpResponse } from 'msw';
 
-import type { CallsignPlatform, RefreshTokenStore } from '../platform/platform.types';
+import type { ApiPlatform, RefreshTokenStore } from '../platform/platform.types';
 import { API_URL } from './server';
 
 export const wolf: UserDto = {
@@ -18,7 +18,7 @@ export function apiError(statusCode: number, code: ErrorCode): HttpResponse<ApiE
   return HttpResponse.json({ statusCode, code, message: code }, { status: statusCode });
 }
 
-export const webPlatform: CallsignPlatform = { apiUrl: API_URL, client: 'web' };
+export const webPlatform: ApiPlatform = { apiUrl: API_URL, client: 'web' };
 
 /** An in-memory secure store, so tests can read what the client wrote. */
 export class MemoryTokenStore implements RefreshTokenStore {
@@ -39,6 +39,6 @@ export class MemoryTokenStore implements RefreshTokenStore {
   }
 }
 
-export function mobilePlatform(store: RefreshTokenStore): CallsignPlatform {
+export function mobilePlatform(store: RefreshTokenStore): ApiPlatform {
   return { apiUrl: API_URL, client: 'mobile', refreshTokenStore: store };
 }

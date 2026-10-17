@@ -22,11 +22,11 @@ interface PlatformBase {
 }
 
 /**
- * What differs between the apps, injected through `CallsignProvider`. The client type decides
+ * What differs between the apps, injected through `ApiProvider`. The client type decides
  * where the refresh token travels, so it comes with its store or without one:
  * - `web`: an httpOnly cookie the browser sends itself; JavaScript never sees the token.
  * - `mobile`: the request body, from the app's secure store.
  */
-export type CallsignPlatform =
+export type ApiPlatform =
   | (PlatformBase & { client: 'web' })
   | (PlatformBase & { client: 'mobile'; refreshTokenStore: RefreshTokenStore });
