@@ -141,9 +141,10 @@ type AuthResponse = {
 io(API_URL, { auth: { token: accessToken } });
 ```
 
-- Middleware verifies the JWT during the handshake. Failure → `connect_error` with message `UNAUTHORIZED`; the client refreshes its token and reconnects.
-- On connect the server joins the socket to:
-  - `user:<userId>`, for events aimed at all of one user's devices
+- Same port as the API, default path `/socket.io` (the `/api` prefix does not apply to sockets). Same CORS rule as REST: only `WEB_ORIGIN`, with credentials. Payloads above 16 KB are refused.
+- Middleware verifies the JWT during the handshake. Failure → `connect_error` with `message` = the error code (`UNAUTHORIZED`) and `data` = the full `ApiError`; the client refreshes its token and reconnects. If the server cannot load the user's nets, the handshake fails the same way with `INTERNAL_ERROR`.
+- During the handshake (so before the client sees `connect`), the server joins the socket to:
+  - `user:<userId>` first, for events aimed at all of one user's devices
   - `room:<roomId>` for every net the user is a member of
 - **Membership stays in sync on the server:** when the REST join or leave succeeds, the service calls `server.in('user:<userId>').socketsJoin('room:<roomId>')` (or `socketsLeave`). Clients never send join or leave events.
 - The token is only checked at the handshake. An open connection survives the access token expiring; the next reconnect needs a fresh token.

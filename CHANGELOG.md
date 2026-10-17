@@ -4,6 +4,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(api): Socket.IO gateway with JWT handshake, joins user and net rooms on connect; CORS adapter; global guards skip socket events
 - chore(docs): how to view the local database (mongosh in the container, Compass) in the README
 - feat(api): messages module (schema with { roomId, _id } index, mapper) and GET /rooms/:id/messages, members only, cursor on _id
 - feat(types): message schemas (content, send request, MessageDto, page), ObjectId schema and typed Socket.IO events

@@ -4,14 +4,16 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 
 import type { Env } from './config/env.schema';
+import { CorsIoAdapter } from './realtime/cors-io.adapter';
 
 /**
- * App-level HTTP setup that lives outside the module graph. Shared by `main.ts` and the
+ * App-level HTTP and WebSocket setup that lives outside the module graph. Shared by `main.ts` and the
  * e2e tests (`Test.createTestingModule` never runs `main.ts`), so tests hit the same app.
  * Guards, filters and pipes are registered in `AppModule` instead, through DI.
  */
 export function configureApp(app: INestApplication): void {
   const config = app.get<ConfigService<Env, true>>(ConfigService);
+  const webOrigin = config.get('WEB_ORIGIN', { infer: true });
 
   app.setGlobalPrefix('api');
   // Security headers (nosniff, HSTS, frame denial, ...). The API serves JSON only, so the defaults fit.
@@ -19,7 +21,9 @@ export function configureApp(app: INestApplication): void {
   // Reads the web refresh-token cookie into `req.cookies`.
   app.use(cookieParser());
   // Only the web app's origin may call the API from a browser, with cookies. Native apps are not subject to CORS.
-  app.enableCors({ origin: config.get('WEB_ORIGIN', { infer: true }), credentials: true });
+  app.enableCors({ origin: webOrigin, credentials: true });
+  // Socket.IO (gateways ignore the global prefix: the path stays `/socket.io`). Same CORS rule.
+  app.useWebSocketAdapter(new CorsIoAdapter(app, webOrigin));
   // Behind a reverse proxy in production, also `app.set('trust proxy', 1)` (Express app),
   // or every client shares the proxy's IP for rate limiting.
 }

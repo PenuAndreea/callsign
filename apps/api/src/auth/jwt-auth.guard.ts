@@ -21,6 +21,11 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Global guards also run on socket events, which carry no HTTP headers. A socket is
+    // authenticated once, at the handshake (`socketAuthMiddleware`), so every event already
+    // has a verified user. Only `ws` is let through: any other new context stays locked.
+    if (context.getType() === 'ws') return true;
+
     const isPublic = this.reflector.getAllAndOverride<boolean | undefined>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),

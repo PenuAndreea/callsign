@@ -30,6 +30,7 @@ function contextFor(
 ): { context: ExecutionContext; request: AuthenticatedRequest } {
   const request = { headers: { authorization } } as AuthenticatedRequest;
   const context = {
+    getType: () => 'http',
     getClass: () => controller.constructor,
     getHandler: () => (controller as Record<string, unknown>)[handler],
     switchToHttp: () => ({ getRequest: () => request }),
@@ -73,6 +74,12 @@ describe('JwtAuthGuard', () => {
     expect(verifyAccessToken).toHaveBeenCalledWith('abc.def.ghi');
     expect(request.user).toEqual(authUser);
     expect(currentUserFromContext(context)).toEqual(authUser);
+  });
+
+  it('lets socket events through: sockets are authenticated at the handshake', async () => {
+    const context = { getType: () => 'ws' } as unknown as ExecutionContext;
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(verifyAccessToken).not.toHaveBeenCalled();
   });
 
   it('passes on the 401 from an invalid token', async () => {
