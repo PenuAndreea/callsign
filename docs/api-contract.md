@@ -51,6 +51,7 @@ type ErrorCode =
 | `passphrase`      | 8 to 128 characters (upper bound keeps argon2 hashing cheap to reject) |
 | net `name`        | trimmed, lowercased, 3 to 30 characters                                |
 | message `content` | trimmed, 1 to 1000 characters                                          |
+| ids in payloads   | 24 hex characters (`objectIdSchema`), e.g. `roomId` in `message:send`  |
 
 The passphrase rule applies to register. Login only checks 1 to 128 characters, so accounts created under an older, looser policy can still sign in.
 
@@ -149,7 +150,7 @@ io(API_URL, { auth: { token: accessToken } });
 
 ### Events
 
-Typed with Socket.IO's generics, `io<ClientToServerEvents, ServerToClientEvents>`, from `packages/types`.
+Typed with Socket.IO's generics from `packages/types`: both sides take `<ListenEvents, EmitEvents>` from their own point of view, so the apps type the socket as `Socket<ServerToClientEvents, ClientToServerEvents>` (`io()` itself is not generic) and the API uses `Server<ClientToServerEvents, ServerToClientEvents>`. Schemas: `sendMessageRequestSchema`, `sendMessageAckSchema` (`SendMessageAck`), `roomUpdatedEventSchema`, `messageDtoSchema`.
 
 ```ts
 interface ClientToServerEvents {

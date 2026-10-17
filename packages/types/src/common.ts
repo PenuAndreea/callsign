@@ -25,6 +25,17 @@ export const apiErrorSchema = z.object({
 
 export type ApiError = z.infer<typeof apiErrorSchema>;
 
+/**
+ * A MongoDB ObjectId as the API serializes it: 24 hex characters. Checked wherever a client
+ * sends an id outside the URL (socket payloads, cursors), so a malformed id is a validation
+ * error and never reaches a query. Lowercased first, like `toHexString()`, so one id has one
+ * spelling (e.g. in the socket room name `room:<id>`).
+ */
+export const objectIdSchema = z
+  .string()
+  .toLowerCase()
+  .regex(/^[0-9a-f]{24}$/, 'Invalid id');
+
 export const PAGE_LIMIT_DEFAULT = 20;
 export const PAGE_LIMIT_MAX = 50;
 

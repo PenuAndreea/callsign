@@ -5,6 +5,7 @@ import type { Page } from '../common';
 import {
   apiErrorSchema,
   errorCodeSchema,
+  objectIdSchema,
   PAGE_LIMIT_DEFAULT,
   PAGE_LIMIT_MAX,
   pageQuerySchema,
@@ -69,6 +70,23 @@ describe('pageSchema', () => {
     expectTypeOf<z.infer<typeof numberPage>>().toEqualTypeOf<Page<number>>();
     expectTypeOf<Page<number>>().toEqualTypeOf<{ items: number[]; nextCursor: string | null }>();
   });
+});
+
+describe('objectIdSchema', () => {
+  it('accepts 24 hex characters', () => {
+    expect(objectIdSchema.parse('6650c0ffee0000000000abcd')).toBe('6650c0ffee0000000000abcd');
+  });
+
+  it('lowercases, so one id has one spelling', () => {
+    expect(objectIdSchema.parse('6650C0FFEE0000000000ABCD')).toBe('6650c0ffee0000000000abcd');
+  });
+
+  it.each(['', 'tower', '6650c0ffee0000000000abc', '6650c0ffee0000000000abcde', 'g'.repeat(24)])(
+    'rejects %j',
+    (id) => {
+      expect(objectIdSchema.safeParse(id).success).toBe(false);
+    },
+  );
 });
 
 describe('errorCodeSchema', () => {

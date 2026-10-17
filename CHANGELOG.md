@@ -4,6 +4,8 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(types): message schemas (content, send request, MessageDto, page), ObjectId schema and typed Socket.IO events
+
 ## 0.4.0 (M3: rooms)
 
 - feat(api): GET /rooms with joined/open scopes, sorted by name, cursor pagination
