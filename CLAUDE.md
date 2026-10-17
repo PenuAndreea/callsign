@@ -44,12 +44,15 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
 - Web: **Vite + React + Vitest**. No Next.js.
 - Mobile: **Expo** (React Native).
 - Shared UI: one component library written with React Native primitives, rendered on web through **react-native-web**.
+- Shared screens (`packages/screens`, source-only): screen bodies used by both apps (`SignInScreen`, `RegisterScreen`, `UnreachableScreen`, `RestoringScreen`, ...). They take navigation as callbacks (`onRegister`, `onBack`) and never import a router; a successful sign-in needs no callback because the session changes and the app's guard moves on. `errorMessage(error)` maps every `ClientErrorCode` to copy in one place.
+  - Forms: **react-hook-form** through `useZodForm(schema, defaults)` (zodResolver over the shared schema: fields hold the typed input, submit gets the parsed output) and `FormInput` (`Controller` + `Input`). Field messages come from the shared schemas (`atLeastChars` / `atMostChars` in `packages/types`), so forms and the API's `VALIDATION_FAILED` say the same thing. A taken callsign goes under its field (`setError`); other failures show in `FormError`.
 - Shared contract: **Zod** schemas in a shared package, with TypeScript types inferred from them (`z.infer`).
 - Shared hooks and the API client live in `packages/`, not in the apps (single source of truth). Platform-specific parts (token storage, API base URL) are injected through a provider, never imported directly in hooks.
   - `ApiProvider({ platform })` (`packages/hooks`) creates the API client and the `QueryClient` once. `platform` is a `ApiPlatform`: `{ apiUrl, client: 'web' }` or `{ apiUrl, client: 'mobile', refreshTokenStore }`, plus an optional `runExclusive` (web: Web Locks, so two tabs never refresh with the same cookie). `apiUrl` is the origin without `/api` (empty on web, through the Vite proxy).
   - API client (`createApiClient`): thin `fetch` wrapper. Paths have no `/api` prefix; every response is parsed with the shared schema (`request(req, schema)`, `requestNoContent` for 204). Failures always reject with `ApiClientError` (`status`, `code`: the API's `ErrorCode` plus `NETWORK_ERROR` and `INVALID_RESPONSE`). The access token lives inside the client (memory only, never React state). A 401 runs one shared refresh (reusing a token another call already refreshed) and retries once; `auth: false` for `/auth/*`. Only a 401 from `/auth/refresh` ends the session (`onSessionEnd`); offline or 5xx keep it. `logout()` waits for a refresh in flight, revokes on the API best effort (offline still signs out locally), then forgets the tokens. Every sign-in/sign-out bumps a generation counter, so a refresh answer that arrives after a newer login is dropped (neither its token nor its 401 replaces the new session).
   - Session (`src/session/`): `createSessionStore` is plain TS read through `useSyncExternalStore` (`useSession()` → `restoring | unreachable | signedOut | signedIn(user)`; `useSignedInUser()` behind the guard). The provider's effect calls `start()`: restore from the refresh token once (StrictMode-safe), and sign out when the client reports the session ended. `unreachable` = the restore got no answer about the session (offline, 5xx): show a retry (`retryRestore`), not the sign-in screen. Every change of user clears the query cache. `useLogin` / `useRegister` / `useLogout` are mutations; their errors are `ApiClientError`s (`INVALID_CREDENTIALS`, `CALLSIGN_TAKEN`, ...). A restore result is applied only if no sign-in overtook it.
   - Query defaults (`createQueryClient`): queries retry only `NETWORK_ERROR` and 5xx, twice; mutations never retry; `staleTime` 30 s.
+  - `@callsign/hooks/testing` (never imported by app code): the MSW `server` with `setupApiTestServer()` for a test setup file, `api(path)`, fixtures (`wolf`, `authResponse`, `apiError`, `webPlatform`, `mobilePlatform`, `MemoryTokenStore`), `createTestClients()` and `renderHookWithApiProvider`. Packages that test against the API add `msw` as a dev dependency.
 - Rooms are public, there is no role field, and rooms have no frequency number.
 - Monorepo: **pnpm workspaces + Turborepo** (`nodeLinker: hoisted` in `pnpm-workspace.yaml` for Expo).
 - Shared package builds: `packages/types` is **built with tsup** (ESM + CJS in `dist/`) because the NestJS API runs compiled JS under plain Node and cannot import TS source. `theme`, `ui` and `hooks` stay **source-only** (consumed only by Vite and Metro). Turbo runs `^build` before `typecheck`, `test` and `dev`.
@@ -67,6 +70,7 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
 - Install scripts: pnpm only runs them for packages listed `true` under `allowBuilds` in `pnpm-workspace.yaml`. Allow only what needs a native build (e.g. `argon2` in M2); packages with prebuilt binaries stay `false`.
 - Data fetching: **TanStack Query** inside the shared hooks.
 - Routing: **React Router** on web, **Expo Router** on mobile (routing stays in the apps).
+  - Web (`apps/web/src/routes.tsx`): `SessionGate` holds every route until the session is known (`RestoringScreen`, or `UnreachableScreen` with retry), then `GuestOnly` (`/signin`, `/register`; signed in → back to the page asked for) and `RequireAuth` (signed out → `/signin` with `state.from`). `redirectTarget` only accepts same-app paths from that state (no open redirect). `App` takes `platform` and `router`, so tests use a memory router; `createWebPlatform()` adds Web Locks when `navigator.locks` exists.
 - Testing: **Vitest** (web, shared packages; `packages/ui` runs on jsdom + `@testing-library/react` with a `react-native` → `react-native-web` alias, like web), **Jest + Supertest** (API, against **mongodb-memory-server**: Jest's `globalSetup` starts one real in-memory `mongod` per e2e run and `test/setup-env.ts` gives each test file its own randomly named database, no Docker in CI; `mongod` pinned to the Docker version under `config.mongodbMemoryServer` in `apps/api/package.json`), **jest-expo + React Native Testing Library** (mobile-only behavior). `packages/hooks` runs Vitest in Node with **MSW** (`msw/node`, `onUnhandledRequest: 'error'`, handlers per test); files that render opt into jsdom with `// @vitest-environment jsdom`.
 - Local MongoDB: `docker-compose.yml` at the root (MongoDB 8.0, named volume, healthcheck, bound to `127.0.0.1` only, no auth). `pnpm db:up` (waits until healthy), then `pnpm dev`; `pnpm db:down` stops it and keeps the data.
 - Env: the API reads `apps/api/.env` (git-ignored); `apps/api/.env.example` is committed and lists every variable. Add new variables to both, and to the Zod `envSchema` (`apps/api/src/config/env.schema.ts`), which `ConfigModule` validates at startup. Inject `ConfigService<Env, true>` and read with `get('X', { infer: true })` for typed values. E2E tests get a fixed env from `apps/api/test/setup-env.ts` (CI has no `.env`).
@@ -84,7 +88,8 @@ packages/
   types/     Zod schemas + inferred TS types (API contract)
   theme/     design tokens
   ui/        shared components (React Native primitives)
-  hooks/     shared hooks + typed API client (useAuth, useRoomMessages, ...)
+  hooks/     shared hooks + typed API client (useSession, useLogin, useRoomMessages, ...)
+  screens/   shared screen bodies (forms, lists, chat), navigation through callbacks
   config/    shared eslint, tsconfig, prettier
 ```
 
@@ -198,7 +203,7 @@ A clean, modern UI with a field-radio voice. The radio feel comes from typograph
   - `ChatBubble`: incoming on surface with the sender callsign in `label` color, outgoing on `bubbleOut`; meta line with the Zulu time.
   - `MessageInput`: chat `Input` + round send `IconButton` ("TX", with `accessibilityLabel="Send"`).
   - `SectionLabel`: tracked label for list sections ("JOINED", "OPEN TO JOIN").
-- All of them are built (M1). `@callsign/ui/preview` exports `ComponentPreview`, one scrolling screen with every component that both apps render until the real screens replace it in M5. Screens own the safe-area insets (`react-native-safe-area-context`), so components never pad for the notch or home indicator.
+- All of them are built (M1). `@callsign/ui/preview` exports `ComponentPreview`, one scrolling screen with every component, kept as a visual reference; web renders the real screens since M5 step 3, mobile until step 7. Screens own the safe-area insets (`react-native-safe-area-context`), so components never pad for the notch or home indicator.
 
 **Screens:**
 
