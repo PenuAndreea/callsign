@@ -35,6 +35,12 @@ describe('ChatBubble', () => {
     expect(screen.getByText('21:58Z')).toHaveStyle({ color: darkColors.bubbleOutMeta });
   });
 
+  it('adds a delivery status after the time', () => {
+    renderWithTheme(<ChatBubble {...message} own status="Sending" />);
+
+    expect(screen.getByText('21:58Z · Sending')).toBeInTheDocument();
+  });
+
   it('accepts a Date as the send time', () => {
     renderWithTheme(<ChatBubble {...message} sentAt={new Date('2026-10-15T08:05:00Z')} />);
 

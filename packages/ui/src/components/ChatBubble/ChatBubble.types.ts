@@ -9,5 +9,7 @@ export interface ChatBubbleProps {
   sentAt: Date | string;
   /** Own message: right-aligned on the primary color, without the sender line. */
   own?: boolean;
+  /** Delivery note after the time on the meta line, e.g. "Sending" or "Not sent". */
+  status?: string;
   style?: StyleProp<ViewStyle>;
 }
