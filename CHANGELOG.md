@@ -4,6 +4,12 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(web): routes with SessionGate, GuestOnly and RequireAuth, sign in and register through the shared screens, Web Locks platform, temporary home with log out
+- feat(screens): screens package with SignInScreen, RegisterScreen, UnreachableScreen, RestoringScreen, react-hook-form helpers (useZodForm, FormInput, FormError) and error copy
+- feat(hooks): @callsign/hooks/testing entry (MSW server, fixtures, test clients) shared by the packages that test against the API
+- feat(ui): trailing icon on Button; sizes.form token for the auth column
+- feat(types): field messages on the callsign, passphrase and net name schemas
+
 - feat(hooks): session store (restore on start, unreachable state, sign in/out with cache clear), useSession, useLogin, useRegister, useLogout; client logout and stale-refresh guard; rename CallsignProvider → ApiProvider, CallsignPlatform → ApiPlatform
 - feat(hooks): hooks package with CallsignProvider (injected platform), typed fetch client (Zod-parsed responses, ApiClientError, single-flight refresh with one retry) and query defaults
 - feat(api): refresh reuse grace window (REFRESH_REUSE_GRACE_SECONDS, default 10): the previous token still refreshes right after a rotation instead of revoking the session

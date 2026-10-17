@@ -11,6 +11,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@callsign/hooks": "workspace:*",
+    "@callsign/screens": "workspace:*",
     "@callsign/theme": "workspace:*",
     "@callsign/types": "workspace:*",
     "@callsign/ui": "workspace:*",
@@ -33,6 +35,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^30.1.2",
+    "msw": "~2.14.5",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.4"
