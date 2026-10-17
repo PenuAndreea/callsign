@@ -32,4 +32,12 @@ describe('defaultSocketFactory', () => {
     defaultSocketFactory('')(options);
     expect(io).toHaveBeenLastCalledWith(options);
   });
+
+  it('adds the platform options, without letting them replace auth or autoConnect', () => {
+    defaultSocketFactory('http://api.test', { transports: ['websocket'] })(options);
+    expect(io).toHaveBeenLastCalledWith('http://api.test', {
+      transports: ['websocket'],
+      ...options,
+    });
+  });
 });

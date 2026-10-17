@@ -15,6 +15,7 @@ export function Input({
   style,
   onFocus,
   onBlur,
+  ref,
   ...props
 }: InputProps) {
   const styles = useInputStyles();
@@ -32,6 +33,7 @@ export function Input({
       )}
       <TextInput
         {...props}
+        ref={ref}
         aria-label={label}
         aria-invalid={invalid}
         placeholderTextColor={colors.textMuted}

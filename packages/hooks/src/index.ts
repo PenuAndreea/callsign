@@ -27,3 +27,7 @@ export type { ChatEntry, PendingMessage } from './messages/messages.types';
 export { useNetMessages } from './messages/useNetMessages';
 export type { SendMessageActions } from './messages/useSendMessage';
 export { useSendMessage } from './messages/useSendMessage';
+export type { SocketFactoryOptions } from './realtime/defaultSocketFactory';
+export { defaultSocketFactory } from './realtime/defaultSocketFactory';
+// Platform wiring without a second TanStack dependency (React Native: AppState → focus).
+export { focusManager, onlineManager } from '@tanstack/react-query';
