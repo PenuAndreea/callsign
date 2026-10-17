@@ -8,7 +8,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import type { MessageDto, SendMessageAck } from '@callsign/types';
+import type { SendMessageAck } from '@callsign/types';
 import { sendMessageRequestSchema } from '@callsign/types';
 
 import { TokensService } from '../auth/tokens.service';
@@ -20,6 +20,7 @@ import type { ChatServer, ChatSocket } from '../realtime/chat-server.types';
 import { authenticateSocket, joinRoomsOnConnect } from '../realtime/handshake';
 import { RealtimeService } from '../realtime/realtime.service';
 import { SlidingWindowLimiter } from '../realtime/sliding-window-limiter';
+import type { SendResult } from './messages.service';
 import { MessagesService } from './messages.service';
 
 /** `message:send` per socket: 5 messages in any 5 seconds. */
@@ -69,19 +70,20 @@ export class MessagesGateway implements OnGatewayInit<ChatServer>, OnGatewayDisc
     @MessageBody() payload: unknown,
     @Ack() ack: ((res: SendMessageAck) => void) | undefined,
   ): Promise<void> {
-    let message: MessageDto;
+    let result: SendResult;
     try {
       if (!this.sendLimiter.tryConsume(socket.id)) {
         throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, 'RATE_LIMITED', 'Too many messages');
       }
       const request = parseOrThrow(sendMessageRequestSchema, payload);
-      message = await this.messages.send(socket.data.user, request);
+      result = await this.messages.send(socket.data.user, request);
     } catch (error) {
       ack?.({ ok: false, error: toLoggedApiError(error, this.logger) });
       return;
     }
     // Saved: from here on the send has succeeded, whatever happens to the broadcast.
-    ack?.({ ok: true, message });
-    this.realtime.broadcastMessage(message);
+    ack?.({ ok: true, message: result.message });
+    // A retry of a saved message was broadcast by its first send: the net hears it once.
+    if (result.created) this.realtime.broadcastMessage(result.message);
   }
 }

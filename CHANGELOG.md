@@ -4,6 +4,8 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(api): idempotent message:send with an optional clientMessageId (unique partial index, retry acks the saved message without a rebroadcast)
+
 ## 0.5.0 (M4: messages and realtime)
 
 - feat(api): RealtimeService; REST join/leave moves the user's open sockets and sends room:updated with the new member count

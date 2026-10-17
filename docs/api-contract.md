@@ -76,6 +76,7 @@ type MessageDto = {
   roomId: string;
   sender: { id: string; callsign: string };
   content: string;
+  clientMessageId?: string; // echoed when the send had one
   createdAt: string;
 };
 
@@ -159,7 +160,7 @@ Typed with Socket.IO's generics from `packages/types`: both sides take `<ListenE
 ```ts
 interface ClientToServerEvents {
   'message:send': (
-    payload: { roomId: string; content: string },
+    payload: { roomId: string; content: string; clientMessageId?: string }, // UUID
     ack: (res: { ok: true; message: MessageDto } | { ok: false; error: ApiError }) => void,
   ) => void;
 }
@@ -173,6 +174,8 @@ interface ServerToClientEvents {
 - **`message:send` flow:** rate limit (5 messages in any 5 seconds per socket, else `RATE_LIMITED`) → validate the payload with `sendMessageRequestSchema` (else `VALIDATION_FAILED`) → check membership in the database (else `NOT_A_MEMBER`, also for a net that does not exist) → save the message with `senderId` and `senderCallsign` from the socket's token (any sender in the payload is ignored) → update `rooms.lastMessage` → ack the sender → broadcast `message:new` to `room:<roomId>`.
 - **The preview update** sets `lastMessage` only if the room has none or holds an older message (compared by message id, in one atomic update), so sends that finish out of order keep the newest preview. It is best effort: once the message is saved the send has succeeded, so a failed preview write is logged and the ack is still `ok`. The preview is cut to 80 characters (code points), ending in `…`.
 - The sender receives the ack first, then `message:new` like every other member's socket; the client deduplicates by message `id`. A client may emit without an ack callback; the message is still saved and broadcast.
+- **Idempotent sends (`clientMessageId`):** optional, a UUID (lowercased) the client creates once per message and reuses on every retry. If this sender already saved a message with that key in that net, the ack is `{ ok: true, message }` with the **saved** message (its content wins if the retry's differs), nothing is saved, the preview is not touched and `message:new` is **not** sent again. A unique partial index `{ senderId, roomId, clientMessageId }` decides, so racing retries also produce one message. The same key from another station or in another net is a new message. Without a key every send is saved. The saved message carries the key in `MessageDto.clientMessageId` (ack and `message:new`), so every device of the sender can match its pending bubble. Retries still count against the rate limit.
+- **Client retry rule:** an ack timeout does not prove the message was not saved. With a key the client may resend safely; without one it must not resend automatically.
 - Errors in the ack use the same `ApiError` shape and codes as REST; unexpected failures are `INTERNAL_ERROR` with details only in the server log.
 
 ### Optional: typing indicator

@@ -32,4 +32,9 @@ describe('toMessageDto', () => {
     expect(messageDtoSchema.parse(dto)).toEqual(dto);
     expect(Object.keys(dto).sort()).toEqual(['content', 'createdAt', 'id', 'roomId', 'sender']);
   });
+
+  it('echoes the client message id when the send had one', () => {
+    const clientMessageId = '8f14e45f-ceea-4e7a-9c1d-2b3f1a6e7d90';
+    expect(toMessageDto({ ...message, clientMessageId })).toMatchObject({ clientMessageId });
+  });
 });
