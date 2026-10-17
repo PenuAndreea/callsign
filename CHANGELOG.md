@@ -4,6 +4,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- refactor(types): toMessagePreview moves from the API to the shared types, for the apps' live previews
 - feat(api): idempotent message:send with an optional clientMessageId (unique partial index, retry acks the saved message without a rebroadcast)
 
 ## 0.5.0 (M4: messages and realtime)

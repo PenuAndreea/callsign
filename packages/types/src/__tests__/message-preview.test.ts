@@ -1,4 +1,6 @@
-import { MESSAGE_PREVIEW_LENGTH, toMessagePreview } from './message-preview';
+import { describe, expect, it } from 'vitest';
+
+import { MESSAGE_PREVIEW_LENGTH, toMessagePreview } from '../message-preview';
 
 describe('toMessagePreview', () => {
   it('keeps short content as it is', () => {

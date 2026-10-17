@@ -1,12 +1,11 @@
 import type { INestApplication } from '@nestjs/common';
 import type { MessageDto, Page, RoomDto } from '@callsign/types';
-import { messageDtoSchema } from '@callsign/types';
+import { MESSAGE_PREVIEW_LENGTH, messageDtoSchema } from '@callsign/types';
 import { Types } from 'mongoose';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 
 import { SEND_LIMIT } from '../src/messages/messages.gateway';
-import { MESSAGE_PREVIEW_LENGTH } from '../src/rooms/message-preview';
 import { RoomsService } from '../src/rooms/rooms.service';
 import { clearDatabase, createTestApp } from './create-test-app';
 import type { Station } from './messages-helpers';
