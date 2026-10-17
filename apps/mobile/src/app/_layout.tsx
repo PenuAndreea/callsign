@@ -1,26 +1,29 @@
+import { ApiProvider } from '@callsign/hooks';
 import { ThemeProvider } from '@callsign/ui';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
 
+import { connectAppFocus } from '@/appFocus';
 import { fontSources } from '@/fonts';
+import { RootStack } from '@/navigation/RootStack';
+import { createMobilePlatform } from '@/platform';
 
 void SplashScreen.preventAutoHideAsync();
+connectAppFocus();
+
+// Module level: the provider reads the platform once.
+const platform = createMobilePlatform();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts(fontSources);
-  const ready = loaded || error !== null;
-
-  useEffect(() => {
-    if (ready) void SplashScreen.hideAsync();
-  }, [ready]);
-
-  if (!ready) return null;
+  // The splash screen stays until `RootStack` knows the session.
+  if (!loaded && error === null) return null;
 
   return (
     <ThemeProvider>
-      <Stack screenOptions={{ headerShown: false }} />
+      <ApiProvider platform={platform}>
+        <RootStack />
+      </ApiProvider>
     </ThemeProvider>
   );
 }

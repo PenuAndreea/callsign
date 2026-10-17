@@ -4,6 +4,12 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(mobile): real app on Expo Router (Stack.Protected auth and app groups, splash until the session is known), secure-store refresh token, emulator API URLs, AppState focus
+- feat(screens): safe-area insets and keyboard avoidance in the form, nets and chat screens; next key moves between fields; passphrases never auto-capitalized
+- feat(ui): Input forwards its ref to the TextInput
+- feat(hooks): socket factory options (websocket-only on React Native); focusManager re-export
+- chore(config): alias react-native-safe-area-context to its ES build for Vite and Vitest
+
 - feat(web): split layout (nets sidebar next to the chat from 900 px, stacked below) and the chat route
 - feat(screens): ChatScreen (inverted history with older pages, pending and failed sends with Retry, join offer, live traffic)
 - feat(hooks): useNetMessages and useSendMessage with pending sends, idempotent retry and live insert into the history
