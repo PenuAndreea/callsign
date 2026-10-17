@@ -4,6 +4,11 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(web): split layout (nets sidebar next to the chat from 900 px, stacked below) and the chat route
+- feat(screens): ChatScreen (inverted history with older pages, pending and failed sends with Retry, join offer, live traffic)
+- feat(hooks): useNetMessages and useSendMessage with pending sends, idempotent retry and live insert into the history
+- feat(ui): delivery status on ChatBubble; sizes.sidebar and breakpoints.split tokens
+
 - feat(api): refresh reuse grace window (REFRESH_REUSE_GRACE_SECONDS, default 10): the previous token still refreshes right after a rotation instead of revoking the session
 
 - feat(hooks): realtime socket per signed-in session (token per handshake, refresh on a refused handshake, catch-up after reconnects), live preview and member count in the cache, useRealtimeStatus, Socket.IO test server
