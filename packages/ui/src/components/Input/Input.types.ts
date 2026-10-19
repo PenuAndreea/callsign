@@ -1,4 +1,5 @@
-import type { StyleProp, TextInputProps, ViewStyle } from 'react-native';
+import type { Ref } from 'react';
+import type { StyleProp, TextInput, TextInputProps, ViewStyle } from 'react-native';
 
 export type InputVariant = 'form' | 'chat';
 
@@ -13,4 +14,6 @@ export interface InputProps extends Omit<TextInputProps, 'style' | 'placeholderT
   error?: string;
   /** Layout of the wrapper (margins, flex). */
   style?: StyleProp<ViewStyle>;
+  /** The field itself, e.g. to focus it from the previous field's "next" key. */
+  ref?: Ref<TextInput>;
 }

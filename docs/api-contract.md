@@ -76,6 +76,7 @@ type MessageDto = {
   roomId: string;
   sender: { id: string; callsign: string };
   content: string;
+  clientMessageId?: string; // echoed when the send had one
   createdAt: string;
 };
 
@@ -101,7 +102,8 @@ type AuthResponse = {
 - **Tokens:** the access token is a JWT (~15 min). The refresh token is an opaque random string (32 bytes), stored as a SHA-256 hash.
 - **Sessions:** one per device. Login or register on one device never logs out another; logout ends only that device's session.
 - **Refresh token rotation:** every `/auth/refresh` issues a new refresh token, replaces the stored hash and moves the session's expiry 30 days forward (sliding). The API client must run only one refresh at a time; concurrent 401s wait for it.
-- **Reuse detection:** presenting a token that was already rotated away revokes that session (401, and the next refresh with the newer token is 401 too). It means someone else holds a copy, so the user logs in again. Side effect: a client that lost a refresh response and retries with the old token is logged out once.
+- **Grace window:** for `REFRESH_REUSE_GRACE_SECONDS` (default 10) after a rotation, the previous token still refreshes and gets a new token. That covers a client that lost the response (a reload mid-refresh) and two concurrent refreshes with the same token (two tabs). The window counts from the real rotation and retries do not extend it. The token in the lost response stops working (401, no revocation).
+- **Reuse detection:** after the window, presenting a token that was already rotated away revokes that session (401, and the next refresh with the newer token is 401 too). It means someone else holds a copy, so the user logs in again.
 - **Web cookie:** `refreshToken`, `httpOnly`, `sameSite=strict`, `path=/api/auth`, `secure` from env config (on in production). Requires web and API on the same site (Vite dev proxy locally).
 - **Rate limiting:** 10 requests/min per IP on each `/auth/*` route, 100/min everywhere else.
 - **`X-Client`:** a missing header means `web` (the token stays in the httpOnly cookie); any other value than `web` or `mobile` is a 400.
@@ -159,7 +161,7 @@ Typed with Socket.IO's generics from `packages/types`: both sides take `<ListenE
 ```ts
 interface ClientToServerEvents {
   'message:send': (
-    payload: { roomId: string; content: string },
+    payload: { roomId: string; content: string; clientMessageId?: string }, // UUID
     ack: (res: { ok: true; message: MessageDto } | { ok: false; error: ApiError }) => void,
   ) => void;
 }
@@ -173,6 +175,8 @@ interface ServerToClientEvents {
 - **`message:send` flow:** rate limit (5 messages in any 5 seconds per socket, else `RATE_LIMITED`) → validate the payload with `sendMessageRequestSchema` (else `VALIDATION_FAILED`) → check membership in the database (else `NOT_A_MEMBER`, also for a net that does not exist) → save the message with `senderId` and `senderCallsign` from the socket's token (any sender in the payload is ignored) → update `rooms.lastMessage` → ack the sender → broadcast `message:new` to `room:<roomId>`.
 - **The preview update** sets `lastMessage` only if the room has none or holds an older message (compared by message id, in one atomic update), so sends that finish out of order keep the newest preview. It is best effort: once the message is saved the send has succeeded, so a failed preview write is logged and the ack is still `ok`. The preview is cut to 80 characters (code points), ending in `…`.
 - The sender receives the ack first, then `message:new` like every other member's socket; the client deduplicates by message `id`. A client may emit without an ack callback; the message is still saved and broadcast.
+- **Idempotent sends (`clientMessageId`):** optional, a UUID (lowercased) the client creates once per message and reuses on every retry. If this sender already saved a message with that key in that net, the ack is `{ ok: true, message }` with the **saved** message (its content wins if the retry's differs), nothing is saved, the preview is not touched and `message:new` is **not** sent again. A unique partial index `{ senderId, roomId, clientMessageId }` decides, so racing retries also produce one message. The same key from another station or in another net is a new message. Without a key every send is saved. The saved message carries the key in `MessageDto.clientMessageId` (ack and `message:new`), so every device of the sender can match its pending bubble. Retries still count against the rate limit.
+- **Client retry rule:** an ack timeout does not prove the message was not saved. With a key the client may resend safely; without one it must not resend automatically.
 - Errors in the ack use the same `ApiError` shape and codes as REST; unexpected failures are `INTERNAL_ERROR` with details only in the server log.
 
 ### Optional: typing indicator

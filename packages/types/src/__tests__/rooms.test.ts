@@ -94,3 +94,12 @@ describe('roomPageSchema', () => {
     expect(roomPageSchema.parse(page)).toEqual(page);
   });
 });
+
+describe('roomNameSchema messages', () => {
+  it('gives the length rule', () => {
+    expect(roomNameSchema.safeParse('ab').error?.issues[0]?.message).toBe('At least 3 characters');
+    expect(roomNameSchema.safeParse('a'.repeat(31)).error?.issues[0]?.message).toBe(
+      'At most 30 characters',
+    );
+  });
+});

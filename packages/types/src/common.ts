@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+/** Length messages shown under form fields (the API returns them in `VALIDATION_FAILED` too). */
+export const atLeastChars = (min: number) => `At least ${min} characters`;
+export const atMostChars = (max: number) => `At most ${max} characters`;
+
 /** Stable error codes; the apps map them to copy. */
 export const errorCodeSchema = z.enum([
   'VALIDATION_FAILED',

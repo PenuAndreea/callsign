@@ -16,6 +16,7 @@ describe('validateEnv', () => {
       PORT: 3000,
       JWT_ACCESS_TTL_SECONDS: 900,
       REFRESH_TOKEN_TTL_DAYS: 30,
+      REFRESH_REUSE_GRACE_SECONDS: 10,
       COOKIE_SECURE: true,
     });
   });

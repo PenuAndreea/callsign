@@ -79,13 +79,23 @@ Runs on http://localhost:5173. Requests to `/api` and `/socket.io` are proxied t
 pnpm --filter @callsign/mobile start
 ```
 
-Starts the Expo dev server. Then press:
+Starts the Expo dev server (the API must be running too). Then press:
 
-- **`i`** to open the iOS Simulator (Expo Go is installed automatically the first time)
+- **`i`** to open the iOS Simulator
 - **`a`** to open an Android emulator
 - or scan the QR code with Expo Go on your phone (phone and computer on the same Wi-Fi)
 
-`pnpm --filter @callsign/mobile ios` opens the iOS Simulator directly.
+`pnpm --filter @callsign/mobile ios` opens the iOS Simulator directly. The app needs **Expo Go for SDK 57**: if Expo Go says the project needs a newer version, press `i` (or `a`) in the Expo terminal and accept the upgrade it offers.
+
+**Which API the app talks to.** Simulators reach the API on your computer without setup: the iOS Simulator at `http://localhost:3000`, the Android emulator at `http://10.0.2.2:3000` (the emulator's name for your computer). A real phone needs your computer's address on the network:
+
+```bash
+cp apps/mobile/.env.example apps/mobile/.env
+```
+
+Set `EXPO_PUBLIC_API_URL` in it, e.g. `http://192.168.1.20:3000` (find the address with `ipconfig getifaddr en0` on macOS), then restart the Expo server with `--clear`. The refresh token is kept in the iOS Keychain / Android Keystore (`expo-secure-store`), so the app stays signed in across restarts.
+
+If the app shows `Element type is invalid … got: undefined` after adding files to a shared package, Metro served a stale bundle: install Watchman (`brew install watchman`) and restart with `pnpm --filter @callsign/mobile start --clear`.
 
 ### API and web together
 
@@ -94,6 +104,15 @@ pnpm dev
 ```
 
 Starts the API, the web app and a watcher that rebuilds `@callsign/types` on change, all through Turbo in one terminal. Mobile runs separately because Expo's menu needs its own terminal.
+
+### Trying it out
+
+1. Start the database, the API and the web app (`pnpm db:up`, then `pnpm dev`).
+2. Open http://localhost:5173, choose **New station? Register here** and register a callsign (3 to 20 characters) with a passphrase (at least 8).
+3. Open a net with **New net**, or join one under **Open to join**. Messages go out with **TX** or Enter.
+4. For a second station, register another callsign in a private window, another browser or the mobile app, and join the same net: messages, the member count and the net list preview update live on both.
+
+On wide windows the nets list stays on the left of the chat; below 900 px wide, the list and the chat are separate pages, like on the phone.
 
 ### Shared types
 
@@ -125,7 +144,11 @@ apps/
   mobile/    Expo (React Native)
 packages/
   types/     Zod schemas + TypeScript types (the API contract)
-  config/    shared ESLint, Prettier and TypeScript configs
+  theme/     design tokens: colors (light and dark), fonts, spacing, sizes
+  ui/        components on React Native primitives (web through react-native-web)
+  hooks/     API client, session, realtime socket and data hooks (TanStack Query)
+  screens/   screen bodies shared by web and mobile; the apps only add routing and layout
+  config/    shared ESLint, Prettier, TypeScript and Vite configs
 docs/
   api-contract.md   REST endpoints and Socket.IO events
   design/           screen mockups
@@ -157,6 +180,7 @@ erDiagram
     ObjectId userId FK
     string tokenHash UK "SHA-256 of the refresh token"
     string previousTokenHash "reuse detection, nullable"
+    Date rotatedAt "start of the reuse grace window, nullable"
     Date expiresAt "sliding, TTL-deleted"
     string client "web or mobile"
     Date createdAt
@@ -186,6 +210,7 @@ erDiagram
     ObjectId senderId FK
     string senderCallsign "copied at send time"
     string content "1 to 1000 chars"
+    string clientMessageId "optional, idempotency key"
     Date createdAt
   }
 ```
@@ -193,16 +218,18 @@ erDiagram
 - **Memberships** link users and nets, instead of a member array on each room.
 - **`memberCount`** and **`lastMessage`** are copies kept on the room, so the nets list needs no extra queries.
 - **`senderCallsign`** is copied onto each message, so history pages need no user lookups (callsigns never change).
+- **`clientMessageId`** is a UUID the client makes per message; a retried send with the same key returns the saved message instead of a second copy.
 - Online status is not stored in the database.
 
-| Collection  | Index                              | Used for                                          |
-| ----------- | ---------------------------------- | ------------------------------------------------- |
-| users       | `{ callsign: 1 }` unique           | login, register                                   |
-| sessions    | `{ tokenHash: 1 }` unique          | refresh, logout                                   |
-| sessions    | `{ userId: 1 }`                    | a user's devices                                  |
-| sessions    | `{ expiresAt: 1 }` TTL             | MongoDB deletes expired sessions                  |
-| sessions    | `{ previousTokenHash: 1 }` partial | reuse detection                                   |
-| rooms       | `{ name: 1 }` unique               | creating a net (duplicate check)                  |
-| memberships | `{ userId: 1, roomId: 1 }` unique  | "my nets" (covered query), prevents joining twice |
-| memberships | `{ roomId: 1 }`                    | members of a net, socket room sync                |
-| messages    | `{ roomId: 1, _id: -1 }`           | paginated history (cursor on `_id`)               |
+| Collection  | Index                                                            | Used for                                          |
+| ----------- | ---------------------------------------------------------------- | ------------------------------------------------- |
+| users       | `{ callsign: 1 }` unique                                         | login, register                                   |
+| sessions    | `{ tokenHash: 1 }` unique                                        | refresh, logout                                   |
+| sessions    | `{ userId: 1 }`                                                  | a user's devices                                  |
+| sessions    | `{ expiresAt: 1 }` TTL                                           | MongoDB deletes expired sessions                  |
+| sessions    | `{ previousTokenHash: 1 }` partial                               | reuse detection, grace retry                      |
+| rooms       | `{ name: 1 }` unique                                             | creating a net (duplicate check)                  |
+| memberships | `{ userId: 1, roomId: 1 }` unique                                | "my nets" (covered query), prevents joining twice |
+| memberships | `{ roomId: 1 }`                                                  | members of a net, socket room sync                |
+| messages    | `{ roomId: 1, _id: -1 }`                                         | paginated history (cursor on `_id`)               |
+| messages    | `{ senderId: 1, roomId: 1, clientMessageId: 1 }` unique, partial | idempotent sends (a retry is never saved twice)   |

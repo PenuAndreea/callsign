@@ -29,6 +29,10 @@ export class Message {
   @Prop({ type: String, required: true })
   content!: string;
 
+  /** Idempotency key from the client (`clientMessageIdSchema`), when it sent one. */
+  @Prop({ type: String })
+  clientMessageId?: string;
+
   // Set by `timestamps` (milliseconds; the `_id` timestamp only has seconds).
   createdAt!: Date;
 }
@@ -41,3 +45,12 @@ export const MessageSchema = SchemaFactory.createForClass(Message);
 // `_id` is unique and grows with time, so the cursor has no ties. Also serves any lookup
 // by `roomId` alone (an index prefix).
 MessageSchema.index({ roomId: 1, _id: -1 });
+
+// Idempotent sends: a retry with the same key cannot insert a second copy, even when two
+// retries race (the index decides, not a "find, then insert"). Scoped to the sender and the
+// net, so one station's key never collides with another's and a reused key in another net is
+// just a new message. Partial: messages without a key are not in the index at all.
+MessageSchema.index(
+  { senderId: 1, roomId: 1, clientMessageId: 1 },
+  { unique: true, partialFilterExpression: { clientMessageId: { $type: 'string' } } },
+);

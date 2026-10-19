@@ -87,4 +87,14 @@ describe('TokensService', () => {
       expect(days).toBeCloseTo(30, 3);
     });
   });
+
+  describe('refresh reuse grace', () => {
+    it('reads REFRESH_REUSE_GRACE_SECONDS in milliseconds', () => {
+      const graceConfig = {
+        get: (key: keyof Env) => (key === 'REFRESH_REUSE_GRACE_SECONDS' ? 10 : 30),
+      } as unknown as ConfigService<Env, true>;
+      const withGrace = new TokensService(new JwtService(jwtOptions(SECRET, 900)), graceConfig);
+      expect(withGrace.refreshReuseGraceMs()).toBe(10_000);
+    });
+  });
 });

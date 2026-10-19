@@ -70,6 +70,19 @@ describe('Button', () => {
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
+  it('shows a trailing icon without changing the accessible name', () => {
+    renderWithTheme(<Button label="Report in" icon="arrowRight" onPress={vi.fn()} />);
+
+    const button = screen.getByRole('button', { name: 'Report in' });
+    expect(button).toContainElement(screen.getByTestId('button-icon'));
+  });
+
+  it('hides the icon while loading', () => {
+    renderWithTheme(<Button label="Report in" icon="arrowRight" onPress={vi.fn()} loading />);
+
+    expect(screen.queryByTestId('button-icon')).not.toBeInTheDocument();
+  });
+
   it('prefers an explicit accessibility label', () => {
     renderWithTheme(<Button label="TX" aria-label="Send" onPress={vi.fn()} />);
 

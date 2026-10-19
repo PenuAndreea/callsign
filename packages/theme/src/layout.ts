@@ -23,4 +23,11 @@ export const sizes = {
   button: 58,
   tx: 56, // round transmit button
   lamp: 12, // status dot
+  form: 440, // max width of the sign-in and register column (wide web windows)
+  sidebar: 380, // nets list next to the chat (web, wide windows)
+} as const;
+
+/** Window widths where layouts change. */
+export const breakpoints = {
+  split: 900, // web: nets sidebar next to the chat panel; narrower windows stack them
 } as const;
