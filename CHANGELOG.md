@@ -4,6 +4,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(api): dev seed (`pnpm db:seed`): wipes the database and writes 8 stations, 7 nets and backdated radio history
 - feat(screens): Join in the nets list uses the small button
 - feat(ui): Button size small (44 touch target, label-size text) for row actions
 - chore(ui): remove ComponentPreview and the @callsign/ui/preview export; no app uses it since M5
