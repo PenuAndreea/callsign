@@ -12,6 +12,7 @@
     "test": "turbo run test",
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
+    "db:seed": "pnpm --filter @callsign/api seed",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

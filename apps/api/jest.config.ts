@@ -7,7 +7,7 @@ const config: Config = {
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
-  collectCoverageFrom: ['src/**/*.ts', '!src/main.ts'],
+  collectCoverageFrom: ['src/**/*.ts', '!src/main.ts', '!src/seed/main.ts'],
   coverageDirectory: './coverage',
   testEnvironment: 'node',
 };

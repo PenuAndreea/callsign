@@ -86,6 +86,8 @@ Rooms are public, there is no role field, and rooms have no frequency number.
 
 Nets list: joined = the user's memberships → rooms by id; open = rooms whose `_id` is not in that set. Both sorted by name, cursor = last name on the page. `isMember` follows from the scope. Query plans (checked with `explain` on 5,000 rooms): joined uses the `_id` index and sorts the user's few rooms in memory; open walks the `name` index from the cursor and stops after `limit + 1` matches. MongoDB's planner picks both without a `hint`.
 
+**Seed (`apps/api/src/seed`, `pnpm db:seed`):** a Nest application context (`SeedModule`, no HTTP server or sockets) that empties the five collections and writes the data in `seed-data.ts` and `scripts/`. Stations and nets go through `UsersService`, `PasswordHasher` and `RoomsService` (create, join, leave), so `memberCount` stays right. Messages are the exception: `MessagesService.send` stamps "now", so the seed inserts them directly (`insertMany` with `timestamps: false`) with a backdated `createdAt` and an `_id` carrying the same second (`objectIdAt`), then sets the preview with `RoomsService.recordLastMessage`. Content and names go through the shared Zod schemas. Refuses `NODE_ENV=production`.
+
 ## Shared packages
 
 - Shared UI: one component library written with React Native primitives, rendered on web through **react-native-web**.

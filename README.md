@@ -57,6 +57,14 @@ docker compose exec mongo mongosh callsign
 
 `exit` leaves the shell. For a GUI, install [MongoDB Compass](https://www.mongodb.com/products/tools/compass) (`brew install --cask mongodb-compass`) and connect to `mongodb://localhost:27017`. It also shows each collection's indexes and query plans (Explain).
 
+#### Seed data
+
+```bash
+pnpm db:seed
+```
+
+Wipes the database (stations, sessions, nets, messages) and fills it with sample data: 8 stations, all with the passphrase `correct horse`, and 7 nets. Log in as `wolf-2` to see joined nets with history (`tower` has several pages over three days), nets open to join, a net with 0 members that kept its history (`night shift`), an empty net and a long one. Logged-in apps are logged out, since their sessions are gone. It refuses to run when `NODE_ENV` is `production`.
+
 ### API
 
 ```bash
@@ -108,7 +116,7 @@ Starts the API, the web app and a watcher that rebuilds `@callsign/types` on cha
 ### Trying it out
 
 1. Start the database, the API and the web app (`pnpm db:up`, then `pnpm dev`).
-2. Open http://localhost:5173, choose **New station? Register here** and register a callsign (3 to 20 characters) with a passphrase (at least 8).
+2. Open http://localhost:5173 and log in as a seeded station (`pnpm db:seed`, e.g. `wolf-2` / `correct horse`), or choose **New station? Register here** and register a callsign (3 to 20 characters) with a passphrase (at least 8).
 3. Open a net with **New net**, or join one under **Open to join**. Messages go out with **TX** or Enter.
 4. For a second station, register another callsign in a private window, another browser or the mobile app, and join the same net: messages, the member count and the net list preview update live on both.
 
