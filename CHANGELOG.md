@@ -4,6 +4,9 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(mobile): crash boundaries: one around the navigator, one per chat and on New net, with a way back
+- feat(screens): crash screen offers Back where the crashed screen's header is gone (onBack); web narrow chat uses it
+
 - feat(web): crash boundaries: one in the root route (resets on another page), one per chat panel (the nets list stays)
 - test(web): shared app test helpers (appTestUtils: setupAppTests, renderApp, refreshAnswers)
 
