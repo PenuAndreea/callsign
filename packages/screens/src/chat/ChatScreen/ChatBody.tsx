@@ -5,6 +5,7 @@ import type { RefObject } from 'react';
 import { ActivityIndicator, FlatList, View } from 'react-native';
 
 import { errorMessage, errorMessageForCode } from '../../errors/errorMessage';
+import { FormError } from '../../form/FormError';
 import { ChatNotice } from './ChatNotice';
 import { ChatRow } from './ChatRow';
 import { useChatStyles } from './ChatScreen.styles';
@@ -26,6 +27,8 @@ export interface ChatBodyProps {
   /** Shown when the history says `NOT_A_MEMBER` (opened from a link, or left elsewhere). */
   onJoin: () => void;
   joining: boolean;
+  /** Why the last join failed, under the Join button. */
+  joinError: string | undefined;
   userId: string;
   userCallsign: string;
   onRetrySend: (clientMessageId: string) => void;
@@ -57,6 +60,7 @@ export function ChatBody({ listRef, ...props }: ChatBodyProps) {
     return (
       <ChatNotice message="You are not on this net. Join to read the traffic and transmit.">
         <Button label="Join the net" loading={props.joining} onPress={props.onJoin} />
+        <FormError message={props.joinError} />
       </ChatNotice>
     );
   }

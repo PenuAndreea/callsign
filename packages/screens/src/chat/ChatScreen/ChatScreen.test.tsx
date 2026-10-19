@@ -208,4 +208,29 @@ describe('ChatScreen', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Leave' }));
     await waitFor(() => expect(onLeft).toHaveBeenCalledOnce());
   });
+
+  it('says why leaving failed and stays on the net', async () => {
+    server.use(http.delete(api(`/rooms/${tower.id}/members/me`), () => HttpResponse.error()));
+    const { onLeft } = renderChat();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Leave' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'No contact with the net. Check your connection.',
+    );
+    expect(onLeft).not.toHaveBeenCalled();
+  });
+
+  it('says why joining failed', async () => {
+    server.use(
+      http.get(api(`/rooms/${tower.id}/messages`), () => apiError(403, 'NOT_A_MEMBER')),
+      http.put(api(`/rooms/${tower.id}/members/me`), () => apiError(429, 'RATE_LIMITED')),
+    );
+    renderChat();
+    await screen.findByText('4 stations on net');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Join the net' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Too many attempts. Stand by and try again in a minute.',
+    );
+  });
 });

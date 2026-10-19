@@ -13,8 +13,11 @@ import { MESSAGE_CONTENT_MAX } from '@callsign/types';
 import { Button, MessageInput, ScreenHeader } from '@callsign/ui';
 import type { ChatEntry } from '@callsign/hooks';
 import { useRef, useState } from 'react';
+import { View } from 'react-native';
 import type { FlatList } from 'react-native';
 
+import { errorMessageIfAny } from '../../errors/errorMessage';
+import { FormError } from '../../form/FormError';
 import { stationsLabel } from '../../format/stations';
 import { KeyboardFrame } from '../../layout/KeyboardFrame';
 import { useInsetPadding } from '../../layout/useInsetPadding';
@@ -44,6 +47,7 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
 
   const offAir = isApiClientError(netQuery.error, 'NOT_FOUND');
   const notMember = isApiClientError(chat.error, 'NOT_A_MEMBER');
+  const leaveError = errorMessageIfAny(leave.error);
   const live = realtime === 'connected' ? '' : ' · reconnecting';
 
   return (
@@ -67,6 +71,11 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
           )
         }
       />
+      {leaveError && (
+        <View style={styles.headerNotice}>
+          <FormError message={leaveError} />
+        </View>
+      )}
       <ChatBody
         listRef={listRef}
         entries={chat.entries}
@@ -80,6 +89,7 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
         onRetryLoad={() => void chat.refetch()}
         onJoin={() => join.mutate(netId, { onSuccess: () => void chat.refetch() })}
         joining={join.isPending}
+        joinError={errorMessageIfAny(join.error)}
         userId={user.id}
         userCallsign={user.callsign}
         onRetrySend={retry}
