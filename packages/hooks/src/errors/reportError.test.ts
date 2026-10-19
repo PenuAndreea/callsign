@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiClientError } from '../api/ApiClientError';
-import { consoleErrorReporter, isUnexpectedError } from './reportError';
+import type { ErrorReporter } from './reportError';
+import { consoleErrorReporter, isUnexpectedError, oncePerError } from './reportError';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -28,5 +29,26 @@ describe('consoleErrorReporter', () => {
     const error = new TypeError('x is undefined');
     consoleErrorReporter(error, { source: 'query', key: ['nets', 'list'] });
     expect(log).toHaveBeenCalledWith('[callsign] unexpected query error', ['nets', 'list'], error);
+  });
+});
+
+describe('oncePerError', () => {
+  it('reports the same error object once, whatever the source', () => {
+    const report = vi.fn<ErrorReporter>();
+    const once = oncePerError(report);
+    const bug = new TypeError('x is undefined');
+    once(bug, { source: 'query', key: ['nets'] });
+    once(bug, { source: 'render', componentStack: 'at ChatScreen' });
+    once(new TypeError('another bug'), { source: 'render' });
+    expect(report).toHaveBeenCalledTimes(2);
+    expect(report).toHaveBeenNthCalledWith(1, bug, { source: 'query', key: ['nets'] });
+  });
+
+  it('passes primitives through every time', () => {
+    const report = vi.fn<ErrorReporter>();
+    const once = oncePerError(report);
+    once('boom', { source: 'render' });
+    once('boom', { source: 'render' });
+    expect(report).toHaveBeenCalledTimes(2);
   });
 });

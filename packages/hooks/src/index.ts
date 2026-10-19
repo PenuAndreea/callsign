@@ -32,5 +32,6 @@ export type { SendMessageActions } from './messages/useSendMessage';
 export { useSendMessage } from './messages/useSendMessage';
 export type { SocketFactoryOptions } from './realtime/defaultSocketFactory';
 export { defaultSocketFactory } from './realtime/defaultSocketFactory';
-// Platform wiring without a second TanStack dependency (React Native: AppState → focus).
-export { focusManager, onlineManager } from '@tanstack/react-query';
+// Platform wiring without a second TanStack dependency (React Native: AppState → focus;
+// error boundaries reset failed queries on retry).
+export { focusManager, onlineManager, useQueryErrorResetBoundary } from '@tanstack/react-query';

@@ -12,7 +12,6 @@ import { ApiProvider } from '../provider/ApiProvider';
 import { apiError, webPlatform } from '../test/fixtures';
 import { api, server } from '../test/server';
 import type { ErrorReporter } from './reportError';
-import { consoleErrorReporter } from './reportError';
 import { useReportError } from './useReportError';
 
 beforeEach(() => {
@@ -45,17 +44,24 @@ class Boundary extends Component<{ onCatch: (error: unknown) => void; children: 
 }
 
 describe('useReportError', () => {
-  it("returns the platform's reporter", () => {
-    const reportError: ErrorReporter = vi.fn();
+  it("reports through the platform's reporter, once per error", () => {
+    const reportError = vi.fn<ErrorReporter>();
     const { result } = renderHook(useReportError, {
       wrapper: wrapperFor({ ...webPlatform, reportError }),
     });
-    expect(result.current).toBe(reportError);
+    const bug = new TypeError('x is undefined');
+    result.current(bug, { source: 'render' });
+    result.current(bug, { source: 'render' });
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(bug, { source: 'render' });
   });
 
   it('falls back to the console', () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const { result } = renderHook(useReportError, { wrapper: wrapperFor(webPlatform) });
-    expect(result.current).toBe(consoleErrorReporter);
+    const bug = new TypeError('x is undefined');
+    result.current(bug, { source: 'render' });
+    expect(log).toHaveBeenCalledWith('[callsign] unexpected render error', '', bug);
+    vi.restoreAllMocks();
   });
 
   it('throws outside ApiProvider', () => {
@@ -119,18 +125,19 @@ describe('reporting through the query cache', () => {
 
   it('reports a failing mutation that is a bug, with its key when it has one', async () => {
     const reportError = vi.fn<ErrorReporter>();
-    const bug = new RangeError('bad index');
+    const keyedBug = new RangeError('bad index');
+    const unkeyedBug = new RangeError('another bad index');
     const { result } = renderHook(
       () => ({
-        keyed: useMutation({ mutationKey: ['join'], mutationFn: () => Promise.reject(bug) }),
-        unkeyed: useMutation({ mutationFn: () => Promise.reject(bug) }),
+        keyed: useMutation({ mutationKey: ['join'], mutationFn: () => Promise.reject(keyedBug) }),
+        unkeyed: useMutation({ mutationFn: () => Promise.reject(unkeyedBug) }),
       }),
       { wrapper: wrapperFor({ ...webPlatform, reportError }) },
     );
     result.current.keyed.mutate();
     result.current.unkeyed.mutate();
     await waitFor(() => expect(reportError).toHaveBeenCalledTimes(2));
-    expect(reportError).toHaveBeenCalledWith(bug, { source: 'mutation', key: ['join'] });
-    expect(reportError).toHaveBeenCalledWith(bug, { source: 'mutation' });
+    expect(reportError).toHaveBeenCalledWith(keyedBug, { source: 'mutation', key: ['join'] });
+    expect(reportError).toHaveBeenCalledWith(unkeyedBug, { source: 'mutation' });
   });
 });

@@ -10,6 +10,8 @@ export interface ErrorContext {
   source: ErrorSource;
   /** The query or mutation key, or the socket event name, when there is one. */
   key?: readonly unknown[];
+  /** For a render crash: the component stack React recorded. */
+  componentStack?: string;
 }
 
 /**
@@ -28,7 +30,23 @@ export function isUnexpectedError(error: unknown): boolean {
   return error.code === 'INVALID_RESPONSE' || error.code === 'INTERNAL_ERROR';
 }
 
+/**
+ * Reports each error object once. A query bug is seen twice on its way: by the query cache, then
+ * by the error boundary it crashes into. Primitives (a thrown string) cannot be tracked and pass.
+ */
+export function oncePerError(report: ErrorReporter): ErrorReporter {
+  const seen = new WeakSet<object>();
+  return (error, context) => {
+    if (typeof error === 'object' && error !== null) {
+      if (seen.has(error)) return;
+      seen.add(error);
+    }
+    report(error, context);
+  };
+}
+
 /** The default reporter: the console (browser devtools, Metro's terminal). */
 export const consoleErrorReporter: ErrorReporter = (error, context) => {
-  console.error(`[callsign] unexpected ${context.source} error`, context.key ?? '', error);
+  const where = context.key ?? context.componentStack ?? '';
+  console.error(`[callsign] unexpected ${context.source} error`, where, error);
 };
