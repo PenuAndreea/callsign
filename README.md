@@ -114,6 +114,14 @@ Starts the API, the web app and a watcher that rebuilds `@callsign/types` on cha
 
 On wide windows the nets list stays on the left of the chat; below 900 px wide, the list and the chat are separate pages, like on the phone.
 
+### When something goes wrong
+
+- **A request fails** (not a member, a name taken, a server error): the screen says why and offers to try again.
+- **The API cannot be reached** (offline, API stopped): "No contact" copy, and messages show "Not sent" with Retry. The app reconnects by itself.
+- **A screen crashes** (a bug): it shows "Signal lost" with Try again (and Back where the screen's own back button is gone). On wide web windows only the chat panel is replaced; the nets list stays.
+
+Unexpected errors (bugs, server failures, responses that break the contract) are logged as `[callsign] unexpected … error` in the browser console or Metro's terminal. To send them to an error-tracking service instead, pass `reportError` in the app's platform (`apps/web/src/platform.ts`, `apps/mobile/src/platform.ts`). In development, React Native also shows every caught error in its red LogBox overlay; dismiss it to see the crash screen.
+
 ### Shared types
 
 `@callsign/types` is built to `packages/types/dist`. `pnpm dev`, `pnpm test` and `pnpm typecheck` build it automatically. When you start apps one by one and change the types, rebuild them:

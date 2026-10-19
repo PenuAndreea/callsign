@@ -4,21 +4,16 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- chore(docs): error handling in CLAUDE.md (expected, reported, crashes; web and mobile boundaries) and README (when something goes wrong)
 - feat(mobile): crash boundaries: one around the navigator, one per chat and on New net, with a way back
 - feat(screens): crash screen offers Back where the crashed screen's header is gone (onBack); web narrow chat uses it
-
 - feat(web): crash boundaries: one in the root route (resets on another page), one per chat panel (the nets list stays)
 - test(web): shared app test helpers (appTestUtils: setupAppTests, renderApp, refreshAnswers)
-
 - feat(screens): CrashScreen and ScreenErrorBoundary (react-error-boundary): reports render crashes, resets failed queries on Try again, resetKeys
 - feat(hooks): one report per error (oncePerError), componentStack for render crashes, useQueryErrorResetBoundary re-export
-
 - feat(hooks): live socket events are checked against the shared schema; broken acks and events are reported, invalid events dropped
 - feat(hooks): queries throw bugs (non-API errors) to the nearest error boundary; API errors stay inline
-
-- fix(screens): a send refused by the socket rate limit says "stand by a few seconds", not a minute
-- fix(hooks): a 502/503/504 without an ApiError body (proxy, API down) is NETWORK_ERROR, not INTERNAL_ERROR
-
+- fix(hooks): a 502/503/504 without an ApiError body (proxy, API down) is NETWORK_ERROR, not INTERNAL_ERROR; a send refused by the socket rate limit says "stand by a few seconds"
 - feat(hooks): reportError seam: ApiPlatform.reportError (console by default), useReportError, the query and mutation caches report unexpected errors only
 
 ## 0.6.0 (M5: frontend integration)
