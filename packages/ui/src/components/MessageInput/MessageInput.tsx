@@ -16,11 +16,11 @@ export function MessageInput({
   style,
 }: MessageInputProps) {
   const styles = useMessageInputStyles();
-  const text = value.trim();
-  const canSend = !disabled && text.length > 0;
+  const canSend = !disabled && value.trim().length > 0;
 
-  const send = () => {
-    if (canSend) onSend(text);
+  const send = (raw: string) => {
+    const text = raw.trim();
+    if (!disabled && text.length > 0) onSend(text);
   };
 
   return (
@@ -31,7 +31,9 @@ export function MessageInput({
         hideLabel
         value={value}
         onChangeText={onChangeText}
-        onSubmitEditing={send}
+        // The field's own text: Return can beat the re-render with the last keystroke or an
+        // autocorrected word, and `value` would still be the previous one.
+        onSubmitEditing={(event) => send(event.nativeEvent.text)}
         placeholder={placeholder}
         returnKeyType="send"
         submitBehavior="submit"
@@ -44,7 +46,7 @@ export function MessageInput({
         variant="primary"
         aria-label="Send"
         disabled={!canSend}
-        onPress={send}
+        onPress={() => send(value)}
       />
     </View>
   );
