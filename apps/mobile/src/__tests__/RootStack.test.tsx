@@ -16,7 +16,18 @@ jest.mock('@callsign/screens', () => {
     ),
   };
 });
-jest.mock('expo-splash-screen', () => ({ hideAsync: jest.fn(() => Promise.resolve()) }));
+// The splash has its own tests: here it only shows whether it may leave.
+jest.mock('@/splash/SplashGate/SplashGate', () => {
+  const { Text: MockText } = jest.requireActual<typeof ReactNative>('react-native');
+  return {
+    SplashGate: ({ ready, children }: { ready: boolean; children: ReactNode }) => (
+      <>
+        <MockText>{ready ? 'splash may leave' : 'splash stays'}</MockText>
+        {children}
+      </>
+    ),
+  };
+});
 // The stack renders which groups its guards allow.
 jest.mock('expo-router', () => {
   const { Text: MockText } = jest.requireActual<typeof ReactNative>('react-native');
@@ -33,11 +44,21 @@ const session = (status: string) => ({
 });
 
 describe('RootStack', () => {
-  it('waits behind the splash screen while the session restores', async () => {
+  it('keeps the splash while the session restores', async () => {
     mockUseSession.mockReturnValue(session('restoring'));
     await render(<RootStack />);
+    expect(screen.getByText('splash stays')).toBeOnTheScreen();
     expect(screen.getByText('restoring')).toBeOnTheScreen();
   });
+
+  it.each(['unreachable', 'signedOut', 'signedIn'])(
+    'lets the splash leave once the session is %s',
+    async (status) => {
+      mockUseSession.mockReturnValue(session(status));
+      await render(<RootStack />);
+      expect(screen.getByText('splash may leave')).toBeOnTheScreen();
+    },
+  );
 
   it('shows the retry screen when the API could not be reached', async () => {
     mockUseSession.mockReturnValue(session('unreachable'));
