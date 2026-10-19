@@ -2,18 +2,21 @@ import type { ChatEntry } from '@callsign/hooks';
 import { isApiClientError } from '@callsign/hooks';
 import { Button, Text } from '@callsign/ui';
 import type { RefObject } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, FlatList, View } from 'react-native';
 
 import { errorMessage, errorMessageForCode } from '../../errors/errorMessage';
 import { FormError } from '../../form/FormError';
 import { ChatNotice } from './ChatNotice';
+import type { ChatItem } from './chatItems';
+import { withDaySeparators } from './chatItems';
 import { ChatRow } from './ChatRow';
 import { useChatStyles } from './ChatScreen.styles';
 
 export interface ChatBodyProps {
   entries: ChatEntry[];
   /** For scrolling to the newest message (offset 0 of the inverted list) after a send. */
-  listRef: RefObject<FlatList<ChatEntry> | null>;
+  listRef: RefObject<FlatList<ChatItem> | null>;
   isPending: boolean;
   /** The net does not exist (its own fetch said `NOT_FOUND`). */
   offAir: boolean;
@@ -43,6 +46,8 @@ export interface ChatBodyProps {
 export function ChatBody({ listRef, ...props }: ChatBodyProps) {
   const styles = useChatStyles();
   const { entries, error } = props;
+  // "Today" is the day the chat opened; a chat left open past midnight keeps it until reopened.
+  const [now] = useState(() => new Date());
   const notMember = isApiClientError(error, 'NOT_A_MEMBER');
 
   // First: the history says NOT_A_MEMBER for a net that does not exist too.
@@ -82,8 +87,8 @@ export function ChatBody({ listRef, ...props }: ChatBodyProps) {
       style={styles.list}
       contentContainerStyle={styles.messages}
       inverted
-      data={entries}
-      keyExtractor={(entry) => entry.key}
+      data={withDaySeparators(entries, now)}
+      keyExtractor={(item) => item.key}
       onEndReached={() => {
         if (props.hasOlder && !props.loadingOlder) props.onLoadOlder();
       }}
@@ -98,15 +103,21 @@ export function ChatBody({ listRef, ...props }: ChatBodyProps) {
           )}
         </View>
       }
-      renderItem={({ item }) => (
-        <ChatRow
-          entry={item}
-          userId={props.userId}
-          userCallsign={props.userCallsign}
-          onRetry={props.onRetrySend}
-          onDiscard={props.onDiscard}
-        />
-      )}
+      renderItem={({ item }) =>
+        item.type === 'day' ? (
+          <View style={styles.day}>
+            <Text variant="meta">{item.label}</Text>
+          </View>
+        ) : (
+          <ChatRow
+            entry={item}
+            userId={props.userId}
+            userCallsign={props.userCallsign}
+            onRetry={props.onRetrySend}
+            onDiscard={props.onDiscard}
+          />
+        )
+      }
     />
   );
 }

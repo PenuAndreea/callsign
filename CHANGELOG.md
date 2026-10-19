@@ -4,6 +4,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(screens): day separators in the chat (Today, Yesterday, 17 Oct)
 - feat(ui): message times in the device's time zone, without the Z (formatTime replaces formatZulu)
 - fix(screens): a failed Leave says so ("Could not leave.") and clears once back on the air
 - feat(screens): join and leave errors show inline in the chat; errorMessageIfAny replaces the repeated error-or-nothing check

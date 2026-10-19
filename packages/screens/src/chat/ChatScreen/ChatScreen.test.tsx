@@ -88,6 +88,19 @@ describe('ChatScreen', () => {
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
   });
 
+  it('marks the day above its traffic', async () => {
+    // Only the clock: timers stay real for the API and the socket.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-25T12:00:00.000Z'));
+    try {
+      renderChat();
+      // The traffic was sent at 22:14Z on 17 Oct: 00:14 on 18 Oct in Brussels (`testTimeEnv`).
+      expect(await screen.findByText('18 Oct')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('has no back button next to the sidebar', async () => {
     renderChat();
     await screen.findByText('Roger. Over.');

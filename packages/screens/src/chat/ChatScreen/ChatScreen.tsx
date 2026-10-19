@@ -11,7 +11,6 @@ import {
 import { spacing } from '@callsign/theme';
 import { MESSAGE_CONTENT_MAX } from '@callsign/types';
 import { Button, MessageInput, ScreenHeader } from '@callsign/ui';
-import type { ChatEntry } from '@callsign/hooks';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import type { FlatList } from 'react-native';
@@ -22,6 +21,7 @@ import { stationsLabel } from '../../format/stations';
 import { KeyboardFrame } from '../../layout/KeyboardFrame';
 import { useInsetPadding } from '../../layout/useInsetPadding';
 import { ChatBody } from './ChatBody';
+import type { ChatItem } from './chatItems';
 import { useChatStyles } from './ChatScreen.styles';
 import type { ChatScreenProps } from './ChatScreen.types';
 
@@ -40,7 +40,7 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
   const leave = useLeaveNet();
   const realtime = useRealtimeStatus();
   const [draft, setDraft] = useState('');
-  const listRef = useRef<FlatList<ChatEntry>>(null);
+  const listRef = useRef<FlatList<ChatItem>>(null);
   const { reset: resetLeave } = leave;
   // Back on the air: a Leave that failed in the outage would now work, so drop its error.
   useEffect(() => {
