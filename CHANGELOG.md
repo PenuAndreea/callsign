@@ -4,6 +4,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- docs: README quick tour with web, iOS and Android screenshots in light and dark, a quick start block, and the seed as its own step in Trying it out
 - feat(api): dev seed (`pnpm db:seed`): wipes the database and writes 8 stations, 7 nets and backdated radio history
 - feat(screens): Join in the nets list uses the small button
 - feat(ui): Button size small (44 touch target, label-size text) for row actions
