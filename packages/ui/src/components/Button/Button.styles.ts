@@ -25,6 +25,11 @@ export const useButtonStyles = createStyles(({ colors }) => ({
     borderWidth: 2,
     borderColor: colors.primary,
   },
+  // After the variant: keeps its colors and border, only shrinks it.
+  small: {
+    minHeight: sizes.touch,
+    paddingHorizontal: spacing.lg,
+  },
   link: {
     paddingHorizontal: spacing.sm,
   },
