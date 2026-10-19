@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { formatZulu } from '../../utils/formatZulu';
+import { formatTime } from '../../utils/formatTime';
 import { Text } from '../Text/Text';
 import { useChatBubbleStyles } from './ChatBubble.styles';
 import type { ChatBubbleProps } from './ChatBubble.types';
@@ -15,7 +15,7 @@ export function ChatBubble({
   style,
 }: ChatBubbleProps) {
   const styles = useChatBubbleStyles();
-  const time = formatZulu(sentAt);
+  const time = formatTime(sentAt);
 
   return (
     <View style={[styles.bubble, own ? styles.own : styles.incoming, style]}>

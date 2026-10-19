@@ -88,6 +88,19 @@ describe('ChatScreen', () => {
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
   });
 
+  it('marks the day above its traffic', async () => {
+    // Only the clock: timers stay real for the API and the socket.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-25T12:00:00.000Z'));
+    try {
+      renderChat();
+      // The traffic was sent at 22:14Z on 17 Oct: 00:14 on 18 Oct in Brussels (`testTimeEnv`).
+      expect(await screen.findByText('18 Oct')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('has no back button next to the sidebar', async () => {
     renderChat();
     await screen.findByText('Roger. Over.');
@@ -212,12 +225,28 @@ describe('ChatScreen', () => {
   it('says why leaving failed and stays on the net', async () => {
     server.use(http.delete(api(`/rooms/${tower.id}/members/me`), () => HttpResponse.error()));
     const { onLeft } = renderChat();
+    // Connected first: connecting later would clear the error (back on the air) before it is read.
+    await screen.findByText('4 stations on net');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Leave' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'No contact with the net. Check your connection.',
+      'Could not leave. No contact with the net. Check your connection.',
     );
     expect(onLeft).not.toHaveBeenCalled();
+  });
+
+  it('drops the leave error once back on the air', async () => {
+    server.use(http.delete(api(`/rooms/${tower.id}/members/me`), () => HttpResponse.error()));
+    renderChat();
+    await screen.findByText('4 stations on net');
+    await userEvent.click(await screen.findByRole('button', { name: 'Leave' }));
+    await screen.findByText(/^Could not leave\./);
+
+    sockets.dropConnections();
+    await screen.findByText('4 stations on net · reconnecting');
+    await screen.findByText('4 stations on net');
+
+    expect(screen.queryByText(/^Could not leave\./)).not.toBeInTheDocument();
   });
 
   it('says why joining failed', async () => {

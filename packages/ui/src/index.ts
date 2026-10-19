@@ -30,4 +30,4 @@ export type * from './components/ChatBubble/ChatBubble.types';
 export * from './components/MessageInput/MessageInput';
 export type * from './components/MessageInput/MessageInput.types';
 
-export * from './utils/formatZulu';
+export * from './utils/formatTime';

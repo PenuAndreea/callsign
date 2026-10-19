@@ -1,4 +1,8 @@
-import { reactNativeWebInlineDeps, reactNativeWebResolve } from '@callsign/config/vite';
+import {
+  reactNativeWebInlineDeps,
+  reactNativeWebResolve,
+  testTimeEnv,
+} from '@callsign/config/vite';
 import { defineConfig } from 'vitest/config';
 
 // Components are written against `react-native`; tests render them through react-native-web,
@@ -9,6 +13,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    env: testTimeEnv,
     server: { deps: { inline: reactNativeWebInlineDeps } },
   },
 });

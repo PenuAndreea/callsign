@@ -24,7 +24,7 @@ A clean, modern UI with a field-radio voice. The radio feel comes from typograph
 - **Fonts (three):** **Stardos Stencil** (400/700) for headings, short labels and buttons; **Special Elite** (typewriter) for message text and inputs; **Share Tech Mono** for numbers and small tracked meta text (times, counts, subtitles, links). Loaded from `@expo-google-fonts/*` on both platforms: `useFonts` in the root layout on mobile (`apps/mobile/src/fonts.ts`, splash screen held until loaded), the `FontFace` API on web (`apps/web/src/fonts.ts`, `.ttf?url` imports). Custom fonts on native ignore `fontWeight`, so there is **one family token per face**, named after the Expo keys (e.g. `StardosStencil_700Bold`), and web registers the same names. Both font maps are typed by `fontFamilies`, so one `fontFamily` token works everywhere and a missing face is a type error.
 - **Labels and meta:** UPPERCASE, letter-spaced (2 to 4px).
 - **Icons and logo:** `react-native-svg` (works on web through react-native-web) with a few hand-made icons: chevron-left, arrow-right, plus, and the radio logo. No icon font.
-- **Timestamps:** Zulu style, e.g. `22:14Z`.
+- **Timestamps:** 24-hour time in the device's time zone, e.g. `22:14`; the chat marks each day ("Today", "Yesterday", "17 Oct").
 - **Copy tone:** "Report in", "New station? Register here", "Request clearance", "Already on the net? Report in", "Type message. Over.", "Keep the net clear. Be brief. Be kind. Over.".
 - **Accessibility:** touch targets at least 44px, real labels on inputs, `aria-label` / `accessibilityLabel` on icon-only buttons (required by the prop type), text contrast at least 4.5:1 in both schemes (checked by a theme test).
 
@@ -40,8 +40,8 @@ A clean, modern UI with a field-radio voice. The radio feel comes from typograph
   - `Masthead`: logo + display title + tracked subtitle (sign in, register).
   - `ScreenHeader`: optional back `IconButton`, meta line above the title ("NET · TOWER AND GROUND"), title, meta line below ("4 STATIONS ON NET"), optional action on the right (e.g. "Leave"). Title truncates in the chat header; net names in lists wrap.
   - `RoomListItem`: status dot, name, last-message preview, trailing slot (member count or Join button), `selected` state for the web sidebar.
-  - `ChatBubble`: incoming on surface with the sender callsign in `label` color, outgoing on `bubbleOut`; meta line with the Zulu time.
-  - `MessageInput`: chat `Input` + round send `IconButton` ("TX", with `accessibilityLabel="Send"`).
+  - `ChatBubble`: incoming on surface with the sender callsign in `label` color, outgoing on `bubbleOut`; meta line with the local time.
+  - `MessageInput`: chat `Input` + round send `IconButton` ("TX", with `accessibilityLabel="Send"`). Return sends the field's own text (`nativeEvent.text`), never a `value` a render behind.
   - `SectionLabel`: tracked label for list sections ("JOINED", "OPEN TO JOIN").
 - All of them are built (M1). `@callsign/ui/preview` exports `ComponentPreview`, one scrolling screen with every component, kept as a visual reference; both apps render the real screens since M5. Screens own the safe-area insets (`react-native-safe-area-context`, `useInsetPadding` in `packages/screens`), so components never pad for the notch or home indicator; web wraps the app in a `SafeAreaProvider` (zero insets). `KeyboardFrame` (`KeyboardAvoidingView`, `padding` on both platforms: Android is edge-to-edge) keeps the composer and form fields above the keyboard. `Input` forwards `ref` to its `TextInput`, so `FormInput` hands react-hook-form the field: "next" keys call `setFocus`, and a failed submit focuses the first invalid field. Passphrase fields set `autoCapitalize="none"` and `autoCorrect={false}` (Android keyboards capitalize the first letter otherwise).
 
@@ -50,6 +50,6 @@ A clean, modern UI with a field-radio voice. The radio feel comes from typograph
 - Sign in (`signin`): `Masthead` "CALLSIGN"; callsign + passphrase; "Report in" primary button; "New station? Register here" link.
 - Register (`register`): back button, `Masthead` "REGISTER"; callsign (3 to 20 characters), passphrase (at least 8 characters), confirm passphrase (not in the mockup, kept from the spec); "Request clearance" button; "Already on the net? Report in" link.
 - Nets list (`chats`): header with the user's callsign above the title; joined nets (green dot, name, member count, last message), then open nets with a Join button. "+ New net" and Log out. No mockup for the open-nets section; reuse `RoomListItem`.
-- Chat (`chat`): `ScreenHeader` with back, net name, member count and "Leave"; own vs other messages; `MessageInput`. Typing line only if the optional indicator is built.
+- Chat (`chat`): `ScreenHeader` with back, net name, member count and "Leave"; own vs other messages; day separators (`meta` text, centered); `MessageInput`. Typing line only if the optional indicator is built.
 - New net (no mockup): name field only (3 to 30 characters), note that the net is open to all. Built from `ScreenHeader`, `Input`, `Button`.
 - Web chat (no mockup): sidebar with nets next to the chat panel; stacks on narrow widths. Same components as mobile, only the layout differs.

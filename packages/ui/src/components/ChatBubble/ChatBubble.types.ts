@@ -5,7 +5,7 @@ export interface ChatBubbleProps {
   content: string;
   /** Sender's callsign, shown on incoming messages (uppercase). */
   senderCallsign: string;
-  /** Send time; shown in Zulu, e.g. `22:14Z`. The API sends ISO strings. */
+  /** Send time; shown in the device's time zone, e.g. `22:14`. The API sends ISO strings. */
   sentAt: Date | string;
   /** Own message: right-aligned on the primary color, without the sender line. */
   own?: boolean;

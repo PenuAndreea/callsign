@@ -11,17 +11,17 @@ import {
 import { spacing } from '@callsign/theme';
 import { MESSAGE_CONTENT_MAX } from '@callsign/types';
 import { Button, MessageInput, ScreenHeader } from '@callsign/ui';
-import type { ChatEntry } from '@callsign/hooks';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import type { FlatList } from 'react-native';
 
-import { errorMessageIfAny } from '../../errors/errorMessage';
+import { errorMessageIfAny, leaveErrorMessage } from '../../errors/errorMessage';
 import { FormError } from '../../form/FormError';
 import { stationsLabel } from '../../format/stations';
 import { KeyboardFrame } from '../../layout/KeyboardFrame';
 import { useInsetPadding } from '../../layout/useInsetPadding';
 import { ChatBody } from './ChatBody';
+import type { ChatItem } from './chatItems';
 import { useChatStyles } from './ChatScreen.styles';
 import type { ChatScreenProps } from './ChatScreen.types';
 
@@ -40,14 +40,19 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
   const leave = useLeaveNet();
   const realtime = useRealtimeStatus();
   const [draft, setDraft] = useState('');
-  const listRef = useRef<FlatList<ChatEntry>>(null);
+  const listRef = useRef<FlatList<ChatItem>>(null);
+  const { reset: resetLeave } = leave;
+  // Back on the air: a Leave that failed in the outage would now work, so drop its error.
+  useEffect(() => {
+    if (realtime === 'connected') resetLeave();
+  }, [realtime, resetLeave]);
   const headerPadding = useInsetPadding({ top: spacing.xl });
   // The composer sheet runs under the home indicator; its field stays above it.
   const composerPadding = useInsetPadding({ bottom: spacing.xl });
 
   const offAir = isApiClientError(netQuery.error, 'NOT_FOUND');
   const notMember = isApiClientError(chat.error, 'NOT_A_MEMBER');
-  const leaveError = errorMessageIfAny(leave.error);
+  const leaveError = leaveErrorMessage(leave.error);
   const live = realtime === 'connected' ? '' : ' · reconnecting';
 
   return (

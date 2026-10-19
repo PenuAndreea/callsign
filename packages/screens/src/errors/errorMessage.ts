@@ -45,3 +45,12 @@ export function errorMessage(error: unknown): string {
 export function errorMessageIfAny(error: unknown): string | undefined {
   return error === null || error === undefined ? undefined : errorMessage(error);
 }
+
+/**
+ * Why Leave failed, said as such: the same outage also fails the history, and two identical
+ * lines on one screen would not say which action failed.
+ */
+export function leaveErrorMessage(error: unknown): string | undefined {
+  const message = errorMessageIfAny(error);
+  return message === undefined ? undefined : `Could not leave. ${message}`;
+}

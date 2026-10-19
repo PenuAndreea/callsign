@@ -5,6 +5,7 @@ import {
   errorMessage,
   errorMessageForCode,
   errorMessageIfAny,
+  leaveErrorMessage,
   sendErrorMessage,
 } from './errorMessage';
 
@@ -56,6 +57,15 @@ describe('errorMessageIfAny', () => {
     expect(errorMessageIfAny(undefined)).toBeUndefined();
     expect(errorMessageIfAny(new ApiClientError(0, 'NETWORK_ERROR', 'x'))).toBe(
       errorMessageForCode('NETWORK_ERROR'),
+    );
+  });
+});
+
+describe('leaveErrorMessage', () => {
+  it('says that leaving failed, then why', () => {
+    expect(leaveErrorMessage(null)).toBeUndefined();
+    expect(leaveErrorMessage(new ApiClientError(0, 'NETWORK_ERROR', 'x'))).toBe(
+      `Could not leave. ${errorMessageForCode('NETWORK_ERROR')}`,
     );
   });
 });

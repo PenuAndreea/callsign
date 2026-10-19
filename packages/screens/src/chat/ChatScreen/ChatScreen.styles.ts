@@ -18,6 +18,7 @@ export const useChatStyles = createStyles(({ colors }) => ({
   },
   centerText: { textAlign: 'center' },
   listEdge: { alignItems: 'center', paddingVertical: spacing.md },
+  day: { alignItems: 'center' },
   pending: { gap: spacing.xs, alignItems: 'flex-end' },
   failedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
 }));

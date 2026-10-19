@@ -63,6 +63,18 @@ describe('MessageInput', () => {
     expect(onSend).toHaveBeenCalledWith('Copy');
   });
 
+  it('sends the text in the field on return, even when `value` is a keystroke behind', () => {
+    const onSend = vi.fn();
+    // `value` not updated yet: Return arrived before the re-render with the last keystroke.
+    renderWithTheme(<MessageInput value="Cop" onChangeText={vi.fn()} onSend={onSend} />);
+    const field = screen.getByRole<HTMLInputElement>('textbox');
+    field.value = 'Copy';
+
+    fireEvent.keyDown(field, { key: 'Enter' });
+
+    expect(onSend).toHaveBeenCalledWith('Copy');
+  });
+
   it('cannot send an empty or blank message', async () => {
     const onSend = vi.fn();
     renderWithTheme(<Composer onSend={onSend} />);

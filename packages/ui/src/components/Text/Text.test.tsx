@@ -26,9 +26,9 @@ describe('Text', () => {
   });
 
   it('follows the theme scheme', () => {
-    renderWithTheme(<Text variant="meta">22:14Z</Text>, { scheme: 'dark' });
+    renderWithTheme(<Text variant="meta">22:14</Text>, { scheme: 'dark' });
 
-    expect(screen.getByText('22:14Z')).toHaveStyle({ color: darkColors.textMuted });
+    expect(screen.getByText('22:14')).toHaveStyle({ color: darkColors.textMuted });
   });
 
   it('lets tone override the variant color', () => {

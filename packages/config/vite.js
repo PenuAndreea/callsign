@@ -38,5 +38,11 @@ export const reactNativeWebOptimizeDeps = {
  */
 export const screenTestTimeoutMs = 10_000;
 
+/**
+ * Vitest env for tests that show times: the UI shows the device's local time, so tests pin one
+ * zone (with summer time, like the users') instead of depending on the machine or CI (UTC).
+ */
+export const testTimeEnv = { TZ: 'Europe/Brussels' };
+
 /** Vitest: transform these like source code so their imports get the aliases above. */
 export const reactNativeWebInlineDeps = ['react-native-svg', 'react-native-safe-area-context'];
