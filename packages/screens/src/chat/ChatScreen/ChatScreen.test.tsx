@@ -225,6 +225,8 @@ describe('ChatScreen', () => {
   it('says why leaving failed and stays on the net', async () => {
     server.use(http.delete(api(`/rooms/${tower.id}/members/me`), () => HttpResponse.error()));
     const { onLeft } = renderChat();
+    // Connected first: connecting later would clear the error (back on the air) before it is read.
+    await screen.findByText('4 stations on net');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Leave' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(

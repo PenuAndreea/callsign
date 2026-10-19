@@ -4,6 +4,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- test(screens): the failed-Leave test waits for the socket first (CI race with the reconnect reset)
 - fix(ui): the composer sends the field's own text on Return, not a value one keystroke behind
 - feat(screens): day separators in the chat (Today, Yesterday, 17 Oct)
 - feat(ui): message times in the device's time zone, without the Z (formatTime replaces formatZulu)
