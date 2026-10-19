@@ -4,6 +4,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- fix(hooks): the chat header keeps the net from the list when its own fetch fails (useNet initialData)
 - fix(hooks): a reconnect also refetches nets data that failed to load (a chat that failed in an outage recovers)
 - chore(docs): slim CLAUDE.md to rules, stack and conventions; architecture details move to docs/architecture.md, the design spec to docs/design/README.md
 - chore(docs): error handling in CLAUDE.md (expected, reported, crashes; web and mobile boundaries) and README (when something goes wrong)
