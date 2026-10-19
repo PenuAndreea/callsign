@@ -1,4 +1,4 @@
-import { darkColors, lightColors } from '@callsign/theme';
+import { darkColors, fontSizes, lightColors, sizes } from '@callsign/theme';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -37,6 +37,25 @@ describe('Button', () => {
 
     expect(screen.getByRole('button')).toHaveStyle({ borderColor: lightColors.primary });
     expect(screen.getByText('Leave')).toHaveStyle({ color: lightColors.primary });
+  });
+
+  it('shrinks the small size to the touch target, keeping the variant colors', () => {
+    renderWithTheme(<Button label="Join" variant="secondary" size="small" onPress={vi.fn()} />);
+
+    expect(screen.getByRole('button')).toHaveStyle({
+      minHeight: sizes.touch,
+      borderColor: lightColors.primary,
+    });
+    expect(screen.getByText('Join')).toHaveStyle({
+      fontSize: fontSizes.label,
+      color: lightColors.primary,
+    });
+  });
+
+  it('keeps links at one size', () => {
+    renderWithTheme(<Button label="Log out" variant="link" size="small" onPress={vi.fn()} />);
+
+    expect(screen.getByText('Log out')).toHaveStyle({ fontSize: fontSizes.caption });
   });
 
   it('underlines the link variant', () => {

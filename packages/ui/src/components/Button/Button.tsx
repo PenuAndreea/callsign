@@ -8,8 +8,9 @@ import type { TextTone, TextVariant } from '../Text/Text.types';
 import { useButtonStyles } from './Button.styles';
 import type { ButtonProps, ButtonVariant } from './Button.types';
 
-/** Matches the button label's cap height. */
+/** Match the label's cap height, regular and small. */
 const ICON_SIZE = 20;
+const SMALL_ICON_SIZE = 14;
 
 const labelProps: Record<ButtonVariant, { variant: TextVariant; tone: TextTone }> = {
   primary: { variant: 'button', tone: 'onPrimary' },
@@ -20,6 +21,7 @@ const labelProps: Record<ButtonVariant, { variant: TextVariant; tone: TextTone }
 export function Button({
   label,
   variant = 'primary',
+  size = 'regular',
   icon,
   disabled = false,
   loading = false,
@@ -30,6 +32,8 @@ export function Button({
   const { colors } = useTheme();
   const inactive = disabled || loading;
   const { tone } = labelProps[variant];
+  const small = size === 'small' && variant !== 'link';
+  const textProps = small ? { variant: 'label' as const, tone } : labelProps[variant];
 
   return (
     <PressableBase
@@ -42,6 +46,7 @@ export function Button({
       style={({ pressed }) => [
         styles.base,
         styles[variant],
+        small && styles.small,
         pressed && styles.pressed,
         disabled && styles.disabled,
         style,
@@ -51,10 +56,17 @@ export function Button({
         <ActivityIndicator color={colors[tone]} />
       ) : (
         <>
-          <Text {...labelProps[variant]} style={variant === 'link' && styles.linkLabel}>
+          <Text {...textProps} style={variant === 'link' && styles.linkLabel}>
             {label}
           </Text>
-          {icon && <Icon name={icon} size={ICON_SIZE} tone={tone} testID="button-icon" />}
+          {icon && (
+            <Icon
+              name={icon}
+              size={small ? SMALL_ICON_SIZE : ICON_SIZE}
+              tone={tone}
+              testID="button-icon"
+            />
+          )}
         </>
       )}
     </PressableBase>
