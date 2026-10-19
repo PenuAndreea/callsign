@@ -2,31 +2,64 @@
 
 One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0, M1 = 0.2.0, and so on; 1.0.0 is the finished v1 scope.
 
-## Unreleased
+## 0.7.0 (M6: extras - further improvements)
 
+### For the reviewers
+
+- docs: how AI was used (docs/ai): workflow, guardrails, corrections, and the implementation plan of every milestone; README section "Built with AI"
 - docs: README quick tour with web, iOS and Android screenshots in light and dark, a quick start block, and the seed as its own step in Trying it out
 - feat(api): dev seed (`pnpm db:seed`): wipes the database and writes 8 stations, 7 nets and backdated radio history
+
+### UI improvement
+
 - feat(screens): Join in the nets list uses the small button
 - feat(ui): Button size small (44 touch target, label-size text) for row actions
+
+### cleanup
+
 - chore(ui): remove ComponentPreview and the @callsign/ui/preview export; no app uses it since M5
+
+### Splash screen
+
 - fix(mobile): the splash intro runs 8 s and starts once the native splash is gone, so a slow first load no longer hides most of it
 - chore(docs): the splash in the design README and architecture; the radar sweep gradient as the one approved exception
 - feat(mobile): the animated splash covers start-up (SplashGate): full intro on the first launch, later launches leave once the session is known (at least 1.5 s), 200 ms fade
 - feat(mobile): splash components (emblem with radar sweep, wordmark, frequency tuner) on the shared Text and theme tokens; Text gains the displayText and displayMuted tones
 - feat(mobile): splash timeline and drivers (useSplashProgress, useContinuousRotation) on Reanimated 4; Jest setup mocks Reanimated and worklets
 - feat(theme): frequency-display tokens for the splash tuner (display, displayText, displayMuted, tick, needle), with contrast tests; light needle lightened to reach 3:1
+
+### Improve CI
+
 - ci: check the mobile native config (expo config + prebuild without pods), so a broken app.json or a missing icon fails CI
+
+### App icon
+
 - chore(mobile): Callsign app icon (iOS light and dark, Android adaptive and monochrome), splash and web favicon on the theme background #1F2318; Expo template assets removed
+
+### Improvements after QA
+
 - test(screens): the failed-Leave test waits for the socket first (CI race with the reconnect reset)
 - fix(ui): the composer sends the field's own text on Return, not a value one keystroke behind
+
+### Date time
+
 - feat(screens): day separators in the chat (Today, Yesterday, 17 Oct)
 - feat(ui): message times in the device's time zone, without the Z (formatTime replaces formatZulu)
+
+### Improvements after QA
+
 - fix(screens): a failed Leave says so ("Could not leave.") and clears once back on the air
 - feat(screens): join and leave errors show inline in the chat; errorMessageIfAny replaces the repeated error-or-nothing check
 - feat(screens): a net that does not exist is "off the air" in the chat (no Join, Leave or composer), not a dead-end offer to join
 - fix(hooks): the chat header keeps the net from the list when its own fetch fails (useNet initialData)
 - fix(hooks): a reconnect also refetches nets data that failed to load (a chat that failed in an outage recovers)
+
+### Smaller Context
+
 - chore(docs): slim CLAUDE.md to rules, stack and conventions; architecture details move to docs/architecture.md, the design spec to docs/design/README.md
+
+### Error handling with boundaries
+
 - chore(docs): error handling in CLAUDE.md (expected, reported, crashes; web and mobile boundaries) and README (when something goes wrong)
 - feat(mobile): crash boundaries: one around the navigator, one per chat and on New net, with a way back
 - feat(screens): crash screen offers Back where the crashed screen's header is gone (onBack); web narrow chat uses it
@@ -41,6 +74,8 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## 0.6.0 (M5: frontend integration)
 
+### Mobile specifics
+
 - test(config): screen tests wait up to 5 s for async queries (setupScreenTests, 10 s test timeout): the first App render took 2.3 s on CI
 - chore(docs): README how-tos for mobile (API address per simulator, a real phone, Expo Go), trying it out, package overview
 - feat(mobile): real app on Expo Router (Stack.Protected auth and app groups, splash until the session is known), secure-store refresh token, emulator API URLs, AppState focus
@@ -49,22 +84,30 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 - feat(hooks): socket factory options (websocket-only on React Native); focusManager re-export
 - chore(config): alias react-native-safe-area-context to its ES build for Vite and Vitest
 
+### Chat and realtime
+
 - feat(web): split layout (nets sidebar next to the chat from 900 px, stacked below) and the chat route
 - feat(screens): ChatScreen (inverted history with older pages, pending and failed sends with Retry, join offer, live traffic)
 - feat(hooks): useNetMessages and useSendMessage with pending sends, idempotent retry and live insert into the history
 - feat(ui): delivery status on ChatBubble; sizes.sidebar and breakpoints.split tokens
 - feat(hooks): realtime socket per signed-in session (token per handshake, refresh on a refused handshake, catch-up after reconnects), live preview and member count in the cache, useRealtimeStatus, Socket.IO test server
 
+### Nets
+
 - feat(web): nets list, new net and a temporary net page with Leave (/nets/new, /nets/:netId)
 - feat(screens): NetsScreen (joined and open sections, paged, join opens the net) and NewNetScreen; FormLayout, formErrorExcept, stationsLabel
 - feat(ui): trailingLabel on RoomListItem, so a trailing count is part of the row's accessible name
 - feat(hooks): nets hooks (useNets, useNet, useCreateNet, useJoinNet, useLeaveNet) with netKeys and net fixtures
+
+### Authentication
 
 - feat(web): routes with SessionGate, GuestOnly and RequireAuth, sign in and register through the shared screens, Web Locks platform, temporary home with log out
 - feat(screens): screens package with SignInScreen, RegisterScreen, UnreachableScreen, RestoringScreen, react-hook-form helpers (useZodForm, FormInput, FormError) and error copy
 - feat(hooks): @callsign/hooks/testing entry (MSW server, fixtures, test clients) shared by the packages that test against the API
 - feat(ui): trailing icon on Button; sizes.form token for the auth column
 - feat(types): field messages on the callsign, passphrase and net name schemas
+
+### Providers and sessions
 
 - feat(hooks): session store (restore on start, unreachable state, sign in/out with cache clear), useSession, useLogin, useRegister, useLogout; client logout and stale-refresh guard; rename CallsignProvider → ApiProvider, CallsignPlatform → ApiPlatform
 - feat(hooks): hooks package with CallsignProvider (injected platform), typed fetch client (Zod-parsed responses, ApiClientError, single-flight refresh with one retry) and query defaults
