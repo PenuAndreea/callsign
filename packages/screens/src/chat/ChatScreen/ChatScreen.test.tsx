@@ -215,9 +215,23 @@ describe('ChatScreen', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Leave' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'No contact with the net. Check your connection.',
+      'Could not leave. No contact with the net. Check your connection.',
     );
     expect(onLeft).not.toHaveBeenCalled();
+  });
+
+  it('drops the leave error once back on the air', async () => {
+    server.use(http.delete(api(`/rooms/${tower.id}/members/me`), () => HttpResponse.error()));
+    renderChat();
+    await screen.findByText('4 stations on net');
+    await userEvent.click(await screen.findByRole('button', { name: 'Leave' }));
+    await screen.findByText(/^Could not leave\./);
+
+    sockets.dropConnections();
+    await screen.findByText('4 stations on net · reconnecting');
+    await screen.findByText('4 stations on net');
+
+    expect(screen.queryByText(/^Could not leave\./)).not.toBeInTheDocument();
   });
 
   it('says why joining failed', async () => {
