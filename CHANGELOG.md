@@ -4,6 +4,8 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- ci: check the mobile native config (expo config + prebuild without pods), so a broken app.json or a missing icon fails CI
+- chore(mobile): Callsign app icon (iOS light and dark, Android adaptive and monochrome), splash and web favicon on the theme background #1F2318; Expo template assets removed
 - test(screens): the failed-Leave test waits for the socket first (CI race with the reconnect reset)
 - fix(ui): the composer sends the field's own text on Return, not a value one keystroke behind
 - feat(screens): day separators in the chat (Today, Yesterday, 17 Oct)
