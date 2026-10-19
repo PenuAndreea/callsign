@@ -4,6 +4,9 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(screens): CrashScreen and ScreenErrorBoundary (react-error-boundary): reports render crashes, resets failed queries on Try again, resetKeys
+- feat(hooks): one report per error (oncePerError), componentStack for render crashes, useQueryErrorResetBoundary re-export
+
 - feat(hooks): live socket events are checked against the shared schema; broken acks and events are reported, invalid events dropped
 - feat(hooks): queries throw bugs (non-API errors) to the nearest error boundary; API errors stay inline
 
