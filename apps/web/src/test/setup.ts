@@ -1,10 +1,4 @@
 import '@testing-library/jest-dom/vitest';
-import { setupApiTestServer } from '@callsign/hooks/testing';
-import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { setupScreenTests } from '@callsign/hooks/testing';
 
-setupApiTestServer();
-
-afterEach(() => {
-  cleanup();
-});
+setupScreenTests();

@@ -6,6 +6,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## 0.6.0 (M5: frontend integration)
 
+- test(config): screen tests wait up to 5 s for async queries (setupScreenTests, 10 s test timeout): the first App render took 2.3 s on CI
 - chore(docs): README how-tos for mobile (API address per simulator, a real phone, Expo Go), trying it out, package overview
 - feat(mobile): real app on Expo Router (Stack.Protected auth and app groups, splash until the session is known), secure-store refresh token, emulator API URLs, AppState focus
 - feat(screens): safe-area insets and keyboard avoidance in the form, nets and chat screens; next key moves between fields; passphrases never auto-capitalized

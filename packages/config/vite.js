@@ -32,5 +32,11 @@ export const reactNativeWebOptimizeDeps = {
   rolldownOptions: { resolve: { extensions: reactNativeWebResolve.extensions } },
 };
 
+/**
+ * Vitest per-test timeout for tests that render whole screens: above Testing Library's async
+ * wait (`SCREEN_ASYNC_TIMEOUT_MS` in `@callsign/hooks/testing`), so a slow CI render can finish.
+ */
+export const screenTestTimeoutMs = 10_000;
+
 /** Vitest: transform these like source code so their imports get the aliases above. */
 export const reactNativeWebInlineDeps = ['react-native-svg', 'react-native-safe-area-context'];

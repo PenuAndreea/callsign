@@ -7,3 +7,4 @@ export * from './fixtures';
 export * from './renderHookWithApiProvider';
 export * from './server';
 export * from './socketServer';
+export * from './setupScreenTests';
