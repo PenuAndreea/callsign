@@ -2,6 +2,7 @@ import {
   reactNativeWebInlineDeps,
   reactNativeWebResolve,
   screenTestTimeoutMs,
+  testTimeEnv,
 } from '@callsign/config/vite';
 import { defineConfig } from 'vitest/config';
 
@@ -13,6 +14,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    env: testTimeEnv,
     testTimeout: screenTestTimeoutMs,
     server: { deps: { inline: reactNativeWebInlineDeps } },
   },

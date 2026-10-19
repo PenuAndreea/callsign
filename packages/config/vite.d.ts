@@ -9,3 +9,4 @@ export declare const reactNativeWebOptimizeDeps: {
 
 export declare const reactNativeWebInlineDeps: string[];
 export declare const screenTestTimeoutMs: number;
+export declare const testTimeEnv: { TZ: string };

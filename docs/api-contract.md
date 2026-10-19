@@ -9,7 +9,7 @@ Every shape below is a Zod schema in `packages/types`; the API validates with it
 - **Auth header:** `Authorization: Bearer <accessToken>` on every route except register, login, refresh and logout.
 - **Client type header:** `X-Client: web | mobile`, set by the API client from the platform provider. Decides whether the refresh token travels in a cookie (web) or the body (mobile).
 - **Ids:** MongoDB ObjectIds serialized as strings, field name `id` (never `_id`).
-- **Dates:** ISO 8601 strings in UTC. The UI formats them as Zulu (`22:14Z`).
+- **Dates:** ISO 8601 strings in UTC. The UI shows them in the device's time zone (`22:14`).
 - **Normalization:** callsigns and net names are trimmed and lowercased by the shared schema before validation, so uniqueness is case-insensitive. Responses return them lowercase; the UI uppercases them for display.
 
 ### Pagination

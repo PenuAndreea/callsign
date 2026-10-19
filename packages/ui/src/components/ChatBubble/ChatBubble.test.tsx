@@ -12,14 +12,14 @@ const message = {
 };
 
 describe('ChatBubble', () => {
-  it('shows an incoming message with its sender and Zulu time on the surface', () => {
+  it('shows an incoming message with its sender and local time on the surface', () => {
     renderWithTheme(<ChatBubble {...message} />);
 
     expect(screen.getByText('twr-ops')).toHaveStyle({ textTransform: 'uppercase' });
     expect(screen.getByText('Runway three-six is clear.')).toHaveStyle({
       color: lightColors.text,
     });
-    expect(screen.getByText('21:58Z')).toBeInTheDocument();
+    expect(screen.getByText('23:58')).toBeInTheDocument();
     expect(screen.getByText('Runway three-six is clear.').parentElement).toHaveStyle({
       backgroundColor: lightColors.surface,
     });
@@ -32,18 +32,18 @@ describe('ChatBubble', () => {
     const text = screen.getByText('Runway three-six is clear.');
     expect(text).toHaveStyle({ color: darkColors.bubbleOutText });
     expect(text.parentElement).toHaveStyle({ backgroundColor: darkColors.bubbleOut });
-    expect(screen.getByText('21:58Z')).toHaveStyle({ color: darkColors.bubbleOutMeta });
+    expect(screen.getByText('23:58')).toHaveStyle({ color: darkColors.bubbleOutMeta });
   });
 
   it('adds a delivery status after the time', () => {
     renderWithTheme(<ChatBubble {...message} own status="Sending" />);
 
-    expect(screen.getByText('21:58Z · Sending')).toBeInTheDocument();
+    expect(screen.getByText('23:58 · Sending')).toBeInTheDocument();
   });
 
   it('accepts a Date as the send time', () => {
     renderWithTheme(<ChatBubble {...message} sentAt={new Date('2026-10-15T08:05:00Z')} />);
 
-    expect(screen.getByText('08:05Z')).toBeInTheDocument();
+    expect(screen.getByText('10:05')).toBeInTheDocument();
   });
 });
