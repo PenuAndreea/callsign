@@ -17,6 +17,12 @@ export const lightColors: ThemeColors = {
   bubbleOutMeta: '#E4EBCF',
   lampOn: '#4F9A1E',
   lampOff: '#B9BDAD',
+  display: '#1F2318',
+  displayText: '#9FD36A',
+  displayMuted: '#A9AB8E',
+  tick: '#B5BAA8',
+  // Lightened from #B5432C to reach 3:1 on the display panel.
+  needle: '#BC462E',
   danger: '#B5432C',
   onDanger: '#FFFFFF',
   dangerText: '#8F2F1B',

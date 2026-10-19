@@ -17,7 +17,7 @@ const platform = createMobilePlatform();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts(fontSources);
-  // The splash screen stays until `RootStack` knows the session.
+  // The native splash stays until the fonts are loaded; then the animated one (SplashGate) takes over.
   if (!loaded && error === null) return null;
 
   return (

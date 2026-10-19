@@ -2,9 +2,9 @@
 
 Modern field-radio style, light and dark. Mockups sit next to this file; token values are in `packages/theme` (mapped in `callsign-palette.md`).
 
-A clean, modern UI with a field-radio voice. The radio feel comes from typography, the olive/brass palette and the copy tone. Rounded corners and soft shadows are fine, but no gradients and no textures. No `.native` / `.web` component splits.
+A clean, modern UI with a field-radio voice. The radio feel comes from typography, the olive/brass palette and the copy tone. Rounded corners and soft shadows are fine, but no gradients and no textures. One approved exception: the radar sweep on the mobile splash (a fading `lampOn` wedge). No `.native` / `.web` component splits.
 
-**Mockups** (this folder, each in `-light` and `-dark`): `signin`, `register`, `chats` (nets list), `chat`. They also show features planned for later versions; build only what is in **Scope (v1)** (`CLAUDE.md`). Out of scope in the mockups: the role selector, full name and home field, the frequency display and tuner ticks, the "LIVE" indicator, the priority picker and priority badge, signal strength, read receipts ("ROGER"), unread counts, the alert net, the bottom tab bar (Direct/Me), the "carrier online / 17 stations" footer and the compass rose background (nice-to-have for M6).
+**Mockups** (this folder, each in `-light` and `-dark`): `signin`, `register`, `chats` (nets list), `chat`. They also show features planned for later versions; build only what is in **Scope (v1)** (`CLAUDE.md`). Out of scope in the mockups: the role selector, full name and home field, the frequency display and tuner ticks (except on the mobile splash), the "LIVE" indicator, the priority picker and priority badge, signal strength, read receipts ("ROGER"), unread counts, the alert net, the bottom tab bar (Direct/Me), the "carrier online / 17 stations" footer and the compass rose background (nice-to-have for M6).
 
 **Theming:**
 
@@ -16,7 +16,8 @@ A clean, modern UI with a field-radio voice. The radio feel comes from typograph
 **Color tokens** (semantic, same keys in both schemes; dark = olive-charcoal + brass, light = cool white-gray + olive drab):
 
 - v1 uses: `background`, `surface` (cards, list rows, inputs, incoming bubbles), `surfaceInset` (composer field), `sheet` (composer bar), `text`, `textMuted` (secondary text, meta, placeholders), `label` (field labels, sender callsign), `primary` / `onPrimary` (primary button, TX, links), `primaryHalo` (ring around primary buttons), `bubbleOut` / `bubbleOutText` / `bubbleOutMeta` (own messages), `lampOn` / `lampOff` (status dot), `danger` / `onDanger` / `dangerText` / `dangerSoft` (errors, destructive actions), `shadow`.
-- Later versions only, not added to the package in v1: `display`, `displayText`, `displayMuted`, `frequency`, `tick`, `needle` (frequency display), `badge` / `onBadge` (unread counts).
+- Splash tuner (frequency display): `display` (panel), `displayText` (digits), `displayMuted` (panel labels), `tick` (decorative scale), `needle`.
+- Later versions only, not added to the package in v1: `frequency`, `badge` / `onBadge` (unread counts).
 - Brass appears only in dark, olive drab only in light; both live in `primary`. Red only for errors and destructive actions in v1.
 
 - **Shape:** named radii per use (`input`, `card`, `button`, `bubble` with a smaller `tail` corner, `sheet` for the composer's top corners, `pill`), round send button. Soft shadows from the `shadow` token through the `boxShadow` style prop (supported by RN 0.86 and react-native-web 0.21). No glows in v1.
@@ -51,5 +52,6 @@ A clean, modern UI with a field-radio voice. The radio feel comes from typograph
 - Register (`register`): back button, `Masthead` "REGISTER"; callsign (3 to 20 characters), passphrase (at least 8 characters), confirm passphrase (not in the mockup, kept from the spec); "Request clearance" button; "Already on the net? Report in" link.
 - Nets list (`chats`): header with the user's callsign above the title; joined nets (green dot, name, member count, last message), then open nets with a Join button. "+ New net" and Log out. No mockup for the open-nets section; reuse `RoomListItem`.
 - Chat (`chat`): `ScreenHeader` with back, net name, member count and "Leave"; own vs other messages; day separators (`meta` text, centered); `MessageInput`. Typing line only if the optional indicator is built.
+- Splash (mobile only; mockups "V2 Splash" and "V3 Light: Splash" in the design canvas): radar emblem (ring drawing in, ticks, rotating sweep and dashed ring, radio ripples), "CALLSIGN" rising letter by letter with "Field radio · flight and ground", then a frequency panel (`display` tokens) whose dial scrolls 121.500 → 118.100 while the needle swings in, and the status turns from "Acquiring signal" to "Carrier locked" with the lamp. Full 8 s intro on the first launch, starting once the native splash is gone (so nothing covers its start); later launches leave once the app is ready (at least 1.5 s), 200 ms fade. Reduced motion: the final frame, still, for 800 ms. The radar blips of the mockup are left out.
 - New net (no mockup): name field only (3 to 30 characters), note that the net is open to all. Built from `ScreenHeader`, `Input`, `Button`.
 - Web chat (no mockup): sidebar with nets next to the chat panel; stacks on narrow widths. Same components as mobile, only the layout differs.

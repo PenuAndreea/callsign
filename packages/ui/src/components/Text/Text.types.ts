@@ -16,6 +16,8 @@ export type TextTone = Extract<
   | 'bubbleOutMeta'
   | 'dangerText'
   | 'onDanger'
+  | 'displayText'
+  | 'displayMuted'
 >;
 
 export interface TextProps extends RNTextProps {

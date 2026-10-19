@@ -92,7 +92,7 @@ Define shapes once in `packages/types` as Zod schemas and infer the TS types. Th
 Modern field-radio style, light and dark: olive/brass palette, stencil, typewriter and mono fonts, radio copy tone. The full spec (mockups and what in them is out of scope, theming, color tokens, components, screens) is in `docs/design/README.md`. Read it before building or changing UI.
 
 - Every value comes from `packages/theme`; raw hex/rgba only in `colors.light.ts` / `colors.dark.ts`. Components use token names through `createStyles((theme) => ...)`.
-- No gradients, no textures, no glows in v1. No `.native` / `.web` component splits.
+- No gradients, no textures, no glows in v1; one approved exception: the radar sweep on the mobile splash. No `.native` / `.web` component splits.
 - Each component in its own folder: `X.tsx`, `X.styles.ts`, `X.types.ts`, `X.test.tsx`.
 - Screens own safe-area insets; components never pad for the notch.
 - Accessibility: touch targets at least 44, real labels on inputs, `accessibilityLabel` on icon-only buttons, text contrast at least 4.5:1 in both schemes.
