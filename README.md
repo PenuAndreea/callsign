@@ -6,6 +6,62 @@ A real-time chat app with a WW2 field-radio feel. Chatrooms are called **nets** 
 - **Web:** Vite + React, sharing its UI with mobile through react-native-web
 - **Mobile:** Expo (React Native)
 
+## Quick tour
+
+The same screens on web, iOS and Android, in light and dark (seed data, logged in as `wolf-2`).
+
+**Web** (wide window: the nets list stays next to the open chat)
+
+<table>
+  <tr>
+    <th>Light</th>
+    <th>Dark</th>
+  </tr>
+  <tr>
+    <td><img src="docs/tour/web-chat-light.png" width="420" alt="Web app in light mode: the nets list on the left, the tower net's chat history on the right" /></td>
+    <td><img src="docs/tour/web-chat-dark.png" width="420" alt="Web app in dark mode: the nets list on the left, the tower net's chat history on the right" /></td>
+  </tr>
+</table>
+
+**Mobile** (iPhone 17 Pro simulator and Pixel 8 emulator, in Expo Go)
+
+<table>
+  <tr>
+    <th></th>
+    <th>iOS light</th>
+    <th>iOS dark</th>
+    <th>Android light</th>
+    <th>Android dark</th>
+  </tr>
+  <tr>
+    <th>Nets</th>
+    <td><img src="docs/tour/ios-nets-light.png" width="180" alt="iOS nets list in light mode: joined nets with their last message, then nets open to join" /></td>
+    <td><img src="docs/tour/ios-nets-dark.png" width="180" alt="iOS nets list in dark mode: joined nets with their last message, then nets open to join" /></td>
+    <td><img src="docs/tour/android-nets-light.png" width="180" alt="Android nets list in light mode: joined nets with their last message, then nets open to join" /></td>
+    <td><img src="docs/tour/android-nets-dark.png" width="180" alt="Android nets list in dark mode: joined nets with their last message, then nets open to join" /></td>
+  </tr>
+  <tr>
+    <th>Chat</th>
+    <td><img src="docs/tour/ios-chat-light.png" width="180" alt="iOS chat in the tower net in light mode: radio messages and the message composer" /></td>
+    <td><img src="docs/tour/ios-chat-dark.png" width="180" alt="iOS chat in the tower net in dark mode: radio messages and the message composer" /></td>
+    <td><img src="docs/tour/android-chat-light.png" width="180" alt="Android chat in the tower net in light mode: radio messages and the message composer" /></td>
+    <td><img src="docs/tour/android-chat-dark.png" width="180" alt="Android chat in the tower net in dark mode: radio messages and the message composer" /></td>
+  </tr>
+</table>
+
+## Quick start
+
+With the [prerequisites](#prerequisites) installed:
+
+```bash
+corepack enable && pnpm install
+cp apps/api/.env.example apps/api/.env
+pnpm db:up && pnpm db:seed
+pnpm dev
+```
+
+Open http://localhost:5173 and log in as `wolf-2` with the passphrase `correct horse`. For the mobile app, run `pnpm --filter @callsign/mobile start` in a second terminal and press `i` or `a` (see [Mobile](#mobile)). The sections below explain each step.
+
 ## Prerequisites
 
 - **Node.js 24.9 or newer** (`.nvmrc` pins 24; run `nvm use` if you use nvm)
@@ -116,9 +172,10 @@ Starts the API, the web app and a watcher that rebuilds `@callsign/types` on cha
 ### Trying it out
 
 1. Start the database, the API and the web app (`pnpm db:up`, then `pnpm dev`).
-2. Open http://localhost:5173 and log in as a seeded station (`pnpm db:seed`, e.g. `wolf-2` / `correct horse`), or choose **New station? Register here** and register a callsign (3 to 20 characters) with a passphrase (at least 8).
-3. Open a net with **New net**, or join one under **Open to join**. Messages go out with **TX** or Enter.
-4. For a second station, register another callsign in a private window, another browser or the mobile app, and join the same net: messages, the member count and the net list preview update live on both.
+2. Fill the database with sample stations, nets and history: `pnpm db:seed`.
+3. Open http://localhost:5173 and log in as a seeded station (e.g. `wolf-2` / `correct horse`), or choose **New station? Register here** and register a callsign (3 to 20 characters) with a passphrase (at least 8).
+4. Open a net with **New net**, or join one under **Open to join**. Messages go out with **TX** or Enter.
+5. For a second station, log in as another seeded station (e.g. `eagle-1`, also in `tower`) or register another callsign in a private window, another browser or the mobile app, and join the same net: messages, the member count and the net list preview update live on both.
 
 On wide windows the nets list stays on the left of the chat; below 900 px wide, the list and the chat are separate pages, like on the phone.
 
