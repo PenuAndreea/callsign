@@ -42,6 +42,7 @@ export function ApiProvider({ platform, apiClient, queryClient, children }: ApiP
       queryClient: cache,
       session,
       createSocket: resolveSocketFactory(platform),
+      reportError,
     }),
   );
 

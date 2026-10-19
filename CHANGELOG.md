@@ -4,6 +4,9 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(hooks): live socket events are checked against the shared schema; broken acks and events are reported, invalid events dropped
+- feat(hooks): queries throw bugs (non-API errors) to the nearest error boundary; API errors stay inline
+
 - fix(screens): a send refused by the socket rate limit says "stand by a few seconds", not a minute
 - fix(hooks): a 502/503/504 without an ApiError body (proxy, API down) is NETWORK_ERROR, not INTERNAL_ERROR
 
