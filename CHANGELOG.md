@@ -4,7 +4,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
-- chore(docs): slim CLAUDE.md to rules, stack and conventions; architecture details move to docs/architecture.md
+- chore(docs): slim CLAUDE.md to rules, stack and conventions; architecture details move to docs/architecture.md, the design spec to docs/design/README.md
 - chore(docs): error handling in CLAUDE.md (expected, reported, crashes; web and mobile boundaries) and README (when something goes wrong)
 - feat(mobile): crash boundaries: one around the navigator, one per chat and on New net, with a way back
 - feat(screens): crash screen offers Back where the crashed screen's header is gone (onBack); web narrow chat uses it
