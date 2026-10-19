@@ -20,14 +20,15 @@ export interface SplashProgress {
 /**
  * Drives the intro: `progress` runs 0 -> 1 once, then `onFinish` fires. With reduced motion the
  * final frame shows at once and `onFinish` fires after a short hold, so "CARRIER LOCKED" is
- * still read.
+ * still read. Nothing moves until `started`: progress stays at its first frame.
  */
-export function useSplashProgress(onFinish?: () => void): SplashProgress {
+export function useSplashProgress(onFinish?: () => void, started = true): SplashProgress {
   const reduceMotion = useReducedMotion();
   const progress = useSharedValue(reduceMotion ? 1 : 0);
   const finished = useEffectEvent(() => onFinish?.());
 
   useEffect(() => {
+    if (!started) return undefined;
     const finish = () => finished();
     if (reduceMotion) {
       progress.value = 1;
@@ -45,7 +46,7 @@ export function useSplashProgress(onFinish?: () => void): SplashProgress {
       },
     );
     return () => cancelAnimation(progress);
-  }, [progress, reduceMotion]);
+  }, [progress, reduceMotion, started]);
 
   return { progress, reduceMotion };
 }

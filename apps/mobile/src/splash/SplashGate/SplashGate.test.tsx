@@ -21,10 +21,14 @@ const renderGate = async (ready: boolean) => {
       </SplashGate>
     </ThemeProvider>,
   );
-  await act(async () => {
-    await Promise.resolve();
-  });
+  await flushPromises();
 };
+
+// The stored flag and `hideAsync().catch().then()` settle over a few microtasks.
+const flushPromises = () =>
+  act(async () => {
+    for (let tick = 0; tick < 5; tick += 1) await Promise.resolve();
+  });
 
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
@@ -49,5 +53,20 @@ describe('SplashGate', () => {
 
     expect(screen.queryByLabelText('Callsign, connecting')).toBeNull();
     expect(screen.getByText('the app')).toBeOnTheScreen();
+  });
+
+  it('starts counting only once the native splash is gone', async () => {
+    let hidden: () => void = () => undefined;
+    jest
+      .mocked(SplashScreen.hideAsync)
+      .mockReturnValueOnce(new Promise<void>((resolve) => (hidden = resolve)));
+    await renderGate(true);
+    act(() => jest.advanceTimersByTime(MIN_SPLASH_MS * 2));
+    expect(screen.getByLabelText('Callsign, connecting')).toBeOnTheScreen();
+
+    hidden();
+    await flushPromises();
+    act(() => jest.advanceTimersByTime(MIN_SPLASH_MS));
+    expect(screen.queryByLabelText('Callsign, connecting')).toBeNull();
   });
 });

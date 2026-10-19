@@ -21,6 +21,26 @@ describe('useSplashProgress', () => {
     expect(onFinish).toHaveBeenCalledTimes(1);
   });
 
+  it('holds the first frame until started', async () => {
+    const onFinish = jest.fn();
+    const { result, rerender } = renderHook(
+      ({ started }: { started: boolean }) => useSplashProgress(onFinish, started),
+      { initialProps: { started: false } },
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current.progress.value).toBe(0);
+    expect(onFinish).not.toHaveBeenCalled();
+
+    rerender({ started: true });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current.progress.value).toBe(1);
+    expect(onFinish).toHaveBeenCalledTimes(1);
+  });
+
   describe('with reduced motion', () => {
     beforeEach(() => {
       jest.mocked(useReducedMotion).mockReturnValue(true);

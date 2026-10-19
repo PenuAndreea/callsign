@@ -81,3 +81,20 @@ it('does not come back once gone, when the session restores again', async () => 
   rerender({ isReady: false });
   expect(result.current.showSplash).toBe(false);
 });
+
+it('counts the minimum time only once the splash is visible', async () => {
+  jest.mocked(readIntroSeen).mockResolvedValue(true);
+  const { result, rerender } = renderHook(
+    ({ visible }: { visible: boolean }) => useSplashGate(true, visible),
+    { initialProps: { visible: false } },
+  );
+  await act(async () => {
+    await Promise.resolve();
+  });
+  act(() => jest.advanceTimersByTime(MIN_SPLASH_MS * 2));
+  expect(result.current.showSplash).toBe(true);
+
+  rerender({ visible: true });
+  act(() => jest.advanceTimersByTime(MIN_SPLASH_MS));
+  expect(result.current.showSplash).toBe(false);
+});

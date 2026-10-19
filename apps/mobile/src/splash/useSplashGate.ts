@@ -13,10 +13,10 @@ export interface SplashGate {
 
 /**
  * When the splash leaves. First launch: once the full intro has played and the app is ready.
- * Later launches: as soon as the app is ready, but not before MIN_SPLASH_MS. Once gone it stays
- * gone, so a later session retry does not bring it back.
+ * Later launches: as soon as the app is ready, but not before MIN_SPLASH_MS on screen (counted
+ * from `visible`). Once gone it stays gone, so a later session retry does not bring it back.
  */
-export function useSplashGate(ready: boolean): SplashGate {
+export function useSplashGate(ready: boolean, visible = true): SplashGate {
   const [introSeen, setIntroSeen] = useState<boolean | null>(null);
   const [introDone, setIntroDone] = useState(false);
   const [minElapsed, setMinElapsed] = useState(false);
@@ -27,12 +27,16 @@ export function useSplashGate(ready: boolean): SplashGate {
     void readIntroSeen().then((seen) => {
       if (active) setIntroSeen(seen);
     });
-    const timer = setTimeout(() => setMinElapsed(true), MIN_SPLASH_MS);
     return () => {
       active = false;
-      clearTimeout(timer);
     };
   }, []);
+
+  useEffect(() => {
+    if (!visible) return undefined;
+    const timer = setTimeout(() => setMinElapsed(true), MIN_SPLASH_MS);
+    return () => clearTimeout(timer);
+  }, [visible]);
 
   const canLeave = ready && introSeen !== null && (introSeen ? minElapsed : introDone);
   if (canLeave && !left) setLeft(true);

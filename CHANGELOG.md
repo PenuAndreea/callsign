@@ -4,6 +4,8 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- fix(mobile): the splash intro runs 8 s and starts once the native splash is gone, so a slow first load no longer hides most of it
+- chore(docs): the splash in the design README and architecture; the radar sweep gradient as the one approved exception
 - feat(mobile): the animated splash covers start-up (SplashGate): full intro on the first launch, later launches leave once the session is known (at least 1.5 s), 200 ms fade
 - feat(mobile): splash components (emblem with radar sweep, wordmark, frequency tuner) on the shared Text and theme tokens; Text gains the displayText and displayMuted tones
 - feat(mobile): splash timeline and drivers (useSplashProgress, useContinuousRotation) on Reanimated 4; Jest setup mocks Reanimated and worklets

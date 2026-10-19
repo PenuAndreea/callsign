@@ -1,5 +1,5 @@
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeOut } from 'react-native-reanimated';
 
@@ -10,13 +10,19 @@ import type { SplashGateProps } from './SplashGate.types';
 
 /**
  * The animated splash over the app until `useSplashGate` lets it go. Takes over from the native
- * splash, which shows the same emblem, as soon as it mounts (fonts are loaded by then).
+ * splash, which shows the same emblem, as soon as it mounts (fonts are loaded by then). The
+ * intro and the minimum time start only once the native splash is gone: whatever still covers
+ * the app at start-up (Expo Go's loader on a slow first load) does not eat the intro.
  */
 export function SplashGate({ ready, children }: SplashGateProps) {
-  const { showSplash, onIntroFinished } = useSplashGate(ready);
+  const [visible, setVisible] = useState(false);
+  const { showSplash, onIntroFinished } = useSplashGate(ready, visible);
 
   useEffect(() => {
-    void SplashScreen.hideAsync();
+    // Rejects when there is no native splash left to hide: visible either way.
+    void SplashScreen.hideAsync()
+      .catch(() => undefined)
+      .then(() => setVisible(true));
   }, []);
 
   return (
@@ -27,7 +33,7 @@ export function SplashGate({ ready, children }: SplashGateProps) {
       </View>
       {showSplash && (
         <Animated.View style={styles.splash} exiting={FadeOut.duration(SPLASH_FADE_MS)}>
-          <Splash onFinish={onIntroFinished} />
+          <Splash onFinish={onIntroFinished} started={visible} />
         </Animated.View>
       )}
     </View>

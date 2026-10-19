@@ -11,9 +11,9 @@ import type { SplashProps } from './Splash.types';
  * The animated intro: radar sweep, wordmark, then a frequency dial that locks on. One element
  * for screen readers. When to leave it (intro played, app ready) is the caller's call.
  */
-export function Splash({ onFinish }: SplashProps) {
+export function Splash({ onFinish, started = true }: SplashProps) {
   const styles = useSplashStyles();
-  const { progress, reduceMotion } = useSplashProgress(onFinish);
+  const { progress, reduceMotion } = useSplashProgress(onFinish, started);
 
   return (
     <View style={styles.root} accessible aria-label="Callsign, connecting">
