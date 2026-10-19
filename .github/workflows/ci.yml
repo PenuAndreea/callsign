@@ -59,3 +59,13 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      # The mobile app has no build here (EAS builds it), so check its native config: `expo
+      # config` resolves app.json and its plugins, and prebuild generates both native projects,
+      # which fails on a missing or invalid icon or splash image. No pods or Gradle: config only.
+      # Prebuild writes ios/, android/ and the package.json scripts; fine on a throwaway runner.
+      - name: Mobile native config
+        working-directory: apps/mobile
+        run: |
+          pnpm exec expo config --type public --json > /dev/null
+          pnpm exec expo prebuild --no-install --clean
