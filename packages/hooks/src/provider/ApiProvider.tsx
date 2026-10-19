@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 
 import type { ApiClient } from '../api/createApiClient';
 import { createApiClient } from '../api/createApiClient';
+import { ErrorReporterContext } from '../errors/ErrorReporterContext';
+import { consoleErrorReporter } from '../errors/reportError';
 import type { ApiPlatform } from '../platform/platform.types';
 import { createQueryClient } from '../query/createQueryClient';
 import { createRealtime } from '../realtime/createRealtime';
@@ -30,8 +32,9 @@ export interface ApiProviderProps {
  * secure store); while signed in, one socket feeds live events into the cache.
  */
 export function ApiProvider({ platform, apiClient, queryClient, children }: ApiProviderProps) {
+  const [reportError] = useState(() => platform.reportError ?? consoleErrorReporter);
   const [client] = useState(() => apiClient ?? createApiClient(platform));
-  const [cache] = useState(() => queryClient ?? createQueryClient());
+  const [cache] = useState(() => queryClient ?? createQueryClient(reportError));
   const [session] = useState(() => createSessionStore(client, cache));
   const [realtime] = useState(() =>
     createRealtime({
@@ -48,12 +51,14 @@ export function ApiProvider({ platform, apiClient, queryClient, children }: ApiP
   useEffect(() => realtime.start(), [realtime]);
 
   return (
-    <ApiClientContext value={client}>
-      <QueryClientProvider client={cache}>
-        <SessionContext value={session}>
-          <RealtimeContext value={realtime}>{children}</RealtimeContext>
-        </SessionContext>
-      </QueryClientProvider>
-    </ApiClientContext>
+    <ErrorReporterContext value={reportError}>
+      <ApiClientContext value={client}>
+        <QueryClientProvider client={cache}>
+          <SessionContext value={session}>
+            <RealtimeContext value={realtime}>{children}</RealtimeContext>
+          </SessionContext>
+        </QueryClientProvider>
+      </ApiClientContext>
+    </ErrorReporterContext>
   );
 }

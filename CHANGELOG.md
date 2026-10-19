@@ -4,6 +4,8 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(hooks): reportError seam: ApiPlatform.reportError (console by default), useReportError, the query and mutation caches report unexpected errors only
+
 ## 0.6.0 (M5: frontend integration)
 
 - test(config): screen tests wait up to 5 s for async queries (setupScreenTests, 10 s test timeout): the first App render took 2.3 s on CI
