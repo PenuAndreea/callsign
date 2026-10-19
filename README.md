@@ -6,6 +6,14 @@ A real-time chat app with a WW2 field-radio feel. Chatrooms are called **nets** 
 - **Web:** Vite + React, sharing its UI with mobile through react-native-web
 - **Mobile:** Expo (React Native)
 
+## Built with AI
+
+Callsign was built with **Claude Code** as a pair: the AI planned each milestone with options and a recommendation, explained the backend decisions, implemented one step at a time and reviewed. I made the decisions, reviewed and tested each step on web, iOS and Android, and did every commit, PR and release. Lint, typecheck, tests and CI checked every step, whoever wrote it.
+
+- **Specs the AI worked from:** [CLAUDE.md](CLAUDE.md) (brief and rules), [docs/architecture.md](docs/architecture.md), [docs/api-contract.md](docs/api-contract.md), [docs/design/README.md](docs/design/README.md)
+- **Implementation plans per milestone:** [docs/ai/plans/](docs/ai/plans/)
+- **Workflow, guardrails and where the AI needed correcting:** [docs/ai/README.md](docs/ai/README.md)
+
 ## Quick tour
 
 The same screens on web, iOS and Android, in light and dark (seed data, logged in as `wolf-2`).
