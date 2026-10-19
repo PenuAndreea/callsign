@@ -56,15 +56,36 @@ describe('useNets', () => {
 });
 
 describe('useNet', () => {
-  it('shows the copy from a loaded list while its own fetch runs', async () => {
-    server.use(http.get(api(`/rooms/${tower.id}`), () => new Promise<never>(() => undefined)));
-    const { result } = renderHookWithApiProvider(() => ({
+  /** Loads the joined list first, then opens `tower`: the list copy is read when it opens. */
+  async function openFromList() {
+    let id = 'not-opened-yet';
+    const rendered = renderHookWithApiProvider(() => ({
       list: useNets('joined'),
-      net: useNet(tower.id),
+      net: useNet(id),
     }));
-    await waitFor(() => expect(result.current.list.data).toEqual([tower]));
-    await waitFor(() => expect(result.current.net.data).toEqual(tower));
-    expect(result.current.net.isPlaceholderData).toBe(true);
+    await waitFor(() => expect(rendered.result.current.list.data).toEqual([tower]));
+    id = tower.id;
+    rendered.rerender();
+    return rendered;
+  }
+
+  beforeEach(() => {
+    server.use(http.get(api('/rooms/:id'), () => new Promise<never>(() => undefined)));
+  });
+
+  it('shows the copy from a loaded list at once, as old as that list', async () => {
+    const { result, queryClient } = await openFromList();
+    expect(result.current.net.data).toEqual(tower);
+    expect(queryClient.getQueryState(netKeys.detail(tower.id))?.dataUpdatedAt).toBe(
+      queryClient.getQueryState(netKeys.list('joined'))?.dataUpdatedAt,
+    );
+  });
+
+  it('keeps the list copy when its own fetch fails', async () => {
+    server.use(http.get(api(`/rooms/${tower.id}`), () => apiError(500, 'INTERNAL_ERROR')));
+    const { result } = await openFromList();
+    await waitFor(() => expect(result.current.net.error).toMatchObject({ code: 'INTERNAL_ERROR' }));
+    expect(result.current.net.data).toEqual(tower);
   });
 
   it('reports a net that does not exist', async () => {

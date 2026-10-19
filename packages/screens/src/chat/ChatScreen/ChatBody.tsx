@@ -4,7 +4,9 @@ import { Button, Text } from '@callsign/ui';
 import type { RefObject } from 'react';
 import { ActivityIndicator, FlatList, View } from 'react-native';
 
-import { errorMessage } from '../../errors/errorMessage';
+import { errorMessage, errorMessageForCode } from '../../errors/errorMessage';
+import { FormError } from '../../form/FormError';
+import { ChatNotice } from './ChatNotice';
 import { ChatRow } from './ChatRow';
 import { useChatStyles } from './ChatScreen.styles';
 
@@ -13,6 +15,10 @@ export interface ChatBodyProps {
   /** For scrolling to the newest message (offset 0 of the inverted list) after a send. */
   listRef: RefObject<FlatList<ChatEntry> | null>;
   isPending: boolean;
+  /** The net does not exist (its own fetch said `NOT_FOUND`). */
+  offAir: boolean;
+  /** The net itself is still loading (nothing from a list to show yet). */
+  netLoading: boolean;
   error: Error | null;
   hasOlder: boolean;
   loadingOlder: boolean;
@@ -21,6 +27,8 @@ export interface ChatBodyProps {
   /** Shown when the history says `NOT_A_MEMBER` (opened from a link, or left elsewhere). */
   onJoin: () => void;
   joining: boolean;
+  /** Why the last join failed, under the Join button. */
+  joinError: string | undefined;
   userId: string;
   userCallsign: string;
   onRetrySend: (clientMessageId: string) => void;
@@ -29,49 +37,43 @@ export interface ChatBodyProps {
 
 /**
  * The message area: newest at the bottom (inverted list, older pages load when scrolling up),
- * or the first load, the empty net, a failed load, or the offer to join.
+ * or the first load, the empty net, a failed load, the offer to join, or a net that is off the air.
  */
 // `listRef` apart from `props`: the React Compiler treats an object holding a ref as a ref.
 export function ChatBody({ listRef, ...props }: ChatBodyProps) {
   const styles = useChatStyles();
   const { entries, error } = props;
+  const notMember = isApiClientError(error, 'NOT_A_MEMBER');
 
-  if (isApiClientError(error, 'NOT_A_MEMBER')) {
-    return (
-      <View style={styles.center}>
-        <Text variant="body" style={styles.centerText}>
-          You are not on this net. Join to read the traffic and transmit.
-        </Text>
-        <Button label="Join the net" loading={props.joining} onPress={props.onJoin} />
-      </View>
-    );
-  }
-  if (error && entries.length === 0) {
-    return (
-      <View style={styles.center}>
-        <Text variant="body" tone="dangerText" role="alert" style={styles.centerText}>
-          {errorMessage(error)}
-        </Text>
-        <Button label="Try again" variant="link" onPress={props.onRetryLoad} />
-      </View>
-    );
-  }
-  if (props.isPending) {
+  // First: the history says NOT_A_MEMBER for a net that does not exist too.
+  if (props.offAir)
+    return <ChatNotice message={errorMessageForCode('NOT_FOUND')} tone="textMuted" />;
+  // Wait for the net before offering to join it: it may turn out to be off the air.
+  if (props.isPending || (notMember && props.netLoading)) {
     return (
       <View style={styles.center}>
         <ActivityIndicator />
       </View>
     );
   }
+  if (notMember) {
+    return (
+      <ChatNotice message="You are not on this net. Join to read the traffic and transmit.">
+        <Button label="Join the net" loading={props.joining} onPress={props.onJoin} />
+        <FormError message={props.joinError} />
+      </ChatNotice>
+    );
+  }
+  if (error && entries.length === 0) {
+    return (
+      <ChatNotice message={errorMessage(error)} tone="dangerText" alert>
+        <Button label="Try again" variant="link" onPress={props.onRetryLoad} />
+      </ChatNotice>
+    );
+  }
   // Outside the list: an inverted list would show its empty component upside down.
   if (entries.length === 0) {
-    return (
-      <View style={styles.center}>
-        <Text variant="body" tone="textMuted" style={styles.centerText}>
-          No traffic yet. Open the net. Over.
-        </Text>
-      </View>
-    );
+    return <ChatNotice message="No traffic yet. Open the net. Over." tone="textMuted" />;
   }
 
   return (

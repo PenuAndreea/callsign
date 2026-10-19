@@ -4,6 +4,10 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(screens): join and leave errors show inline in the chat; errorMessageIfAny replaces the repeated error-or-nothing check
+- feat(screens): a net that does not exist is "off the air" in the chat (no Join, Leave or composer), not a dead-end offer to join
+- fix(hooks): the chat header keeps the net from the list when its own fetch fails (useNet initialData)
+- fix(hooks): a reconnect also refetches nets data that failed to load (a chat that failed in an outage recovers)
 - chore(docs): slim CLAUDE.md to rules, stack and conventions; architecture details move to docs/architecture.md, the design spec to docs/design/README.md
 - chore(docs): error handling in CLAUDE.md (expected, reported, crashes; web and mobile boundaries) and README (when something goes wrong)
 - feat(mobile): crash boundaries: one around the navigator, one per chat and on New net, with a way back

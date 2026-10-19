@@ -155,9 +155,39 @@ describe('ChatScreen', () => {
       }),
     );
     renderChat();
+    // Connecting refetches the failed history, which swaps the offer for a spinner meanwhile.
+    await screen.findByText('4 stations on net');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Join the net' }));
     expect(await screen.findByText('Welcome. Over.')).toBeInTheDocument();
+  });
+
+  it('says a net that does not exist is off the air, with nothing to join, leave or send', async () => {
+    let answerNet: ((response: Response) => void) | undefined;
+    let historyAnswered = false;
+    server.use(
+      // The history answers first, as it can: NOT_A_MEMBER, also for a net that does not exist.
+      http.get(api(`/rooms/${tower.id}/messages`), () => {
+        historyAnswered = true;
+        return apiError(403, 'NOT_A_MEMBER');
+      }),
+      http.get(
+        api(`/rooms/${tower.id}`),
+        () => new Promise<Response>((resolve) => (answerNet = resolve)),
+      ),
+    );
+    renderChat();
+
+    await waitFor(() => expect(historyAnswered && answerNet).toBeTruthy());
+    // Only to show that the offer to join does not appear meanwhile.
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(screen.queryByRole('button', { name: 'Join the net' })).not.toBeInTheDocument();
+
+    answerNet?.(apiError(404, 'NOT_FOUND'));
+    expect(await screen.findByText('That net is off the air.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Join the net' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Leave' })).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Message' })).toHaveAttribute('readonly');
   });
 
   it('says when the net is quiet', async () => {
@@ -177,5 +207,30 @@ describe('ChatScreen', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Leave' }));
     await waitFor(() => expect(onLeft).toHaveBeenCalledOnce());
+  });
+
+  it('says why leaving failed and stays on the net', async () => {
+    server.use(http.delete(api(`/rooms/${tower.id}/members/me`), () => HttpResponse.error()));
+    const { onLeft } = renderChat();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Leave' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'No contact with the net. Check your connection.',
+    );
+    expect(onLeft).not.toHaveBeenCalled();
+  });
+
+  it('says why joining failed', async () => {
+    server.use(
+      http.get(api(`/rooms/${tower.id}/messages`), () => apiError(403, 'NOT_A_MEMBER')),
+      http.put(api(`/rooms/${tower.id}/members/me`), () => apiError(429, 'RATE_LIMITED')),
+    );
+    renderChat();
+    await screen.findByText('4 stations on net');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Join the net' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Too many attempts. Stand by and try again in a minute.',
+    );
   });
 });

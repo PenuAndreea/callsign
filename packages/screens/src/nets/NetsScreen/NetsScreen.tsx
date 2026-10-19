@@ -5,7 +5,7 @@ import { Button, ScreenHeader, SectionLabel } from '@callsign/ui';
 import type { SectionListData } from 'react-native';
 import { SectionList, View } from 'react-native';
 
-import { errorMessage } from '../../errors/errorMessage';
+import { errorMessageIfAny } from '../../errors/errorMessage';
 import { FormError } from '../../form/FormError';
 import { useInsetPadding } from '../../layout/useInsetPadding';
 import { JoinedNetRow, OpenNetRow } from './NetRows';
@@ -83,7 +83,7 @@ export function NetsScreen({ onOpenNet, onNewNet, selectedNetId }: NetsScreenPro
             }
           />
           <Button label="New net" icon="plus" variant="secondary" onPress={onNewNet} />
-          <FormError message={join.error ? errorMessage(join.error) : undefined} />
+          <FormError message={errorMessageIfAny(join.error)} />
         </View>
       }
       renderSectionHeader={({ section }) => (

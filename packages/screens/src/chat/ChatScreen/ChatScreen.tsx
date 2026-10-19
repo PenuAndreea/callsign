@@ -13,8 +13,11 @@ import { MESSAGE_CONTENT_MAX } from '@callsign/types';
 import { Button, MessageInput, ScreenHeader } from '@callsign/ui';
 import type { ChatEntry } from '@callsign/hooks';
 import { useRef, useState } from 'react';
+import { View } from 'react-native';
 import type { FlatList } from 'react-native';
 
+import { errorMessageIfAny } from '../../errors/errorMessage';
+import { FormError } from '../../form/FormError';
 import { stationsLabel } from '../../format/stations';
 import { KeyboardFrame } from '../../layout/KeyboardFrame';
 import { useInsetPadding } from '../../layout/useInsetPadding';
@@ -29,7 +32,8 @@ import type { ChatScreenProps } from './ChatScreen.types';
 export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
   const styles = useChatStyles();
   const user = useSignedInUser();
-  const { data: net } = useNet(netId);
+  const netQuery = useNet(netId);
+  const net = netQuery.data;
   const chat = useNetMessages(netId);
   const { send, retry, discard } = useSendMessage(netId);
   const join = useJoinNet();
@@ -41,7 +45,9 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
   // The composer sheet runs under the home indicator; its field stays above it.
   const composerPadding = useInsetPadding({ bottom: spacing.xl });
 
+  const offAir = isApiClientError(netQuery.error, 'NOT_FOUND');
   const notMember = isApiClientError(chat.error, 'NOT_A_MEMBER');
+  const leaveError = errorMessageIfAny(leave.error);
   const live = realtime === 'connected' ? '' : ' · reconnecting';
 
   return (
@@ -54,7 +60,8 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
         {...(net && { subtitle: `${stationsLabel(net.memberCount)} on net${live}` })}
         truncateTitle
         action={
-          !notMember && (
+          !notMember &&
+          net !== undefined && (
             <Button
               label="Leave"
               variant="link"
@@ -64,10 +71,17 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
           )
         }
       />
+      {leaveError && (
+        <View style={styles.headerNotice}>
+          <FormError message={leaveError} />
+        </View>
+      )}
       <ChatBody
         listRef={listRef}
         entries={chat.entries}
         isPending={chat.isPending}
+        offAir={offAir}
+        netLoading={netQuery.isPending}
         error={chat.error}
         hasOlder={chat.hasNextPage}
         loadingOlder={chat.isFetchingNextPage}
@@ -75,6 +89,7 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
         onRetryLoad={() => void chat.refetch()}
         onJoin={() => join.mutate(netId, { onSuccess: () => void chat.refetch() })}
         joining={join.isPending}
+        joinError={errorMessageIfAny(join.error)}
         userId={user.id}
         userCallsign={user.callsign}
         onRetrySend={retry}

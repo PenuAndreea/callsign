@@ -88,10 +88,13 @@ export function createRealtime({
     authRetries = 0;
     setStatus('connected');
     const connectedAt = Date.now();
-    // In-flight first fetches count as fresh; data from before this connection may miss events.
+    // Data from before this connection may miss events, and a failed load (often the same
+    // outage) gets another try. In-flight first fetches and retries count as fresh.
     void queryClient.invalidateQueries({
       queryKey: netKeys.all,
-      predicate: ({ state }) => state.dataUpdatedAt !== 0 && state.dataUpdatedAt < connectedAt,
+      predicate: ({ state }) =>
+        (state.status === 'error' && state.fetchStatus === 'idle') ||
+        (state.dataUpdatedAt !== 0 && state.dataUpdatedAt < connectedAt),
     });
   }
 

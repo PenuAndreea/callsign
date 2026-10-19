@@ -3,7 +3,7 @@ import { loginRequestSchema } from '@callsign/types';
 import { Button, Masthead } from '@callsign/ui';
 import { View } from 'react-native';
 
-import { errorMessage } from '../../errors/errorMessage';
+import { errorMessageIfAny } from '../../errors/errorMessage';
 import { FormError } from '../../form/FormError';
 import { FormInput } from '../../form/FormInput';
 import { useZodForm } from '../../form/useZodForm';
@@ -53,7 +53,7 @@ export function SignInScreen({ onRegister }: SignInScreenProps) {
         />
       </View>
       <View style={styles.actions}>
-        <FormError message={login.error ? errorMessage(login.error) : undefined} />
+        <FormError message={errorMessageIfAny(login.error)} />
         <Button
           label="Report in"
           icon="arrowRight"

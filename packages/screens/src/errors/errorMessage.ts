@@ -40,3 +40,8 @@ export function sendErrorMessage(code: ClientErrorCode): string {
 export function errorMessage(error: unknown): string {
   return isApiClientError(error) ? errorMessageForCode(error.code) : GENERIC;
 }
+
+/** The copy for a failed query or mutation, or nothing while there is no error. */
+export function errorMessageIfAny(error: unknown): string | undefined {
+  return error === null || error === undefined ? undefined : errorMessage(error);
+}

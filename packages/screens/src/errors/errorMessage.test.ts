@@ -1,7 +1,12 @@
 import { ApiClientError } from '@callsign/hooks';
 import { describe, expect, it } from 'vitest';
 
-import { errorMessage, errorMessageForCode, sendErrorMessage } from './errorMessage';
+import {
+  errorMessage,
+  errorMessageForCode,
+  errorMessageIfAny,
+  sendErrorMessage,
+} from './errorMessage';
 
 describe('errorMessage', () => {
   it('maps API codes to copy', () => {
@@ -41,6 +46,16 @@ describe('errorMessageForCode', () => {
   it('gives the same copy as errorMessage', () => {
     expect(errorMessageForCode('RATE_LIMITED')).toBe(
       errorMessage(new ApiClientError(429, 'RATE_LIMITED', 'x')),
+    );
+  });
+});
+
+describe('errorMessageIfAny', () => {
+  it('is nothing without an error, and the copy with one', () => {
+    expect(errorMessageIfAny(null)).toBeUndefined();
+    expect(errorMessageIfAny(undefined)).toBeUndefined();
+    expect(errorMessageIfAny(new ApiClientError(0, 'NETWORK_ERROR', 'x'))).toBe(
+      errorMessageForCode('NETWORK_ERROR'),
     );
   });
 });
