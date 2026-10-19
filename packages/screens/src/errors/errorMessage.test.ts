@@ -1,7 +1,7 @@
 import { ApiClientError } from '@callsign/hooks';
 import { describe, expect, it } from 'vitest';
 
-import { errorMessage, errorMessageForCode } from './errorMessage';
+import { errorMessage, errorMessageForCode, sendErrorMessage } from './errorMessage';
 
 describe('errorMessage', () => {
   it('maps API codes to copy', () => {
@@ -21,6 +21,19 @@ describe('errorMessage', () => {
     expect(errorMessage(new TypeError('cannot read x of undefined'))).toBe(
       'Something went wrong. Try again.',
     );
+  });
+});
+
+describe('sendErrorMessage', () => {
+  it('says seconds, not a minute, for the socket send limit', () => {
+    expect(sendErrorMessage('RATE_LIMITED')).toBe(
+      'Transmitting too fast. Stand by a few seconds, then retry.',
+    );
+  });
+
+  it('uses the shared copy for every other code', () => {
+    expect(sendErrorMessage('NETWORK_ERROR')).toBe(errorMessageForCode('NETWORK_ERROR'));
+    expect(sendErrorMessage('NOT_A_MEMBER')).toBe(errorMessageForCode('NOT_A_MEMBER'));
   });
 });
 

@@ -10,12 +10,15 @@ import { apiError, authResponse, net, page, webPlatform } from '../test/fixtures
 import { api, server } from '../test/server';
 import type { SocketTestServer } from '../test/socketServer';
 import { startSocketTestServer } from '../test/socketServer';
+import type { ErrorReporter } from '../errors/reportError';
 import { createRealtime } from './createRealtime';
 
 let sockets: SocketTestServer;
 let stop: (() => void) | undefined;
+let reportError: ReturnType<typeof vi.fn<ErrorReporter>>;
 
 beforeEach(async () => {
+  reportError = vi.fn<ErrorReporter>();
   sockets = await startSocketTestServer();
 });
 
@@ -43,6 +46,7 @@ async function signedIn(accessToken = 'access-1', refresh?: () => Response) {
     queryClient,
     session,
     createSocket: sockets.createSocket,
+    reportError,
   });
   const stopRealtime = realtime.start();
   stop = () => {
@@ -193,5 +197,35 @@ describe('createRealtime: live events', () => {
     sockets.io.emit('room:updated', { id: tower.id, memberCount: 3 });
     await vi.waitFor(() => expect(cachedTower(queryClient)?.memberCount).toBe(3));
     expect(queryClient.getQueryData<typeof tower>(netKeys.detail(tower.id))?.memberCount).toBe(3);
+  });
+
+  it('reports and drops a message:new that breaks the contract', async () => {
+    const { queryClient } = await withCachedTower();
+
+    sockets.io.emit('message:new', {
+      ...message('Over.', '2026-10-17T22:15:00.000Z'),
+      content: '',
+    });
+    sockets.io.emit('message:new', message('Valid. Over.', '2026-10-17T22:16:00.000Z'));
+    await vi.waitFor(() =>
+      expect(cachedTower(queryClient)?.lastMessage?.content).toBe('Valid. Over.'),
+    );
+    expect(reportError).toHaveBeenCalledOnce();
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'INVALID_RESPONSE' }),
+      { source: 'realtime', key: ['message:new'] },
+    );
+  });
+
+  it('reports and drops a room:updated that breaks the contract', async () => {
+    const { queryClient } = await withCachedTower();
+
+    sockets.io.emit('room:updated', { id: tower.id, memberCount: -1 });
+    sockets.io.emit('room:updated', { id: tower.id, memberCount: 5 });
+    await vi.waitFor(() => expect(cachedTower(queryClient)?.memberCount).toBe(5));
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'INVALID_RESPONSE' }),
+      { source: 'realtime', key: ['room:updated'] },
+    );
   });
 });

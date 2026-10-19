@@ -1,3 +1,4 @@
+import type { ErrorReporter } from '../errors/reportError';
 import type { SocketFactory } from '../realtime/realtime.types';
 
 /**
@@ -26,6 +27,8 @@ interface PlatformBase {
    * Native: `transports: ['websocket']`). `false` turns realtime off (tests that only use HTTP).
    */
   createSocket?: SocketFactory | false;
+  /** Where unexpected errors go. Omitted: the console. */
+  reportError?: ErrorReporter;
 }
 
 /**

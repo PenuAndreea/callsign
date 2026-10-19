@@ -2,7 +2,7 @@ import type { ChatEntry } from '@callsign/hooks';
 import { Button, ChatBubble, Text } from '@callsign/ui';
 import { View } from 'react-native';
 
-import { errorMessageForCode } from '../../errors/errorMessage';
+import { sendErrorMessage } from '../../errors/errorMessage';
 import { useChatStyles } from './ChatScreen.styles';
 
 interface ChatRowProps {
@@ -45,7 +45,7 @@ export function ChatRow({ entry, userId, userCallsign, onRetry, onDiscard }: Cha
         <View style={styles.failedRow}>
           {pending.error !== null && (
             <Text variant="small" tone="dangerText">
-              {errorMessageForCode(pending.error)}
+              {sendErrorMessage(pending.error)}
             </Text>
           )}
           <Button label="Retry" variant="link" onPress={() => onRetry(pending.clientMessageId)} />

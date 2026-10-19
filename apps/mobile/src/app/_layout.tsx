@@ -1,4 +1,5 @@
 import { ApiProvider } from '@callsign/hooks';
+import { ScreenErrorBoundary } from '@callsign/screens';
 import { ThemeProvider } from '@callsign/ui';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -22,7 +23,10 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <ApiProvider platform={platform}>
-        <RootStack />
+        {/* The last resort: Try again starts the navigator over. Screens with a way back have their own. */}
+        <ScreenErrorBoundary>
+          <RootStack />
+        </ScreenErrorBoundary>
       </ApiProvider>
     </ThemeProvider>
   );

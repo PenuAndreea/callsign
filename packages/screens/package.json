@@ -19,6 +19,7 @@
     "@callsign/types": "workspace:*",
     "@callsign/ui": "workspace:*",
     "@hookform/resolvers": "~5.9.1",
+    "react-error-boundary": "~6.1.6",
     "react-hook-form": "~7.89.0",
     "zod": "catalog:"
   },
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@callsign/config": "workspace:*",
+    "@tanstack/react-query": "~5.103.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",

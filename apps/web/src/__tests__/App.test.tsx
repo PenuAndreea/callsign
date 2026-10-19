@@ -1,79 +1,18 @@
-import {
-  api,
-  apiError,
-  authResponse,
-  net,
-  page,
-  server,
-  webPlatform,
-} from '@callsign/hooks/testing';
-import { render, screen, waitFor } from '@testing-library/react';
+import { api, authResponse, net, page, server } from '@callsign/hooks/testing';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { createMemoryRouter } from 'react-router';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import App from '../App';
-import { routes } from '../routes';
+import {
+  refreshAnswers,
+  renderApp,
+  setupAppTests,
+  setWindowWidth,
+  tower,
+} from '../test/appTestUtils';
 
-const refreshAnswers = (session: 'signedIn' | 'signedOut' | 'offline') =>
-  server.use(
-    http.post(api('/auth/refresh'), () => {
-      if (session === 'offline') return HttpResponse.error();
-      return session === 'signedIn'
-        ? HttpResponse.json(authResponse('access-1'))
-        : apiError(401, 'UNAUTHORIZED');
-    }),
-  );
-
-const tower = net('tower', { memberCount: 2 });
-
-// Signed-in pages load the nets list: tower is joined, nothing is open.
-beforeEach(() => {
-  server.use(
-    http.get(api('/rooms'), ({ request }) =>
-      HttpResponse.json(
-        page(new URL(request.url).searchParams.get('scope') === 'joined' ? [tower] : []),
-      ),
-    ),
-    http.get(api(`/rooms/${tower.id}`), () => HttpResponse.json(tower)),
-    http.get(api(`/rooms/${tower.id}/messages`), () =>
-      HttpResponse.json(
-        page([
-          {
-            id: 'aa00000000000000000000aa',
-            roomId: tower.id,
-            sender: { id: 'other', callsign: 'twr-ops' },
-            content: 'Radio check. Over.',
-            createdAt: '2026-10-17T22:14:00.000Z',
-          },
-        ]),
-      ),
-    ),
-  );
-});
-
-/**
- * react-native-web measures `documentElement.clientWidth` (jsdom has no layout: always 0) and
- * re-reads it on `resize`. Tests start wide (split view) unless they narrow the window.
- */
-function setWindowWidth(width: number) {
-  Object.defineProperty(document.documentElement, 'clientWidth', {
-    configurable: true,
-    value: width,
-  });
-  window.dispatchEvent(new Event('resize'));
-}
-
-beforeEach(() => setWindowWidth(1024));
-afterEach(() => setWindowWidth(0));
-
-/** The real routes in a memory router, against MSW (the test platform has an absolute API URL). */
-function renderApp(path = '/') {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
-  render(<App platform={webPlatform} router={router} />);
-  return router;
-}
+setupAppTests();
 
 const homeHeading = () => screen.findByRole('heading', { name: 'Nets' });
 const signInButton = () => screen.findByRole('button', { name: 'Report in' });

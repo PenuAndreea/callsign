@@ -1,6 +1,11 @@
+import { messageDtoSchema, roomUpdatedEventSchema } from '@callsign/types';
 import type { QueryClient } from '@tanstack/react-query';
+import type { z } from 'zod';
 
+import { ApiClientError } from '../api/ApiClientError';
 import type { ApiClient } from '../api/createApiClient';
+import type { ErrorReporter } from '../errors/reportError';
+import { consoleErrorReporter } from '../errors/reportError';
 import type { PendingStore } from '../messages/pendingStore';
 import { createPendingStore } from '../messages/pendingStore';
 import { newClientMessageId } from '../messages/newClientMessageId';
@@ -21,6 +26,8 @@ export interface RealtimeOptions {
   session: SessionStore;
   /** `null`: realtime off. */
   createSocket: SocketFactory | null;
+  /** Where broken acks and events go. Omitted: the console. */
+  reportError?: ErrorReporter;
 }
 
 export interface Realtime {
@@ -54,6 +61,7 @@ export function createRealtime({
   queryClient,
   session,
   createSocket,
+  reportError = consoleErrorReporter,
 }: RealtimeOptions): Realtime {
   const listeners = new Set<() => void>();
   let status: RealtimeStatus = 'disconnected';
@@ -105,6 +113,20 @@ export function createRealtime({
     );
   }
 
+  /**
+   * A live event checked against its schema, like every HTTP response. One that does not match
+   * (contract drift) is reported and dropped instead of corrupting the cache.
+   */
+  function parseEvent<T>(event: string, schema: z.ZodType<T>, raw: unknown): T | null {
+    const parsed = schema.safeParse(raw);
+    if (parsed.success) return parsed.data;
+    const error = new ApiClientError(200, 'INVALID_RESPONSE', `Invalid ${event} event`, {
+      cause: parsed.error,
+    });
+    reportError(error, { source: 'realtime', key: [event] });
+    return null;
+  }
+
   function open(factory: SocketFactory): void {
     if (socket) return;
     const current = factory({
@@ -114,12 +136,17 @@ export function createRealtime({
     current.on('connect', onConnect);
     current.on('disconnect', () => setStatus(current.active ? 'connecting' : 'disconnected'));
     current.on('connect_error', (error) => onConnectError(current, error));
-    current.on('message:new', (message) => {
+    current.on('message:new', (raw) => {
+      const message = parseEvent('message:new', messageDtoSchema, raw);
+      if (!message) return;
       applyNewMessage(queryClient, message);
       // The broadcast of our own send can arrive when the ack was lost (timeout).
       if (message.clientMessageId !== undefined) pending.remove(message.clientMessageId);
     });
-    current.on('room:updated', (room) => applyRoomUpdate(queryClient, room));
+    current.on('room:updated', (raw) => {
+      const room = parseEvent('room:updated', roomUpdatedEventSchema, raw);
+      if (room) applyRoomUpdate(queryClient, room);
+    });
     socket = current;
     setStatus('connecting');
     current.connect();
@@ -165,11 +192,13 @@ export function createRealtime({
         error: null,
       } as const;
       pending.add(message);
-      return transmit(socket, queryClient, pending, message);
+      return transmit(socket, queryClient, pending, message, reportError);
     },
     retry(clientMessageId) {
       const message = pending.get(clientMessageId);
-      return message ? transmit(socket, queryClient, pending, message) : Promise.resolve();
+      return message
+        ? transmit(socket, queryClient, pending, message, reportError)
+        : Promise.resolve();
     },
     discard: (clientMessageId) => pending.remove(clientMessageId),
   };
