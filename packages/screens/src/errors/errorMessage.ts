@@ -23,6 +23,19 @@ export function errorMessageForCode(code: ClientErrorCode): string {
   return messages[code];
 }
 
+/**
+ * Codes whose copy differs for a message send. The socket limits sends per 5 seconds, not per
+ * minute like the HTTP routes.
+ */
+const sendMessages: Partial<Record<ClientErrorCode, string>> = {
+  RATE_LIMITED: 'Transmitting too fast. Stand by a few seconds, then retry.',
+};
+
+/** The copy under a message that was not sent. */
+export function sendErrorMessage(code: ClientErrorCode): string {
+  return sendMessages[code] ?? errorMessageForCode(code);
+}
+
 /** One line for the user. Unknown errors (bugs) get the generic line; details stay in the log. */
 export function errorMessage(error: unknown): string {
   return isApiClientError(error) ? errorMessageForCode(error.code) : GENERIC;

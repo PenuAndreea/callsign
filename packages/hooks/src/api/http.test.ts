@@ -80,10 +80,18 @@ describe('sendHttp', () => {
   });
 
   it('keeps the status when the error body is not an ApiError', async () => {
+    server.use(http.get(api('/rooms'), () => new HttpResponse('Oops', { status: 500 })));
+    await expect(sendHttp(config, { method: 'GET', path: '/rooms' }, null)).rejects.toMatchObject({
+      status: 500,
+      code: 'INTERNAL_ERROR',
+    });
+  });
+
+  it('turns a proxy page for a down API into NETWORK_ERROR, keeping the status', async () => {
     server.use(http.get(api('/rooms'), () => new HttpResponse('Bad gateway', { status: 502 })));
     await expect(sendHttp(config, { method: 'GET', path: '/rooms' }, null)).rejects.toMatchObject({
       status: 502,
-      code: 'INTERNAL_ERROR',
+      code: 'NETWORK_ERROR',
     });
   });
 

@@ -122,7 +122,7 @@ describe('ChatScreen', () => {
     await transmit('Over.');
 
     expect(await screen.findByText(/Not sent/)).toBeInTheDocument();
-    expect(screen.getByText(/Too many attempts/)).toBeInTheDocument();
+    expect(screen.getByText(/Stand by a few seconds/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(screen.queryByText(/Not sent/)).not.toBeInTheDocument());
     expect(attempts).toBe(2);

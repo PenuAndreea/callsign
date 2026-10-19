@@ -4,6 +4,9 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- fix(screens): a send refused by the socket rate limit says "stand by a few seconds", not a minute
+- fix(hooks): a 502/503/504 without an ApiError body (proxy, API down) is NETWORK_ERROR, not INTERNAL_ERROR
+
 - feat(hooks): reportError seam: ApiPlatform.reportError (console by default), useReportError, the query and mutation caches report unexpected errors only
 
 ## 0.6.0 (M5: frontend integration)
