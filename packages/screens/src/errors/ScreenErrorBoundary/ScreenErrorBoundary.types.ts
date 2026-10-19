@@ -7,4 +7,6 @@ export interface ScreenErrorBoundaryProps {
    * leaves a crashed chat without pressing Try again.
    */
   resetKeys?: unknown[];
+  /** Shown on the crash screen as a way out (see `CrashScreenProps.onBack`). */
+  onBack?: () => void;
 }

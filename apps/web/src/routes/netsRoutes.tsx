@@ -40,7 +40,7 @@ export function ChatRoute() {
   return (
     // A fresh boundary and screen per net: the draft never carries over to another net, and a
     // crashed chat starts over when another net is opened. In the split view the list stays.
-    <ScreenErrorBoundary key={netId}>
+    <ScreenErrorBoundary key={netId} {...(!split && { onBack: toList })}>
       <ChatScreen netId={netId} {...(!split && { onBack: toList })} onLeft={toList} />
     </ScreenErrorBoundary>
   );

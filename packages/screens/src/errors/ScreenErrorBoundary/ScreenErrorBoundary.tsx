@@ -9,7 +9,7 @@ import type { ScreenErrorBoundaryProps } from './ScreenErrorBoundary.types';
  * and shows `CrashScreen` in its place. Try again resets the failed queries first, so they
  * refetch instead of throwing their cached error again. Place it inside `ApiProvider`.
  */
-export function ScreenErrorBoundary({ children, resetKeys }: ScreenErrorBoundaryProps) {
+export function ScreenErrorBoundary({ children, resetKeys, onBack }: ScreenErrorBoundaryProps) {
   const reportError = useReportError();
   const { reset } = useQueryErrorResetBoundary();
 
@@ -22,7 +22,9 @@ export function ScreenErrorBoundary({ children, resetKeys }: ScreenErrorBoundary
           ...(info.componentStack && { componentStack: info.componentStack }),
         })
       }
-      fallbackRender={({ resetErrorBoundary }) => <CrashScreen onRetry={resetErrorBoundary} />}
+      fallbackRender={({ resetErrorBoundary }) => (
+        <CrashScreen onRetry={resetErrorBoundary} {...(onBack && { onBack })} />
+      )}
       {...(resetKeys && { resetKeys })}
     >
       {children}

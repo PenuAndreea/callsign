@@ -51,6 +51,20 @@ describe('ScreenErrorBoundary', () => {
     expect(await screen.findByText('Back on air')).toBeInTheDocument();
   });
 
+  it('offers the way back on the crash screen', async () => {
+    crash.on = true;
+    const onBack = vi.fn();
+    renderScreen(
+      <ScreenErrorBoundary onBack={onBack}>
+        <Fragile label="Never shown" />
+      </ScreenErrorBoundary>,
+      { platform: platform() },
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Back' }));
+    expect(onBack).toHaveBeenCalledOnce();
+  });
+
   it('starts over when a reset key changes', async () => {
     crash.on = true;
     /** Like the web chat route: the net id comes from outside the boundary. */

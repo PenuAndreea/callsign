@@ -13,5 +13,14 @@ describe('CrashScreen', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('The fault was logged');
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(onRetry).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+  });
+
+  it('offers a way back when given one', async () => {
+    const onBack = vi.fn();
+    renderScreen(<CrashScreen onRetry={vi.fn()} onBack={onBack} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(onBack).toHaveBeenCalledOnce();
   });
 });

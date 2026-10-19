@@ -4,7 +4,13 @@ import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { refreshAnswers, renderApp, setupAppTests, tower } from '../test/appTestUtils';
+import {
+  refreshAnswers,
+  renderApp,
+  setupAppTests,
+  setWindowWidth,
+  tower,
+} from '../test/appTestUtils';
 
 /** Which screen throws while rendering, like a bug. */
 const crash = vi.hoisted(() => ({ chat: false, nets: false }));
@@ -51,6 +57,18 @@ describe('crashes on web', () => {
     crash.chat = false;
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Radio check. Over.')).toBeInTheDocument();
+  });
+
+  it('offers Back to the list when a stacked chat crashes', async () => {
+    setWindowWidth(400);
+    refreshAnswers('signedIn');
+    crash.chat = true;
+    const router = renderApp(`/nets/${tower.id}`);
+
+    await crashScreen();
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(router.state.location.pathname).toBe('/');
+    expect(await screen.findByRole('heading', { name: 'Nets' })).toBeInTheDocument();
   });
 
   it('shows the crash screen for the whole page, and starts over on another page', async () => {
