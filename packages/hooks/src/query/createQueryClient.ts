@@ -18,6 +18,15 @@ export function shouldRetry(failureCount: number, error: unknown): boolean {
 }
 
 /**
+ * Which query errors crash to the nearest error boundary instead of reaching the screen: bugs
+ * only (anything that is not an `ApiClientError`). An API error, even a 5xx or a broken response,
+ * is something the screen can explain and retry, so it stays inline.
+ */
+export function throwsToBoundary(error: unknown): boolean {
+  return !(error instanceof ApiClientError);
+}
+
+/**
  * Server state only. The session (who is signed in) lives outside the query cache.
  * Unexpected failures (after retries) go to `reportError`; expected ones only reach the screens.
  */
@@ -38,6 +47,7 @@ export function createQueryClient(reportError: ErrorReporter = consoleErrorRepor
     defaultOptions: {
       queries: {
         retry: shouldRetry,
+        throwOnError: throwsToBoundary,
         // Live updates come over the socket; refetching on every mount would only add load.
         staleTime: 30_000,
       },

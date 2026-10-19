@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ApiClientError } from '../api/ApiClientError';
-import { createQueryClient, shouldRetry } from './createQueryClient';
+import { createQueryClient, shouldRetry, throwsToBoundary } from './createQueryClient';
 
 describe('shouldRetry', () => {
   it('retries network errors and 5xx up to twice', () => {
@@ -22,10 +22,24 @@ describe('shouldRetry', () => {
   });
 });
 
+describe('throwsToBoundary', () => {
+  it('sends bugs to the error boundary', () => {
+    expect(throwsToBoundary(new TypeError('x is undefined'))).toBe(true);
+    expect(throwsToBoundary('thrown string')).toBe(true);
+  });
+
+  it('keeps every API error inline, even a server failure or a broken response', () => {
+    expect(throwsToBoundary(new ApiClientError(0, 'NETWORK_ERROR', 'offline'))).toBe(false);
+    expect(throwsToBoundary(new ApiClientError(500, 'INTERNAL_ERROR', 'boom'))).toBe(false);
+    expect(throwsToBoundary(new ApiClientError(200, 'INVALID_RESPONSE', 'bad shape'))).toBe(false);
+  });
+});
+
 describe('createQueryClient', () => {
-  it('uses the retry rule for queries and never retries mutations', () => {
+  it('uses the retry and boundary rules for queries and never retries mutations', () => {
     const defaults = createQueryClient().getDefaultOptions();
     expect(defaults.queries?.retry).toBe(shouldRetry);
+    expect(defaults.queries?.throwOnError).toBe(throwsToBoundary);
     expect(defaults.mutations?.retry).toBe(false);
   });
 });

@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { http } from 'msw';
 import type { ReactNode } from 'react';
+import { Component } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiClientError } from '../api/ApiClientError';
@@ -24,6 +25,23 @@ function wrapperFor(platform: ApiPlatform) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return <ApiProvider platform={platform}>{children}</ApiProvider>;
   };
+}
+
+/** The smallest error boundary, enough to see what a render throws. */
+class Boundary extends Component<{ onCatch: (error: unknown) => void; children: ReactNode }> {
+  override state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  override componentDidCatch(error: unknown) {
+    this.props.onCatch(error);
+  }
+
+  override render() {
+    return this.state.failed ? null : this.props.children;
+  }
 }
 
 describe('useReportError', () => {
@@ -52,11 +70,40 @@ describe('reporting through the query cache', () => {
     const reportError = vi.fn<ErrorReporter>();
     const bug = new TypeError('x is undefined');
     const { result } = renderHook(
-      () => useQuery({ queryKey: ['broken'], queryFn: () => Promise.reject(bug), retry: false }),
+      () =>
+        useQuery({
+          queryKey: ['broken'],
+          queryFn: () => Promise.reject(bug),
+          retry: false,
+          // Stay on the screen so the test can read the state; the next test covers the throw.
+          throwOnError: false,
+        }),
       { wrapper: wrapperFor({ ...webPlatform, reportError }) },
     );
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(reportError).toHaveBeenCalledWith(bug, { source: 'query', key: ['broken'] });
+  });
+
+  it('throws a bug to the nearest error boundary, and keeps API errors inline', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const caught: unknown[] = [];
+    const platform = { ...webPlatform, reportError: vi.fn<ErrorReporter>() };
+    const bug = new TypeError('x is undefined');
+    const notFound = new ApiClientError(404, 'NOT_FOUND', 'off the air');
+    renderHook(() => useQuery({ queryKey: ['bug'], queryFn: () => Promise.reject(bug) }), {
+      wrapper: ({ children }) => (
+        <ApiProvider platform={platform}>
+          <Boundary onCatch={(error) => caught.push(error)}>{children}</Boundary>
+        </ApiProvider>
+      ),
+    });
+    const { result } = renderHook(
+      () => useQuery({ queryKey: ['gone'], queryFn: () => Promise.reject(notFound) }),
+      { wrapper: wrapperFor(platform) },
+    );
+    await waitFor(() => expect(caught).toEqual([bug]));
+    await waitFor(() => expect(result.current.error).toBe(notFound));
+    vi.restoreAllMocks();
   });
 
   it('does not report an expected API error', async () => {
