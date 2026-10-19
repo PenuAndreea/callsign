@@ -33,6 +33,16 @@ export interface ThemeColors {
   lampOn: string;
   /** Inactive status dot */
   lampOff: string;
+  /** Frequency display panel (splash tuner) */
+  display: string;
+  /** Digits on the frequency display */
+  displayText: string;
+  /** Small labels on the frequency display (TUNING, MHZ) */
+  displayMuted: string;
+  /** Scale ticks on the frequency display (decorative) */
+  tick: string;
+  /** Tuning needle on the frequency display */
+  needle: string;
   /** Destructive action fill */
   danger: string;
   /** Text on `danger` fill */

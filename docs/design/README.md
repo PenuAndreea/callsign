@@ -16,7 +16,8 @@ A clean, modern UI with a field-radio voice. The radio feel comes from typograph
 **Color tokens** (semantic, same keys in both schemes; dark = olive-charcoal + brass, light = cool white-gray + olive drab):
 
 - v1 uses: `background`, `surface` (cards, list rows, inputs, incoming bubbles), `surfaceInset` (composer field), `sheet` (composer bar), `text`, `textMuted` (secondary text, meta, placeholders), `label` (field labels, sender callsign), `primary` / `onPrimary` (primary button, TX, links), `primaryHalo` (ring around primary buttons), `bubbleOut` / `bubbleOutText` / `bubbleOutMeta` (own messages), `lampOn` / `lampOff` (status dot), `danger` / `onDanger` / `dangerText` / `dangerSoft` (errors, destructive actions), `shadow`.
-- Later versions only, not added to the package in v1: `display`, `displayText`, `displayMuted`, `frequency`, `tick`, `needle` (frequency display), `badge` / `onBadge` (unread counts).
+- Splash tuner (frequency display): `display` (panel), `displayText` (digits), `displayMuted` (panel labels), `tick` (decorative scale), `needle`.
+- Later versions only, not added to the package in v1: `frequency`, `badge` / `onBadge` (unread counts).
 - Brass appears only in dark, olive drab only in light; both live in `primary`. Red only for errors and destructive actions in v1.
 
 - **Shape:** named radii per use (`input`, `card`, `button`, `bubble` with a smaller `tail` corner, `sheet` for the composer's top corners, `pill`), round send button. Soft shadows from the `shadow` token through the `boxShadow` style prop (supported by RN 0.86 and react-native-web 0.21). No glows in v1.

@@ -25,9 +25,10 @@ Changes from the design canvas:
 - Dark `textMuted` is `#A3A588` instead of `#9A9C80`, to reach 4.5:1 on `surfaceInset` (composer placeholder).
 - Added `primaryHalo` (translucent `primary`) for the ring around primary buttons.
 - Added `lineHeights`; Special Elite runs tight without them.
-- Left out until their features land: `display`, `displayText`, `displayMuted`, `frequency`, `tick`, `needle` (frequency display), `badge` / `onBadge` (unread counts), the `micro` font size (priority tag) and the segmented-control radii.
+- Added for the splash tuner: `display`, `displayText`, `displayMuted`, `tick`, `needle` (values below). Light `needle` is `#BC462E` instead of `#B5432C`, to reach 3:1 on `display`.
+- Left out until their features land: `frequency` (frequency display), `badge` / `onBadge` (unread counts), the `micro` font size (priority tag) and the segmented-control radii.
 
-Values of the left-out tokens, for when their features land:
+Values of the frequency-display tokens and the ones still left out:
 
 | Token          | Dark                      | Light                      |
 | -------------- | ------------------------- | -------------------------- |
@@ -36,7 +37,7 @@ Values of the left-out tokens, for when their features land:
 | `displayMuted` | `#9A9C80`                 | `#A9AB8E`                  |
 | `frequency`    | `#9FD36A`                 | `#2F6A14`                  |
 | `tick`         | `#4A5139`                 | `#B5BAA8`                  |
-| `needle`       | `#C9A24D`                 | `#B5432C`                  |
+| `needle`       | `#C9A24D`                 | `#BC462E`                  |
 | `badge`        | `#C9A24D`                 | `#556B2F`                  |
 | `onBadge`      | `#1F2318`                 | `#FFFFFF`                  |
 

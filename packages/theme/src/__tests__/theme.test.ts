@@ -24,12 +24,15 @@ const TEXT_PAIRS: [foreground: ColorKey, background: ColorKey][] = [
   ['onDanger', 'danger'],
   ['dangerText', 'background'],
   ['dangerText', 'surface'],
+  ['displayText', 'display'],
+  ['displayMuted', 'display'],
 ];
 
 /** Non-text indicators that must reach 3:1. */
 const INDICATOR_PAIRS: [foreground: ColorKey, background: ColorKey][] = [
   ['lampOn', 'surface'],
   ['lampOn', 'background'],
+  ['needle', 'display'],
 ];
 
 describe.each([lightTheme, darkTheme])('$scheme theme', ({ colors }) => {

@@ -4,6 +4,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(theme): frequency-display tokens for the splash tuner (display, displayText, displayMuted, tick, needle), with contrast tests; light needle lightened to reach 3:1
 - test(screens): the failed-Leave test waits for the socket first (CI race with the reconnect reset)
 - fix(ui): the composer sends the field's own text on Return, not a value one keystroke behind
 - feat(screens): day separators in the chat (Today, Yesterday, 17 Oct)
