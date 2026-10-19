@@ -155,6 +155,8 @@ describe('ChatScreen', () => {
       }),
     );
     renderChat();
+    // Connecting refetches the failed history, which swaps the offer for a spinner meanwhile.
+    await screen.findByText('4 stations on net');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Join the net' }));
     expect(await screen.findByText('Welcome. Over.')).toBeInTheDocument();

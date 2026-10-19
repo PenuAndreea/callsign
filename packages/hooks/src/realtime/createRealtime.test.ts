@@ -1,5 +1,5 @@
 import type { MessageDto } from '@callsign/types';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, QueryObserver } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -137,6 +137,43 @@ describe('createRealtime: catching up after a reconnect', () => {
     await connected(realtime);
 
     expect(queryClient.getQueryState(netKeys.detail('tower'))?.isInvalidated).toBe(true);
+  });
+
+  it('refetches open nets data that failed to load', async () => {
+    const { realtime, queryClient } = await signedIn();
+    await connected(realtime);
+    const queryFn = vi.fn(() => Promise.reject(new Error('offline')));
+    // Subscribed like an open screen: only active queries refetch.
+    const unsubscribe = new QueryObserver(queryClient, {
+      queryKey: netKeys.detail('tower'),
+      queryFn,
+      retry: false,
+    }).subscribe(() => undefined);
+    await vi.waitFor(() =>
+      expect(queryClient.getQueryState(netKeys.detail('tower'))?.status).toBe('error'),
+    );
+
+    sockets.dropConnections();
+    await vi.waitFor(() => expect(sockets.handshakes).toHaveLength(2));
+    await connected(realtime);
+
+    await vi.waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
+    unsubscribe();
+  });
+
+  it('leaves a first fetch still in flight alone', async () => {
+    const { realtime, queryClient } = await signedIn();
+    await connected(realtime);
+    void queryClient.prefetchQuery({
+      queryKey: netKeys.detail('tower'),
+      queryFn: () => new Promise<never>(() => undefined),
+    });
+
+    sockets.dropConnections();
+    await vi.waitFor(() => expect(sockets.handshakes).toHaveLength(2));
+    await connected(realtime);
+
+    expect(queryClient.getQueryState(netKeys.detail('tower'))?.isInvalidated).toBe(false);
   });
 });
 
