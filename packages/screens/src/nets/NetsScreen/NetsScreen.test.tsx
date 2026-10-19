@@ -1,4 +1,5 @@
 import { api, apiError, net, page, server } from '@callsign/hooks/testing';
+import { sizes } from '@callsign/theme';
 import type { RoomDto } from '@callsign/types';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -44,7 +45,10 @@ describe('NetsScreen', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Joined')).toBeInTheDocument();
     expect(screen.getByText('Open to join')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Join ground' })).toBeInTheDocument();
+    // The compact size: a row action, not a form button.
+    expect(screen.getByRole('button', { name: 'Join ground' })).toHaveStyle({
+      minHeight: sizes.touch,
+    });
   });
 
   it('opens a joined net', async () => {

@@ -33,7 +33,7 @@ A clean, modern UI with a field-radio voice. The radio feel comes from typograph
 
 - Primitives:
   - `Text` with variants `display`, `title`, `label`, `body`, `meta` and a `tone`.
-  - `Button` with variants `primary` (primary fill), `secondary` (outline) and `link` (underlined meta), plus optional trailing icon, `disabled` and `loading`.
+  - `Button` with variants `primary` (primary fill), `secondary` (outline) and `link` (underlined meta), sizes `regular` and `small` (the 44 touch target with a `label`-size text, for row actions such as Join in the nets list), plus optional trailing icon, `disabled` and `loading`.
   - `IconButton` (square surface button, e.g. back).
   - `Input` with label, error and a `variant`: `form` (surface field) and `chat` (pill on `surfaceInset`). One component, not two.
   - `Card`, `StatusDot` (`on` / `off`), `Icon`.
@@ -44,7 +44,7 @@ A clean, modern UI with a field-radio voice. The radio feel comes from typograph
   - `ChatBubble`: incoming on surface with the sender callsign in `label` color, outgoing on `bubbleOut`; meta line with the local time.
   - `MessageInput`: chat `Input` + round send `IconButton` ("TX", with `accessibilityLabel="Send"`). Return sends the field's own text (`nativeEvent.text`), never a `value` a render behind.
   - `SectionLabel`: tracked label for list sections ("JOINED", "OPEN TO JOIN").
-- All of them are built (M1). `@callsign/ui/preview` exports `ComponentPreview`, one scrolling screen with every component, kept as a visual reference; both apps render the real screens since M5. Screens own the safe-area insets (`react-native-safe-area-context`, `useInsetPadding` in `packages/screens`), so components never pad for the notch or home indicator; web wraps the app in a `SafeAreaProvider` (zero insets). `KeyboardFrame` (`KeyboardAvoidingView`, `padding` on both platforms: Android is edge-to-edge) keeps the composer and form fields above the keyboard. `Input` forwards `ref` to its `TextInput`, so `FormInput` hands react-hook-form the field: "next" keys call `setFocus`, and a failed submit focuses the first invalid field. Passphrase fields set `autoCapitalize="none"` and `autoCorrect={false}` (Android keyboards capitalize the first letter otherwise).
+- All of them are built (M1) and used by the real screens in both apps (M5). Screens own the safe-area insets (`react-native-safe-area-context`, `useInsetPadding` in `packages/screens`), so components never pad for the notch or home indicator; web wraps the app in a `SafeAreaProvider` (zero insets). `KeyboardFrame` (`KeyboardAvoidingView`, `padding` on both platforms: Android is edge-to-edge) keeps the composer and form fields above the keyboard. `Input` forwards `ref` to its `TextInput`, so `FormInput` hands react-hook-form the field: "next" keys call `setFocus`, and a failed submit focuses the first invalid field. Passphrase fields set `autoCapitalize="none"` and `autoCorrect={false}` (Android keyboards capitalize the first letter otherwise).
 
 **Screens:**
 

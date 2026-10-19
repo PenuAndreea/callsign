@@ -42,6 +42,7 @@ export function OpenNetRow({ net, joining, onJoin }: OpenNetRowProps) {
           label="Join"
           aria-label={`Join ${net.name}`}
           variant="secondary"
+          size="small"
           loading={joining}
           onPress={() => onJoin(net.id)}
         />
