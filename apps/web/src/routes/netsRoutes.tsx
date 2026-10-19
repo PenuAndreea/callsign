@@ -1,4 +1,4 @@
-import { ChatScreen, NetsScreen, NewNetScreen } from '@callsign/screens';
+import { ChatScreen, NetsScreen, NewNetScreen, ScreenErrorBoundary } from '@callsign/screens';
 import { useNavigate, useOutletContext, useParams } from 'react-router';
 
 import type { NetsLayoutContext } from './NetsLayout';
@@ -38,12 +38,10 @@ export function ChatRoute() {
   const { netId = '' } = useParams();
   const toList = () => void navigate('/');
   return (
-    <ChatScreen
-      // A fresh screen per net: the draft never carries over to another net.
-      key={netId}
-      netId={netId}
-      {...(!split && { onBack: toList })}
-      onLeft={toList}
-    />
+    // A fresh boundary and screen per net: the draft never carries over to another net, and a
+    // crashed chat starts over when another net is opened. In the split view the list stays.
+    <ScreenErrorBoundary key={netId}>
+      <ChatScreen netId={netId} {...(!split && { onBack: toList })} onLeft={toList} />
+    </ScreenErrorBoundary>
   );
 }

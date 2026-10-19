@@ -4,6 +4,9 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+- feat(web): crash boundaries: one in the root route (resets on another page), one per chat panel (the nets list stays)
+- test(web): shared app test helpers (appTestUtils: setupAppTests, renderApp, refreshAnswers)
+
 - feat(screens): CrashScreen and ScreenErrorBoundary (react-error-boundary): reports render crashes, resets failed queries on Try again, resetKeys
 - feat(hooks): one report per error (oncePerError), componentStack for render crashes, useQueryErrorResetBoundary re-export
 
