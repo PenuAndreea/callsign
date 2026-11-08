@@ -20,10 +20,10 @@ Web and mobile share the hooks, screens and API client, so most rows cover both 
 | A08 Software or Data Integrity Failures    | Done     | n/a                                               |
 | A09 Security Logging and Alerting Failures | Partly   | Log failed logins                                 |
 | A10 Mishandling of Exceptional Conditions  | Done     | n/a                                               |
-| M5 Insecure Communication                  | Partly   | Require `https` in mobile release builds          |
+| M5 Insecure Communication                  | Done     | n/a                                               |
 | M6 Inadequate Privacy Controls             | Open     | Account deletion (separate PR)                    |
 | M7 Insufficient Binary Protections         | Accepted | n/a                                               |
-| M9 Insecure Data Storage                   | Partly   | Device-only keychain access                       |
+| M9 Insecure Data Storage                   | Done     | n/a                                               |
 
 ## Web and API (OWASP Top 10:2025)
 
@@ -113,7 +113,7 @@ Risks shared with the web are covered above: M1 and M3 under A07, M2 under A03, 
 ### M5 Insecure Communication
 
 - **Done:** WebSocket transport only on mobile, through the same API URL.
-- **Open:** the development default API URL is `http://` (simulator and emulator). Plan: release builds refuse an API URL that is not `https://`.
+- **Done:** release builds refuse to start unless `EXPO_PUBLIC_API_URL` is `https://` (`assertSecureApiUrl` in `apps/mobile/src/platform.ts`), so tokens and messages never cross the network in plain text. Development builds may use `http://` for the simulator, the emulator and the LAN.
 - **Accepted (v1):** no certificate pinning. Pinning breaks the app whenever the server certificate rotates unless pin updates are managed; worth it once there is a production backend and a rotation process.
 
 ### M6 Inadequate Privacy Controls
@@ -130,5 +130,5 @@ Risks shared with the web are covered above: M1 and M3 under A07, M2 under A03, 
 
 - **Done:** the refresh token is stored in the iOS Keychain / Android Keystore through `expo-secure-store` (`apps/mobile/src/platform.ts`), never in AsyncStorage.
 - **Done:** sign-out and sign-in clear the query cache, so the next user never sees the previous user's data (`sessionStore.ts`).
-- **Open:** the keychain item uses the default accessibility. Plan: `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`, so the token is never included in backups or moved to another device.
+- **Done:** the iOS keychain item is `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`. It is never included in iCloud or iTunes backups and never moved to another device, and it stays readable while the phone is locked after the first unlock, so a background token refresh still works. A write deletes the item and adds it again, because on iOS updating an existing item keeps its old accessibility; tokens saved before this change move over on the next refresh. On Android the Keystore key never leaves the device, and the `expo-secure-store` config plugin keeps the store out of Auto Backup.
 - **Planned with offline-first:** once the query cache is saved to disk, messages are stored on the device. That storage must be encrypted (key in the secure store) and wiped on sign-out.
