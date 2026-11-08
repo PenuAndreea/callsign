@@ -78,11 +78,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
-    services:
-      mongo:
-        image: mongo:8.0
-        ports: ['27017:27017']
-
     env:
       NODE_ENV: production
       PORT: 3000
@@ -98,6 +93,23 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      # Same binary and cache as the e2e tests (version pinned in apps/api/package.json).
+      - name: Cache MongoDB binary
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('apps/api/package.json') }}
+          restore-keys: mongodb-binaries-${{ runner.os }}-
+
+      # Not the `mongo` Docker image as a service: mongod 8.0 in that image exits at startup on
+      # the runner's kernel (6.19+, SERVER-121912), while the binary the e2e tests use runs.
+      # Run from apps/api so mongodb-memory-server picks up the pinned version.
+      - name: Start MongoDB
+        working-directory: apps/api
+        run: |
+          node -e "require('mongodb-memory-server').MongoMemoryServer.create({ instance: { port: 27017 } }).then(() => console.log('MongoDB ready'))" > ../../mongo.log 2>&1 &
+          timeout 120 bash -c 'until grep -q "MongoDB ready" ../../mongo.log; do sleep 1; done'
 
       # `vite preview` serves the production build and proxies /api and /socket.io to the API
       # (it reuses `server.proxy`), so the scan sees one origin, as in production.
@@ -125,4 +137,4 @@ jobs:
 
       - name: Server logs
         if: failure()
-        run: cat api.log web.log
+        run: cat mongo.log api.log web.log
