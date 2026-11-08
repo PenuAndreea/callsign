@@ -2,6 +2,12 @@
 
 One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0, M1 = 0.2.0, and so on; 1.0.0 is the finished v1 scope.
 
+## 0.8.0
+
+### Security
+
+- docs: security checklist against the OWASP Top 10:2025 and Mobile Top 10 2024 (docs/security.md), linked from the README
+
 ## 0.7.0 (M6: extras - further improvements)
 
 ### For the reviewers

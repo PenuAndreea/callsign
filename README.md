@@ -214,6 +214,8 @@ pnpm --filter @callsign/types build
 | `pnpm --filter @callsign/api test:e2e` | API end-to-end tests                |
 | `pnpm build`                           | Production builds (types, API, web) |
 
+How the app covers the OWASP Top 10 (web) and Mobile Top 10, with known gaps and accepted risks: [docs/security.md](docs/security.md).
+
 A pre-commit hook lints and formats staged files and runs the typecheck. Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org), e.g. `feat(api): add auth module`. CI runs all checks above on every push and pull request.
 
 ## Project structure
