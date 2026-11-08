@@ -2,6 +2,21 @@
 
 One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0, M1 = 0.2.0, and so on; 1.0.0 is the finished v1 scope.
 
+## 0.8.0
+
+### Security
+
+- feat(api): ending a session (logout, refresh token reuse) closes that device's sockets; the client refreshes and reconnects or signs out
+- feat(api): security audit log (failed and successful logins, rate limiting, refresh token reuse); JSON logs in production
+- feat(mobile): release builds refuse a non-https API URL
+- feat(mobile): refresh token in the keychain as device-only, after first unlock (migrates existing tokens)
+- feat(web): security headers (strict CSP, frame, sniffing, permissions, cross-origin isolation) on the production build; ZAP baseline clean
+- ci: OWASP ZAP baseline scan of the web build and API, with reviewed ignores in .zap/rules.tsv
+- ci: pin GitHub Actions to commit SHAs; shared setup-workspace action
+- ci: dependency audit (`pnpm run audit`) and Dependabot for npm and GitHub Actions
+- fix(deps): patch high advisories (NestJS 12.4, body-parser and node-forge overrides); two accepted with reasons
+- docs: security checklist against the OWASP Top 10:2025 and Mobile Top 10 2024 (docs/security.md), linked from the README
+
 ## 0.7.0 (M6: extras - further improvements)
 
 ### For the reviewers

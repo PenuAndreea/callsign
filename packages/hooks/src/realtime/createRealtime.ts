@@ -53,6 +53,7 @@ export interface Realtime {
  * - A refused handshake (`UNAUTHORIZED`, the token expired while offline) refreshes through the
  *   API client's shared refresh and connects again; a refresh that ends the session signs out,
  *   which closes the socket. Socket.IO does not retry refused handshakes by itself.
+ * - The server closing the socket (its session ended) takes the same refresh path.
  * - Socket.IO does not replay missed events: every (re)connect marks nets data fetched before it
  *   as stale, so screens refetch what they show.
  */
@@ -98,13 +99,9 @@ export function createRealtime({
     });
   }
 
-  function onConnectError(current: RealtimeSocket, error: Error): void {
-    // A transport failure (API down, offline): Socket.IO keeps retrying with backoff.
-    if (current.active) return setStatus('connecting');
-    // Refused by the handshake middleware: Socket.IO stops, so the next move is ours.
-    if (error.message !== 'UNAUTHORIZED' || authRetries >= MAX_AUTH_RETRIES) {
-      return retryLater(current);
-    }
+  /** Refreshes through the shared refresh, then connects with the new token. */
+  function refreshAndReconnect(current: RealtimeSocket): void {
+    if (authRetries >= MAX_AUTH_RETRIES) return retryLater(current);
     authRetries += 1;
     setStatus('connecting');
     api.refresh().then(
@@ -114,6 +111,22 @@ export function createRealtime({
       },
       () => retryLater(current),
     );
+  }
+
+  function onConnectError(current: RealtimeSocket, error: Error): void {
+    // A transport failure (API down, offline): Socket.IO keeps retrying with backoff.
+    if (current.active) return setStatus('connecting');
+    // Refused by the handshake middleware: Socket.IO stops, so the next move is ours.
+    if (error.message !== 'UNAUTHORIZED') return retryLater(current);
+    refreshAndReconnect(current);
+  }
+
+  function onDisconnect(current: RealtimeSocket, reason: string): void {
+    // The server closed the socket because its session ended (logout, or revoked after refresh
+    // token reuse). Socket.IO does not reconnect after that; a refresh tells whether the session
+    // is really over (sign out) or the socket may come back.
+    if (reason === 'io server disconnect') return refreshAndReconnect(current);
+    setStatus(current.active ? 'connecting' : 'disconnected');
   }
 
   /**
@@ -137,7 +150,7 @@ export function createRealtime({
       autoConnect: false,
     });
     current.on('connect', onConnect);
-    current.on('disconnect', () => setStatus(current.active ? 'connecting' : 'disconnected'));
+    current.on('disconnect', (reason) => onDisconnect(current, reason));
     current.on('connect_error', (error) => onConnectError(current, error));
     current.on('message:new', (raw) => {
       const message = parseEvent('message:new', messageDtoSchema, raw);

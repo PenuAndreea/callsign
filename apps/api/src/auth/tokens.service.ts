@@ -30,8 +30,9 @@ export class TokensService {
     private readonly config: ConfigService<Env, true>,
   ) {}
 
-  signAccessToken(user: { id: string; callsign: string }): Promise<string> {
-    return this.jwt.signAsync({ sub: user.id, callsign: user.callsign });
+  /** For one session (device): `sid` ties the token, and the sockets it opens, to that session. */
+  signAccessToken(user: { id: string; callsign: string }, sessionId: string): Promise<string> {
+    return this.jwt.signAsync({ sub: user.id, callsign: user.callsign, sid: sessionId });
   }
 
   /**
@@ -47,7 +48,7 @@ export class TokensService {
     }
     const claims = accessTokenPayloadSchema.safeParse(payload);
     if (!claims.success) throw unauthorized();
-    return { userId: claims.data.sub, callsign: claims.data.callsign };
+    return { userId: claims.data.sub, callsign: claims.data.callsign, sessionId: claims.data.sid };
   }
 
   /** 32 random bytes: unguessable, so a fast SHA-256 is enough to store it (no argon2 needed). */

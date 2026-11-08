@@ -6,6 +6,7 @@ import { minutes, ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ApiExceptionFilter } from './common/errors/api-exception.filter';
+import { SecurityLogModule } from './common/security/security-log.module';
 import { HttpThrottlerGuard } from './common/throttling/http-throttler.guard';
 import { validateEnv } from './config/validate-env';
 import { DatabaseModule } from './database/database.module';
@@ -23,6 +24,8 @@ import { RoomsModule } from './rooms/rooms.module';
       throttlers: [{ name: 'default', ttl: minutes(1), limit: 100 }],
       errorMessage: 'Too many requests',
     }),
+    // For `HttpThrottlerGuard`, which logs every refused request.
+    SecurityLogModule,
     AuthModule,
     RoomsModule,
     MessagesModule,

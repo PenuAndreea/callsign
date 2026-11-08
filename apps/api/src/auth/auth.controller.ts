@@ -14,6 +14,7 @@ import type { Request, Response } from 'express';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import type { AuthUser } from './auth-user';
 import { AuthService } from './auth.service';
+import { ClientIp } from './decorators/client-ip.decorator';
 import { Client } from './decorators/client-type.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
@@ -47,9 +48,10 @@ export class AuthController {
   async login(
     @Body(new ZodValidationPipe(loginRequestSchema)) body: LoginRequest,
     @Client() client: ClientType,
+    @ClientIp() ip: string,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponse> {
-    return this.transport.send(res, client, await this.auth.login(body, client));
+    return this.transport.send(res, client, await this.auth.login(body, { ip, client }));
   }
 
   @Public()

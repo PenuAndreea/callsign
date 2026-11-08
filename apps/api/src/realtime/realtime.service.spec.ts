@@ -15,11 +15,12 @@ const message: MessageDto = {
 function fakeServer() {
   const socketsJoin = jest.fn();
   const socketsLeave = jest.fn();
+  const disconnectSockets = jest.fn();
   const emit = jest.fn();
-  const in_ = jest.fn(() => ({ socketsJoin, socketsLeave }));
+  const in_ = jest.fn(() => ({ socketsJoin, socketsLeave, disconnectSockets }));
   const to = jest.fn(() => ({ emit }));
   const server = { in: in_, to } as unknown as ChatServer;
-  return { server, in: in_, to, socketsJoin, socketsLeave, emit };
+  return { server, in: in_, to, socketsJoin, socketsLeave, disconnectSockets, emit };
 }
 
 describe('RealtimeService', () => {
@@ -35,6 +36,18 @@ describe('RealtimeService', () => {
     expect(fake.socketsJoin).toHaveBeenCalledWith('room:r1');
     expect(fake.in).toHaveBeenNthCalledWith(2, 'user:u1');
     expect(fake.socketsLeave).toHaveBeenCalledWith('room:r1');
+  });
+
+  it('closes every socket of an ended session, for good', () => {
+    const fake = fakeServer();
+    const realtime = new RealtimeService();
+    realtime.attach(fake.server);
+
+    realtime.endSession('s1');
+
+    expect(fake.in).toHaveBeenCalledWith('session:s1');
+    // `true` closes the underlying connection too, not just this namespace.
+    expect(fake.disconnectSockets).toHaveBeenCalledWith(true);
   });
 
   it('broadcasts messages and room updates to the net', () => {
@@ -57,6 +70,7 @@ describe('RealtimeService', () => {
       realtime.removeUserFromNet('u1', 'r1');
       realtime.broadcastMessage(message);
       realtime.broadcastRoomUpdate({ id: 'r1', memberCount: 1 });
+      realtime.endSession('s1');
     }).not.toThrow();
   });
 });

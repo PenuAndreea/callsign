@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { MessageDto, RoomUpdatedEvent } from '@callsign/types';
 
 import type { ChatServer } from './chat-server.types';
-import { netRoom, userRoom } from './socket-rooms';
+import { netRoom, sessionRoom, userRoom } from './socket-rooms';
 
 /**
  * Everything the rest of the API does to sockets, in one place. Holds the Socket.IO server,
@@ -27,6 +27,16 @@ export class RealtimeService {
   /** Every socket of the user stops receiving the net's events. */
   removeUserFromNet(userId: string, roomId: string): void {
     this.server?.in(userRoom(userId)).socketsLeave(netRoom(roomId));
+  }
+
+  /**
+   * Closes every socket of a session that just ended (logout, or revoked after refresh token
+   * reuse), including one opened with a stolen access token. The handshake checks the token only
+   * once, so without this an open socket would keep receiving messages. The client then tries
+   * to refresh, which fails for an ended session and signs it out.
+   */
+  endSession(sessionId: string): void {
+    this.server?.in(sessionRoom(sessionId)).disconnectSockets(true);
   }
 
   /** `message:new` to every socket in the net, the sender's included. */

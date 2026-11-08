@@ -1,5 +1,8 @@
 import { Types } from 'mongoose';
 
+import type { RequestOrigin } from '../common/security/security-event';
+import type { SecurityLog } from '../common/security/security-log.service';
+import type { RealtimeService } from '../realtime/realtime.service';
 import type { SessionsService } from '../sessions/sessions.service';
 import type { UserDocument } from '../users/user.schema';
 import type { UsersService } from '../users/users.service';
@@ -21,6 +24,8 @@ const userDto = {
   createdAt: '2026-10-15T22:14:00.000Z',
 };
 const nextToken: RefreshToken = { token: 'next', hash: 'next-hash', expiresAt: new Date() };
+/** `sessions.rotate` for a valid token: the rotated session. */
+const rotated = { status: 'rotated', session: { id: 'session-1', userId: _id } };
 
 const users = { create: jest.fn(), findById: jest.fn(), findByCallsignWithPassword: jest.fn() };
 const sessions = { create: jest.fn(), rotate: jest.fn(), revoke: jest.fn() };
@@ -32,12 +37,21 @@ const tokens = {
   refreshReuseGraceMs: jest.fn(() => 10_000),
 };
 
+const securityLog = { record: jest.fn() };
+const realtime = { endSession: jest.fn() };
+const SESSION_ID = 'session-1';
+
 const auth = new AuthService(
   users as unknown as UsersService,
   sessions as unknown as SessionsService,
   hasher as unknown as PasswordHasher,
   tokens as unknown as TokensService,
+  securityLog as unknown as SecurityLog,
+  realtime as unknown as RealtimeService,
 );
+
+const fromWeb: RequestOrigin = { ip: '203.0.113.7', client: 'web' };
+const fromMobile: RequestOrigin = { ip: '198.51.100.4', client: 'mobile' };
 
 const expectCode = (promise: Promise<unknown>, statusCode: number, code: string) =>
   expect(promise).rejects.toMatchObject({ response: { statusCode, code } });
@@ -47,6 +61,7 @@ describe('AuthService', () => {
     jest.clearAllMocks();
     tokens.signAccessToken.mockResolvedValue('access');
     tokens.createRefreshToken.mockReturnValue(nextToken);
+    sessions.create.mockResolvedValue(SESSION_ID);
   });
 
   describe('register', () => {
@@ -58,7 +73,11 @@ describe('AuthService', () => {
 
       expect(users.create).toHaveBeenCalledWith('wolf-2', 'argon-hash');
       expect(sessions.create).toHaveBeenCalledWith(userDto.id, 'web', nextToken);
-      expect(tokens.signAccessToken).toHaveBeenCalledWith({ id: userDto.id, callsign: 'wolf-2' });
+      // The access token is tied to the new session, so its sockets can be closed with it.
+      expect(tokens.signAccessToken).toHaveBeenCalledWith(
+        { id: userDto.id, callsign: 'wolf-2' },
+        SESSION_ID,
+      );
       expect(issued).toEqual({ user: userDto, accessToken: 'access', refreshToken: nextToken });
     });
   });
@@ -68,45 +87,80 @@ describe('AuthService', () => {
       users.findByCallsignWithPassword.mockResolvedValue(userDoc);
       hasher.verify.mockResolvedValue(true);
 
-      const issued = await auth.login({ callsign: 'wolf-2', passphrase: 'secret12' }, 'mobile');
+      const issued = await auth.login({ callsign: 'wolf-2', passphrase: 'secret12' }, fromMobile);
 
       expect(hasher.verify).toHaveBeenCalledWith('stored-hash', 'secret12');
       expect(sessions.create).toHaveBeenCalledWith(userDto.id, 'mobile', nextToken);
       expect(issued.user).toEqual(userDto);
+      expect(securityLog.record).toHaveBeenCalledWith({
+        event: 'login_succeeded',
+        userId: userDto.id,
+        callsign: 'wolf-2',
+        ...fromMobile,
+      });
     });
 
-    it('rejects a wrong passphrase with INVALID_CREDENTIALS', async () => {
+    it('rejects a wrong passphrase with INVALID_CREDENTIALS and logs why', async () => {
       users.findByCallsignWithPassword.mockResolvedValue(userDoc);
       hasher.verify.mockResolvedValue(false);
       await expectCode(
-        auth.login({ callsign: 'wolf-2', passphrase: 'x' }, 'web'),
+        auth.login({ callsign: 'wolf-2', passphrase: 'x' }, fromWeb),
         401,
         'INVALID_CREDENTIALS',
       );
       expect(sessions.create).not.toHaveBeenCalled();
+      expect(securityLog.record).toHaveBeenCalledWith({
+        event: 'login_failed',
+        callsign: 'wolf-2',
+        reason: 'wrong_passphrase',
+        ...fromWeb,
+      });
     });
 
     it('verifies even for an unknown callsign, then gives the same error', async () => {
       users.findByCallsignWithPassword.mockResolvedValue(null);
       hasher.verify.mockResolvedValue(false);
       await expectCode(
-        auth.login({ callsign: 'nobody', passphrase: 'x' }, 'web'),
+        auth.login({ callsign: 'nobody', passphrase: 'x' }, fromWeb),
         401,
         'INVALID_CREDENTIALS',
       );
       expect(hasher.verify).toHaveBeenCalledWith(undefined, 'x');
+      expect(securityLog.record).toHaveBeenCalledWith({
+        event: 'login_failed',
+        callsign: 'nobody',
+        reason: 'unknown_callsign',
+        ...fromWeb,
+      });
+    });
+
+    it('never puts the passphrase in the security log', async () => {
+      users.findByCallsignWithPassword.mockResolvedValue(userDoc);
+      hasher.verify.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+      const body = { callsign: 'wolf-2', passphrase: 'very secret phrase' };
+
+      await auth.login(body, fromWeb).catch(() => undefined);
+      await auth.login(body, fromWeb);
+
+      expect(securityLog.record).toHaveBeenCalledTimes(2);
+      expect(JSON.stringify(securityLog.record.mock.calls)).not.toContain('very secret phrase');
     });
   });
 
   describe('refresh', () => {
     it('rotates by the hash of the presented token, then loads the user', async () => {
-      sessions.rotate.mockResolvedValue({ userId: _id });
+      sessions.rotate.mockResolvedValue(rotated);
       users.findById.mockResolvedValue(userDoc);
 
       const issued = await auth.refresh('current');
 
       expect(sessions.rotate).toHaveBeenCalledWith('hash(current)', nextToken, 10_000);
       expect(users.findById).toHaveBeenCalledWith(userDto.id);
+      expect(tokens.signAccessToken).toHaveBeenCalledWith(
+        { id: userDto.id, callsign: 'wolf-2' },
+        SESSION_ID,
+      );
+      expect(realtime.endSession).not.toHaveBeenCalled();
       expect(issued).toEqual({ user: userDto, accessToken: 'access', refreshToken: nextToken });
     });
 
@@ -115,27 +169,43 @@ describe('AuthService', () => {
       expect(sessions.rotate).not.toHaveBeenCalled();
     });
 
-    it('rejects an unknown, reused or expired token', async () => {
-      sessions.rotate.mockResolvedValue(null);
+    it('rejects an unknown or expired token', async () => {
+      sessions.rotate.mockResolvedValue({ status: 'invalid' });
       await expectCode(auth.refresh('stale'), 401, 'UNAUTHORIZED');
+      expect(realtime.endSession).not.toHaveBeenCalled();
+    });
+
+    it('rejects a reused token and closes the revoked session’s sockets', async () => {
+      sessions.rotate.mockResolvedValue({ status: 'reused', sessionId: SESSION_ID });
+      await expectCode(auth.refresh('stolen'), 401, 'UNAUTHORIZED');
+      expect(realtime.endSession).toHaveBeenCalledWith(SESSION_ID);
     });
 
     it('rejects a session whose user no longer exists', async () => {
-      sessions.rotate.mockResolvedValue({ userId: _id });
+      sessions.rotate.mockResolvedValue(rotated);
       users.findById.mockResolvedValue(null);
       await expectCode(auth.refresh('current'), 401, 'UNAUTHORIZED');
     });
   });
 
   describe('logout', () => {
-    it('revokes the session of the presented token', async () => {
+    it('revokes the session of the presented token and closes its sockets', async () => {
+      sessions.revoke.mockResolvedValue(SESSION_ID);
       await auth.logout('current');
       expect(sessions.revoke).toHaveBeenCalledWith('hash(current)');
+      expect(realtime.endSession).toHaveBeenCalledWith(SESSION_ID);
+    });
+
+    it('closes no sockets for an unknown token', async () => {
+      sessions.revoke.mockResolvedValue(null);
+      await auth.logout('unknown');
+      expect(realtime.endSession).not.toHaveBeenCalled();
     });
 
     it('is a no-op without a token', async () => {
       await expect(auth.logout(undefined)).resolves.toBeUndefined();
       expect(sessions.revoke).not.toHaveBeenCalled();
+      expect(realtime.endSession).not.toHaveBeenCalled();
     });
   });
 

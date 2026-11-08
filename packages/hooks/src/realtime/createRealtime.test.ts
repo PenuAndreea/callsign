@@ -126,6 +126,32 @@ describe('createRealtime: refused handshake', () => {
   });
 });
 
+describe('createRealtime: socket closed by the server', () => {
+  it('refreshes and reconnects while the session is still valid', async () => {
+    sockets.validTokens.add('access-2');
+    const { realtime } = await signedIn('access-1', () =>
+      HttpResponse.json(authResponse('access-2')),
+    );
+    await connected(realtime);
+
+    sockets.io.disconnectSockets(true);
+
+    await vi.waitFor(() => expect(sockets.handshakes).toEqual(['access-1', 'access-2']));
+    await connected(realtime);
+  });
+
+  it('signs out when the server ended the session (logout elsewhere, token reuse)', async () => {
+    const { realtime, session } = await signedIn('access-1');
+    await connected(realtime);
+
+    sockets.io.disconnectSockets(true);
+
+    await vi.waitFor(() => expect(session.getSnapshot().status).toBe('signedOut'));
+    expect(realtime.getStatus()).toBe('disconnected');
+    expect(realtime.getSocket()).toBeNull();
+  });
+});
+
 describe('createRealtime: catching up after a reconnect', () => {
   it('marks nets data from before the reconnect as stale', async () => {
     const { realtime, queryClient } = await signedIn();
