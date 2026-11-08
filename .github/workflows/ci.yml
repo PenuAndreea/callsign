@@ -4,6 +4,10 @@ on:
   push:
     branches: [main, develop]
   pull_request:
+  # Weekly, so new advisories and new ZAP rules are checked against code that has not changed.
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
 
 # A newer push to the same branch or PR cancels the run still in progress.
 concurrency:
@@ -13,6 +17,7 @@ concurrency:
 permissions:
   contents: read
 
+# Third-party actions are pinned to a commit SHA (a tag can be moved); Dependabot keeps them current.
 jobs:
   checks:
     name: Format, lint, typecheck, test, build
@@ -20,18 +25,14 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      # Installs the pnpm version pinned in package.json's `packageManager` field.
-      - uses: pnpm/action-setup@v4
+      - uses: ./.github/actions/setup-workspace
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install
-        run: pnpm install --frozen-lockfile
+      # Known vulnerabilities (high and critical) in what ships: the apps' and packages' runtime
+      # dependencies. Accepted findings are listed in pnpm-workspace.yaml (`auditConfig`).
+      - name: Dependency audit
+        run: pnpm run audit
 
       - name: Format
         run: pnpm format:check
@@ -48,7 +49,7 @@ jobs:
       # mongodb-memory-server downloads mongod (~80 MB) on first use. The version is pinned
       # in apps/api/package.json (`config.mongodbMemoryServer`), so that file keys the cache.
       - name: Cache MongoDB binary
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.cache/mongodb-binaries
           key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('apps/api/package.json') }}
@@ -69,3 +70,59 @@ jobs:
         run: |
           pnpm exec expo config --type public --json > /dev/null
           pnpm exec expo prebuild --no-install --clean
+
+  # OWASP ZAP baseline: a passive scan (headers, cookies, information leaks) of the production
+  # web build and the API behind it, both started here. It neither signs in nor attacks.
+  zap:
+    name: OWASP ZAP baseline scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      mongo:
+        image: mongo:8.0
+        ports: ['27017:27017']
+
+    env:
+      NODE_ENV: production
+      PORT: 3000
+      MONGODB_URI: mongodb://localhost:27017/callsign
+      WEB_ORIGIN: http://localhost:4173
+      # Plain http on the runner; production keeps the secure default.
+      COOKIE_SECURE: 'false'
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: ./.github/actions/setup-workspace
+
+      - name: Build
+        run: pnpm build
+
+      # `vite preview` serves the production build and proxies /api and /socket.io to the API
+      # (it reuses `server.proxy`), so the scan sees one origin, as in production.
+      - name: Start API and web
+        run: |
+          export JWT_ACCESS_SECRET="$(openssl rand -base64 48)"
+          pnpm --filter @callsign/api start > api.log 2>&1 &
+          pnpm --filter @callsign/web exec vite preview --port 4173 --strictPort > web.log 2>&1 &
+          timeout 60 bash -c 'until curl -sf http://localhost:4173/api/health > /dev/null; do sleep 1; done'
+
+      # Runs ZAP in Docker on the host network, so it reaches localhost. The reports
+      # (HTML, Markdown, JSON) are attached to the run as the `zap_scan` artifact.
+      - name: ZAP baseline scan
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
+        with:
+          target: http://localhost:4173
+          # Each rule's verdict, and why: docs/security.md.
+          rules_file_name: .zap/rules.tsv
+          # AJAX spider: the app is a single-page app, so it needs a browser to find its pages.
+          cmd_options: '-j'
+          # Any alert not marked IGNORE in the rules file fails the job.
+          fail_action: true
+          # The report artifact is enough; no GitHub issue (and no write permission).
+          allow_issue_writing: false
+
+      - name: Server logs
+        if: failure()
+        run: cat api.log web.log
