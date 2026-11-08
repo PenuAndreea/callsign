@@ -11,8 +11,8 @@ Web and mobile share the hooks, screens and API client, so most rows cover both 
 | Risk                                       | Status   | Open items                                        |
 | ------------------------------------------ | -------- | ------------------------------------------------- |
 | A01 Broken Access Control                  | Done     | n/a                                               |
-| A02 Security Misconfiguration / M8         | Partly   | Content-Security-Policy for the web app           |
-| A03 Software Supply Chain Failures / M2    | Partly   | Dependency audit in CI, Dependabot                |
+| A02 Security Misconfiguration / M8         | Partly   | Security headers (CSP and others) on the web app  |
+| A03 Software Supply Chain Failures / M2    | Done     | n/a                                               |
 | A04 Cryptographic Failures / M10           | Done     | n/a                                               |
 | A05 Injection / M4                         | Done     | n/a                                               |
 | A06 Insecure Design                        | Done     | n/a                                               |
@@ -40,13 +40,17 @@ Web and mobile share the hooks, screens and API client, so most rows cover both 
 - **Done:** Helmet security headers on the API (nosniff, HSTS, frame denial).
 - **Done:** environment validated with Zod at startup; the API refuses to start with a missing or weak value (`apps/api/src/config/env.schema.ts`). `COOKIE_SECURE` defaults to `true`.
 - **Done:** Socket.IO does not serve its client bundle (`serveClient: false`) and caps payloads at 16 KB (default is 1 MB).
-- **Open:** the web app sends no Content-Security-Policy. The API's Helmet headers do not cover the static web app. Plan: a CSP limiting scripts and connections to the app's own origin, as defence in depth against XSS.
+- **Done:** CI runs an [OWASP ZAP](https://www.zaproxy.org) baseline scan (job `zap` in `.github/workflows/ci.yml`) against the production web build and the API behind it. Any alert not reviewed and marked `IGNORE` in `.zap/rules.tsv` fails the job; each ignored rule has its reason in that file. The scan is passive: it checks headers, cookies and information leaks, but does not sign in or attack, so it does not test access control or injection, and it does not cover the mobile apps.
+- **Open:** the web app sends no security headers. The API's Helmet headers do not cover the static web app, and ZAP reports five missing on every page: Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Permissions-Policy and the cross-origin isolation headers. Plan: set them for the web app, with a CSP limiting scripts and connections to the app's own origin as defence in depth against XSS.
 - **Note for deployment:** behind a reverse proxy, set `trust proxy`, or every client shares the proxy's IP for rate limiting (comment in `configure-app.ts`).
 
 ### A03 Software Supply Chain Failures (mobile: M2)
 
 - **Done:** one lockfile, installed with `--frozen-lockfile` in CI; React, react-native-web and Zod versions pinned once in the pnpm `catalog:`.
-- **Open:** CI does not audit dependencies. Plan: `pnpm audit --prod` in CI, plus Dependabot for security updates.
+- **Done:** CI fails on any high or critical advisory in runtime dependencies (`pnpm run audit`, which is `pnpm audit --prod --audit-level=high`). Fixes for transitive dependencies are pinned as same-major `overrides` in `pnpm-workspace.yaml`.
+- **Accepted:** two advisories with no same-major fix, listed in `auditConfig.ignoreGhsas` in `pnpm-workspace.yaml` with their reasons: zod 3 inside `@expo/cli` (build tooling, never shipped) and `decode-uri-component` in expo-router (parses the app's own deep links). Revisit both with the next Expo SDK upgrade.
+- **Done:** Dependabot (`.github/dependabot.yml`) opens weekly update PRs for npm packages and GitHub Actions. Packages tied to the Expo SDK are left out, because they move only with an SDK upgrade.
+- **Done:** every GitHub Action is pinned to a commit SHA, not a tag, because a tag can be moved to different code. Dependabot keeps the pins current.
 
 ### A04 Cryptographic Failures (mobile: M10)
 
