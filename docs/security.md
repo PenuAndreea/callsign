@@ -8,22 +8,22 @@ Web and mobile share the hooks, screens and API client, so most rows cover both 
 
 ## At a glance
 
-| Risk                                       | Status   | Open items                                        |
-| ------------------------------------------ | -------- | ------------------------------------------------- |
-| A01 Broken Access Control                  | Done     | n/a                                               |
-| A02 Security Misconfiguration / M8         | Done     | n/a                                               |
-| A03 Software Supply Chain Failures / M2    | Done     | n/a                                               |
-| A04 Cryptographic Failures / M10           | Done     | n/a                                               |
-| A05 Injection / M4                         | Done     | n/a                                               |
-| A06 Insecure Design                        | Done     | n/a                                               |
-| A07 Authentication Failures / M1, M3       | Partly   | Close open sockets on logout; per-account backoff |
-| A08 Software or Data Integrity Failures    | Done     | n/a                                               |
-| A09 Security Logging and Alerting Failures | Partly   | Alert rules (log platform, at deployment)         |
-| A10 Mishandling of Exceptional Conditions  | Done     | n/a                                               |
-| M5 Insecure Communication                  | Done     | n/a                                               |
-| M6 Inadequate Privacy Controls             | Open     | Account deletion (separate PR)                    |
-| M7 Insufficient Binary Protections         | Accepted | n/a                                               |
-| M9 Insecure Data Storage                   | Done     | n/a                                               |
+| Risk                                       | Status   | Open items                                |
+| ------------------------------------------ | -------- | ----------------------------------------- |
+| A01 Broken Access Control                  | Done     | n/a                                       |
+| A02 Security Misconfiguration / M8         | Done     | n/a                                       |
+| A03 Software Supply Chain Failures / M2    | Done     | n/a                                       |
+| A04 Cryptographic Failures / M10           | Done     | n/a                                       |
+| A05 Injection / M4                         | Done     | n/a                                       |
+| A06 Insecure Design                        | Done     | n/a                                       |
+| A07 Authentication Failures / M1, M3       | Done     | n/a                                       |
+| A08 Software or Data Integrity Failures    | Done     | n/a                                       |
+| A09 Security Logging and Alerting Failures | Partly   | Alert rules (log platform, at deployment) |
+| A10 Mishandling of Exceptional Conditions  | Done     | n/a                                       |
+| M5 Insecure Communication                  | Done     | n/a                                       |
+| M6 Inadequate Privacy Controls             | Open     | Account deletion (separate PR)            |
+| M7 Insufficient Binary Protections         | Accepted | n/a                                       |
+| M9 Insecure Data Storage                   | Done     | n/a                                       |
 
 ## Web and API (OWASP Top 10:2025)
 
@@ -85,8 +85,9 @@ Web and mobile share the hooks, screens and API client, so most rows cover both 
 - **Done (web):** the refresh token lives in an httpOnly, `sameSite=strict` cookie scoped to `/api/auth`. JavaScript cannot read it (XSS), and other sites cannot send it (CSRF).
 - **Done:** passphrase policy of 8 to 128 characters; spaces allowed, so passphrases can be real phrases.
 - **Done:** sockets authenticate in the handshake with the same token check as HTTP.
-- **Open:** logout revokes the session, but a socket that is already connected keeps receiving messages until it reconnects. Plan: disconnect the user's sockets on logout.
-- **Accepted (v1):** throttling is per IP, so credential stuffing spread over many IPs is not slowed per account. A per-callsign backoff would need shared state (Redis) once there is more than one instance.
+- **Done:** ending a session closes that device's open sockets. The handshake checks the access token only once, so without this a connected socket would keep receiving messages after logout, or after a stolen refresh token was caught. The access token carries the session id (`sid`), every socket joins a `session:<id>` room, and `RealtimeService.endSession` closes that room's sockets on logout and when refresh token reuse revokes a session, including a socket opened with a stolen access token. Other devices of the same user stay connected. The client then refreshes: a valid session reconnects, an ended one signs out.
+- **Accepted (v1):** a socket is not closed when its access token expires while the session stays valid. Every early end of a session (logout, theft detection) already closes it, and closing every socket every 15 minutes would make each device reconnect and refetch its open screens.
+- **Accepted (v1):** throttling is per IP, so credential stuffing spread over many IPs is not slowed per account. Failed logins are logged per callsign (A09), so an alert can catch it. A per-callsign backoff would need shared state (Redis) once there is more than one instance.
 
 ### A08 Software or Data Integrity Failures
 

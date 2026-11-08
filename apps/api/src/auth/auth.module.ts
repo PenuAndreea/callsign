@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 
 import { SecurityLogModule } from '../common/security/security-log.module';
 import type { Env } from '../config/env.schema';
+import { RealtimeModule } from '../realtime/realtime.module';
 import { SessionsModule } from '../sessions/sessions.module';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
@@ -26,6 +27,8 @@ import { TokensService } from './tokens.service';
     UsersModule,
     SessionsModule,
     SecurityLogModule,
+    // Leaf module (no imports), so no cycle: logout and token reuse close the session's sockets.
+    RealtimeModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, PasswordHasher, RefreshTokenTransport, TokensService],

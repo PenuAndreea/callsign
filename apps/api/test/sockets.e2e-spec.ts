@@ -55,7 +55,7 @@ describe('Sockets: handshake and rooms (e2e)', () => {
     it('refuses a well-formed token signed with another secret', async () => {
       const forged = await new JwtService({
         secret: 'another-secret-that-is-at-least-32-characters',
-      }).signAsync({ sub: wolf.user.id, callsign: 'wolf-2' });
+      }).signAsync({ sub: wolf.user.id, callsign: 'wolf-2', sid: 'some-session' });
       await expect(clients.connect({ token: forged })).rejects.toMatchObject({
         message: 'UNAUTHORIZED',
       });
@@ -68,7 +68,7 @@ describe('Sockets: handshake and rooms (e2e)', () => {
   });
 
   describe('rooms on connect', () => {
-    it('puts the socket in its user room and in every joined net, before connect', async () => {
+    it('puts the socket in its user and session rooms and in every joined net, before connect', async () => {
       const tower = await createRoom(server, wolf.token, 'tower');
       const ground = await createRoom(server, wolf.token, 'ground');
       const eagle = await station(server, 'eagle-1');
@@ -85,7 +85,8 @@ describe('Sockets: handshake and rooms (e2e)', () => {
           netRoom(ground.id),
         ]),
       );
-      expect(rooms).toHaveLength(4);
+      expect(rooms?.filter((room) => room.startsWith('session:'))).toHaveLength(1);
+      expect(rooms).toHaveLength(5);
       expect(rooms).not.toContain(netRoom(open.id));
     });
 

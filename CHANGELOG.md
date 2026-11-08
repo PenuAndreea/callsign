@@ -6,6 +6,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ### Security
 
+- feat(api): ending a session (logout, refresh token reuse) closes that device's sockets; the client refreshes and reconnects or signs out
 - feat(api): security audit log (failed and successful logins, rate limiting, refresh token reuse); JSON logs in production
 - feat(mobile): release builds refuse a non-https API URL
 - feat(mobile): refresh token in the keychain as device-only, after first unlock (migrates existing tokens)

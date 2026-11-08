@@ -5,7 +5,7 @@ import type { TokensService } from '../auth/tokens.service';
 import { ApiException } from '../common/errors/api.exception';
 import type { MembershipsService } from '../memberships/memberships.service';
 import type { ChatMiddleware } from './chat-server.types';
-import { netRoom, userRoom } from './socket-rooms';
+import { netRoom, sessionRoom, userRoom } from './socket-rooms';
 import { toSocketMiddleware } from './to-socket-middleware';
 
 /** `io(url, { auth: { token } })`. Browsers cannot set headers on a WebSocket, hence `auth`. */
@@ -27,14 +27,14 @@ export function authenticateSocket(tokens: TokensService): ChatMiddleware {
 }
 
 /**
- * Joins the socket to its user room first, then to every net the user is in. In the handshake,
- * so the rooms are in place before the client sees `connect`. User room first: a REST join
- * that lands while the nets load still reaches this socket through `user:<id>`.
+ * Joins the socket to its user and session rooms first, then to every net the user is in. In
+ * the handshake, so the rooms are in place before the client sees `connect`. User room first: a
+ * REST join that lands while the nets load still reaches this socket through `user:<id>`.
  */
 export function joinRoomsOnConnect(memberships: MembershipsService): ChatMiddleware {
   return toSocketMiddleware(async (socket) => {
-    const { userId } = socket.data.user;
-    await socket.join(userRoom(userId));
+    const { userId, sessionId } = socket.data.user;
+    await socket.join([userRoom(userId), sessionRoom(sessionId)]);
     const roomIds = await memberships.roomIdsFor(userId);
     await socket.join(roomIds.map((id) => netRoom(id.toHexString())));
   });

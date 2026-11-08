@@ -13,6 +13,7 @@ const tokens = new TokensService(new JwtService(jwtOptions(SECRET, 900)), config
 
 /** Signs arbitrary claims with the real secret (no default expiry), to craft bad tokens. */
 const rawJwt = new JwtService({ secret: SECRET });
+const SESSION_ID = '6650c0ffee0000000000beef';
 
 function base64url(value: object): string {
   return Buffer.from(JSON.stringify(value)).toString('base64url');
@@ -21,15 +22,16 @@ function base64url(value: object): string {
 describe('TokensService', () => {
   describe('access tokens', () => {
     it('round-trips the user', async () => {
-      const token = await tokens.signAccessToken(user);
+      const token = await tokens.signAccessToken(user, SESSION_ID);
       await expect(tokens.verifyAccessToken(token)).resolves.toEqual({
         userId: user.id,
         callsign: user.callsign,
+        sessionId: SESSION_ID,
       });
     });
 
     it('expires after the configured TTL', async () => {
-      const token = await tokens.signAccessToken(user);
+      const token = await tokens.signAccessToken(user, SESSION_ID);
       const { iat, exp } = rawJwt.decode<{ iat: number; exp: number }>(token);
       expect(exp - iat).toBe(900);
     });
@@ -44,13 +46,17 @@ describe('TokensService', () => {
       await rejects(await rawJwt.signAsync({ sub: user.id, callsign: user.callsign, exp }));
     });
 
+    it('rejects a token without a session id (issued before sessions were in the token)', async () => {
+      await rejects(await rawJwt.signAsync({ sub: user.id, callsign: user.callsign }));
+    });
+
     it('rejects a token signed with another secret', async () => {
       const other = new JwtService({ secret: 'another-secret-that-is-at-least-32-chars' });
       await rejects(await other.signAsync({ sub: user.id, callsign: user.callsign }));
     });
 
     it('rejects a tampered payload', async () => {
-      const [header, , signature] = (await tokens.signAccessToken(user)).split('.');
+      const [header, , signature] = (await tokens.signAccessToken(user, SESSION_ID)).split('.');
       const forged = base64url({ sub: 'someone-else', callsign: 'admin' });
       await rejects(`${header}.${forged}.${signature}`);
     });

@@ -21,7 +21,7 @@ class PublicController {
   @Get() anything(): void {}
 }
 
-const authUser: AuthUser = { userId: 'u1', callsign: 'wolf-2' };
+const authUser: AuthUser = { userId: 'u1', callsign: 'wolf-2', sessionId: 's1' };
 
 function contextFor(
   controller: object,

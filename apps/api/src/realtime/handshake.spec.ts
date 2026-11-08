@@ -9,7 +9,11 @@ import type { MembershipsService } from '../memberships/memberships.service';
 import type { ChatMiddleware, ChatSocket } from './chat-server.types';
 import { authenticateSocket, joinRoomsOnConnect } from './handshake';
 
-const user: AuthUser = { userId: '6650c0ffee0000000000f00d', callsign: 'wolf-2' };
+const user: AuthUser = {
+  userId: '6650c0ffee0000000000f00d',
+  callsign: 'wolf-2',
+  sessionId: '6650c0ffee0000000000beef',
+};
 
 function fakeSocket(auth: unknown, data: Partial<ChatSocket['data']> = {}) {
   const join = jest.fn<Promise<void>, [string | string[]]>().mockResolvedValue();
@@ -71,7 +75,7 @@ describe('joinRoomsOnConnect', () => {
 
   beforeEach(() => roomIdsFor.mockReset());
 
-  it('joins the user room first, then every net of the user', async () => {
+  it('joins the user and session rooms first, then every net of the user', async () => {
     const nets = [new Types.ObjectId(), new Types.ObjectId()];
     roomIdsFor.mockResolvedValue(nets);
     const { socket, join } = fakeSocket({}, { user });
@@ -79,7 +83,7 @@ describe('joinRoomsOnConnect', () => {
     await expect(run(middleware, socket)).resolves.toBeUndefined();
     expect(roomIdsFor).toHaveBeenCalledWith(user.userId);
     expect(join.mock.calls).toEqual([
-      [`user:${user.userId}`],
+      [[`user:${user.userId}`, `session:${user.sessionId}`]],
       [nets.map((id) => `room:${id.toHexString()}`)],
     ]);
   });
