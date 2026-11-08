@@ -2,6 +2,8 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import type { ClientType, LoginRequest, RegisterRequest, UserDto } from '@callsign/types';
 
 import { ApiException } from '../common/errors/api.exception';
+import type { RequestOrigin } from '../common/security/security-event';
+import { SecurityLog } from '../common/security/security-log.service';
 import { SessionsService } from '../sessions/sessions.service';
 import type { UserDocument } from '../users/user.schema';
 import { toUserDto } from '../users/users.mapper';
@@ -28,6 +30,7 @@ export class AuthService {
     private readonly sessions: SessionsService,
     private readonly hasher: PasswordHasher,
     private readonly tokens: TokensService,
+    private readonly securityLog: SecurityLog,
   ) {}
 
   /** Registering logs you in. @throws 409 `CALLSIGN_TAKEN` */
@@ -39,19 +42,29 @@ export class AuthService {
     return this.startSession(user, client);
   }
 
-  /** @throws 401 `INVALID_CREDENTIALS`, the same for an unknown callsign and a wrong passphrase. */
-  async login({ callsign, passphrase }: LoginRequest, client: ClientType): Promise<IssuedTokens> {
+  /**
+   * Every attempt goes to the security log, with the real reason for a failure; the response
+   * does not tell them apart.
+   * @throws 401 `INVALID_CREDENTIALS`, the same for an unknown callsign and a wrong passphrase.
+   */
+  async login(
+    { callsign, passphrase }: LoginRequest,
+    origin: RequestOrigin,
+  ): Promise<IssuedTokens> {
     const user = await this.users.findByCallsignWithPassword(callsign);
     // Always verify (against a dummy hash for unknown callsigns), so timing reveals nothing.
     const valid = await this.hasher.verify(user?.passwordHash, passphrase);
     if (!user || !valid) {
+      const reason = user ? 'wrong_passphrase' : 'unknown_callsign';
+      this.securityLog.record({ event: 'login_failed', callsign, reason, ...origin });
       throw new ApiException(
         HttpStatus.UNAUTHORIZED,
         'INVALID_CREDENTIALS',
         'Callsign or passphrase is incorrect',
       );
     }
-    return this.startSession(user, client);
+    this.securityLog.record({ event: 'login_succeeded', userId: user.id, callsign, ...origin });
+    return this.startSession(user, origin.client);
   }
 
   /**

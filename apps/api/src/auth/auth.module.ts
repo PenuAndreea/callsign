@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 
+import { SecurityLogModule } from '../common/security/security-log.module';
 import type { Env } from '../config/env.schema';
 import { SessionsModule } from '../sessions/sessions.module';
 import { UsersModule } from '../users/users.module';
@@ -24,6 +25,7 @@ import { TokensService } from './tokens.service';
     }),
     UsersModule,
     SessionsModule,
+    SecurityLogModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, PasswordHasher, RefreshTokenTransport, TokensService],

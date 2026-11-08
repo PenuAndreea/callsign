@@ -18,7 +18,7 @@ Web and mobile share the hooks, screens and API client, so most rows cover both 
 | A06 Insecure Design                        | Done     | n/a                                               |
 | A07 Authentication Failures / M1, M3       | Partly   | Close open sockets on logout; per-account backoff |
 | A08 Software or Data Integrity Failures    | Done     | n/a                                               |
-| A09 Security Logging and Alerting Failures | Partly   | Log failed logins                                 |
+| A09 Security Logging and Alerting Failures | Partly   | Alert rules (log platform, at deployment)         |
 | A10 Mishandling of Exceptional Conditions  | Done     | n/a                                               |
 | M5 Insecure Communication                  | Done     | n/a                                               |
 | M6 Inadequate Privacy Controls             | Open     | Account deletion (separate PR)                    |
@@ -95,10 +95,22 @@ Web and mobile share the hooks, screens and API client, so most rows cover both 
 
 ### A09 Security Logging and Alerting Failures
 
-- **Done:** refresh token reuse is logged with the session and user id (`sessions.service.ts`).
-- **Done:** every unexpected (5xx) error is logged with its stack, from HTTP, socket handshakes and socket acks alike (`to-logged-api-error.ts`). Passphrases and tokens are never logged.
+- **Done:** a security audit trail. `SecurityLog` (`apps/api/src/common/security/`) writes one structured entry per event under the `Security` context. The event type is a closed union, so an entry cannot carry a passphrase, token or hash; a test checks that the passphrase never appears.
+
+  | Event                 | Level | Fields                                                                 |
+  | --------------------- | ----- | ---------------------------------------------------------------------- |
+  | `login_failed`        | warn  | callsign, reason (`unknown_callsign` / `wrong_passphrase`), ip, client |
+  | `login_succeeded`     | log   | userId, callsign, ip, client                                           |
+  | `rate_limited`        | warn  | method, route pattern (no ids or query strings), ip                    |
+  | `refresh_token_reuse` | warn  | sessionId, userId                                                      |
+
+  The failure reason is logged server-side only: the API answers the same for both, so it cannot be used to enumerate callsigns, but the log tells account scanning (many unknown callsigns) from a targeted attack (many wrong passphrases on one callsign). Successes are logged too, because a success after a run of failures is the sign that an account was cracked.
+
+- **Done:** in production the API logs JSON lines (`ConsoleLogger` with `json: true`, `main.ts`), which log tooling reads without parsing rules. JSON escapes every value, so a crafted callsign cannot forge a log line (log injection).
+- **Done:** every unexpected (5xx) error is logged with its stack, from HTTP, socket handshakes and socket acks alike (`to-logged-api-error.ts`).
 - **Done (clients):** unexpected errors go to the platform's `reportError` hook (`ApiPlatform`), ready for a crash reporter.
-- **Open:** failed logins are not logged. Plan: a structured warning with callsign and IP, so brute force shows up in the logs.
+- **Open (deployment):** alerting lives in the log platform (for example New Relic or CloudWatch), not in the code. Rules to add there: many `login_failed` from one IP or for one callsign within a minute, any `refresh_token_reuse`, and `rate_limited` spikes.
+- **Privacy:** these entries hold IP addresses and callsigns, which are personal data under the GDPR. Keep them only as long as security needs (for example 30 days, set on the log platform). Behind a reverse proxy the IP is the proxy's until `trust proxy` is set (`configure-app.ts`).
 
 ### A10 Mishandling of Exceptional Conditions
 

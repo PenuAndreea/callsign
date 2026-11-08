@@ -127,7 +127,9 @@ describe('SessionsService (Mongo)', () => {
       // The legitimate client's current token is dead too: everyone logs in again.
       await expect(sessions.rotate('t2', token('t3'))).resolves.toBeNull();
       await expect(sessionModel.countDocuments({ userId })).resolves.toBe(0);
-      expect(Logger.prototype.warn).toHaveBeenCalledWith(expect.stringContaining('reuse'));
+      expect(Logger.prototype.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'refresh_token_reuse', userId: String(userId) }),
+      );
     });
 
     it('reuse only revokes the affected session, not the user’s other devices', async () => {

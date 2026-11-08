@@ -1,18 +1,20 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { ClientType } from '@callsign/types';
 import { Model } from 'mongoose';
 
 import type { RefreshToken } from '../auth/tokens.service';
+import { SecurityLog } from '../common/security/security-log.service';
 import type { SessionDocument } from './session.schema';
 import { Session } from './session.schema';
 
 /** Data access for `sessions`. Works with token hashes only; `TokensService` makes them. */
 @Injectable()
 export class SessionsService {
-  private readonly logger = new Logger(SessionsService.name);
-
-  constructor(@InjectModel(Session.name) private readonly sessionModel: Model<Session>) {}
+  constructor(
+    @InjectModel(Session.name) private readonly sessionModel: Model<Session>,
+    private readonly securityLog: SecurityLog,
+  ) {}
 
   /** Login or register on one device; other devices' sessions are untouched. */
   async create(userId: string, client: ClientType, refreshToken: RefreshToken): Promise<void> {
@@ -75,9 +77,11 @@ export class SessionsService {
       .findOneAndDelete({ previousTokenHash: currentHash })
       .exec();
     if (reused) {
-      this.logger.warn(
-        `Refresh token reuse: revoked session ${reused.id} of user ${String(reused.userId)}`,
-      );
+      this.securityLog.record({
+        event: 'refresh_token_reuse',
+        sessionId: reused.id,
+        userId: String(reused.userId),
+      });
     }
     return null;
   }
