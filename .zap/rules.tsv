@@ -2,8 +2,9 @@
 # With `fail_action: true` any alert not listed as IGNORE fails the job. Only findings that were
 # reviewed and are not a risk go here, each with its reason. See docs/security.md.
 #
-# Informational: Vite serves files with `Cache-Control: no-cache` (revalidate); nothing private is cached.
-10049	IGNORE	(Storable but Non-Cacheable Content)
+# Informational, reports the cache headers it found. The app's files are public (`no-cache`, so
+# revalidated); private API data needs an Authorization header, which shared caches never store.
+10049	IGNORE	(Storable and Cacheability Content)
 # False positive: large numbers inside third-party code in the minified bundle, not server timestamps.
 10096	IGNORE	(Timestamp Disclosure - Unix)
 # False positive: words like "user" in minified library code; the build strips source comments.

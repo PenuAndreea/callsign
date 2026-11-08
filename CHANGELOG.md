@@ -6,6 +6,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ### Security
 
+- feat(web): security headers (strict CSP, frame, sniffing, permissions, cross-origin isolation) on the production build; ZAP baseline clean
 - ci: OWASP ZAP baseline scan of the web build and API, with reviewed ignores in .zap/rules.tsv
 - ci: pin GitHub Actions to commit SHAs; shared setup-workspace action
 - ci: dependency audit (`pnpm run audit`) and Dependabot for npm and GitHub Actions

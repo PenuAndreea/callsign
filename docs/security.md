@@ -11,7 +11,7 @@ Web and mobile share the hooks, screens and API client, so most rows cover both 
 | Risk                                       | Status   | Open items                                        |
 | ------------------------------------------ | -------- | ------------------------------------------------- |
 | A01 Broken Access Control                  | Done     | n/a                                               |
-| A02 Security Misconfiguration / M8         | Partly   | Security headers (CSP and others) on the web app  |
+| A02 Security Misconfiguration / M8         | Done     | n/a                                               |
 | A03 Software Supply Chain Failures / M2    | Done     | n/a                                               |
 | A04 Cryptographic Failures / M10           | Done     | n/a                                               |
 | A05 Injection / M4                         | Done     | n/a                                               |
@@ -41,7 +41,12 @@ Web and mobile share the hooks, screens and API client, so most rows cover both 
 - **Done:** environment validated with Zod at startup; the API refuses to start with a missing or weak value (`apps/api/src/config/env.schema.ts`). `COOKIE_SECURE` defaults to `true`.
 - **Done:** Socket.IO does not serve its client bundle (`serveClient: false`) and caps payloads at 16 KB (default is 1 MB).
 - **Done:** CI runs an [OWASP ZAP](https://www.zaproxy.org) baseline scan (job `zap` in `.github/workflows/ci.yml`) against the production web build and the API behind it. Any alert not reviewed and marked `IGNORE` in `.zap/rules.tsv` fails the job; each ignored rule has its reason in that file. The scan is passive: it checks headers, cookies and information leaks, but does not sign in or attack, so it does not test access control or injection, and it does not cover the mobile apps.
-- **Open:** the web app sends no security headers. The API's Helmet headers do not cover the static web app, and ZAP reports five missing on every page: Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Permissions-Policy and the cross-origin isolation headers. Plan: set them for the web app, with a CSP limiting scripts and connections to the app's own origin as defence in depth against XSS.
+- **Done:** the web app sends its own security headers, defined once in `apps/web/src/securityHeaders.ts` and served by `vite preview` (the build CI scans). Before this, ZAP flagged five missing headers on every page; it now reports none.
+  - **Content-Security-Policy:** every source is `'self'`, because the app loads nothing from another origin (bundle, CSS, fonts and favicon are self-hosted). No `unsafe-eval` and no `unsafe-inline`. `connect-src 'self'` covers `/api` and the Socket.IO WebSocket. `frame-ancestors 'none'` and `object-src 'none'`.
+  - **Styles:** react-native-web inserts an empty `<style>` element and fills it through `insertRule`. The policy allows only the hash of the empty string, so no other inline `<style>` can run. A unit test checks the hash.
+  - **Other headers:** `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, a `Permissions-Policy` that switches off camera, microphone, geolocation, payment and USB, and the cross-origin isolation headers (COOP, CORP and COEP `require-corp`).
+  - **Dev server:** not covered. React Refresh injects an inline script that this policy would block.
+- **Note for deployment:** the production host (nginx, a CDN or similar) must send the headers from `securityHeaders.ts`, plus HSTS, which only makes sense over TLS.
 - **Note for deployment:** behind a reverse proxy, set `trust proxy`, or every client shares the proxy's IP for rate limiting (comment in `configure-app.ts`).
 
 ### A03 Software Supply Chain Failures (mobile: M2)
