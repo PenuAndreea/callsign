@@ -20,7 +20,7 @@
     "@callsign/ui": "workspace:*",
     "@hookform/resolvers": "~5.9.1",
     "react-error-boundary": "~6.1.6",
-    "react-hook-form": "~7.89.0",
+    "react-hook-form": "~7.91.0",
     "zod": "catalog:"
   },
   "peerDependencies": {
@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@callsign/config": "workspace:*",
-    "@tanstack/react-query": "~5.103.3",
+    "@tanstack/react-query": "~5.106.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",
@@ -46,6 +46,6 @@
     "react-native-web": "catalog:",
     "socket.io": "^4.8.4",
     "typescript": "~6.0.3",
-    "vitest": "^5.0.4"
+    "vitest": "^5.1.0"
   }
 }
