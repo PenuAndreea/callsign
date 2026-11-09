@@ -15,7 +15,7 @@ import { resolveSocketFactory } from '../realtime/resolveSocketFactory';
 import { SessionContext } from '../session/SessionContext';
 import { createSessionStore } from '../session/sessionStore';
 import { createCachePersistence } from '../storage/cachePersistence';
-import { clearOfflineStorage } from '../storage/clearOfflineStorage';
+import { createOfflineData } from '../storage/offlineData';
 import { ApiClientContext } from './ApiClientContext';
 
 export interface ApiProviderProps {
@@ -42,10 +42,11 @@ export function ApiProvider({ platform, apiClient, queryClient, children }: ApiP
     createCachePersistence({ queryClient: cache, storage: platform.offlineStorage, reportError }),
   );
   const [session] = useState(() =>
-    createSessionStore(client, cache, {
-      load: persistence.restore,
-      wipe: () => clearOfflineStorage(platform.offlineStorage, reportError),
-    }),
+    createSessionStore(
+      client,
+      cache,
+      createOfflineData({ storage: platform.offlineStorage, persistence, reportError }),
+    ),
   );
   const [realtime] = useState(() =>
     createRealtime({

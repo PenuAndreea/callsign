@@ -6,8 +6,12 @@ import type { ApiClient } from '../api/createApiClient';
 /**
  * Who is signed in on this device.
  * - `restoring`: on start, until `/auth/refresh` answers (keep the splash or a blank screen).
- * - `unreachable`: the refresh failed without an answer about the session (offline, 5xx). The
- *   session may still be valid, so this is not `signedOut`: offer a retry (`restore()`).
+ * - `unreachable`: the refresh failed without an answer about the session (offline, 5xx), and
+ *   no station was signed in on this device before. The session may still be valid, so this is
+ *   not `signedOut`: offer a retry (`restore()`).
+ * - `signedIn`: also on a start without an answer when this device saved who was signed in
+ *   (offline-first). The session is then unverified: the first request that reaches the API
+ *   gets a 401, the API client refreshes, and a session that ended signs out (and wipes).
  */
 export type SessionState =
   | { status: 'restoring' }
@@ -39,14 +43,20 @@ const SIGNED_OUT: SessionState = { status: 'signedOut' };
  */
 /** What the device saved for offline use. Neither method rejects (the caller reports failures). */
 export interface OfflineData {
-  /** Loads the saved data (the query cache) before the first restore decides anything. */
-  load(): Promise<void>;
+  /**
+   * Loads the saved data (the query cache) before the first restore decides anything, and
+   * returns the station last signed in on this device (`null`: none).
+   */
+  load(): Promise<UserDto | null>;
+  /** Remembers who is signed in, so a start without network can open on the saved data. */
+  saveUser(user: UserDto): Promise<void>;
   /** Empties it, on every change of user. */
   wipe(): Promise<void>;
 }
 
 const NO_OFFLINE_DATA: OfflineData = {
-  load: () => Promise.resolve(),
+  load: () => Promise.resolve(null),
+  saveUser: () => Promise.resolve(),
   wipe: () => Promise.resolve(),
 };
 
@@ -75,17 +85,23 @@ export function createSessionStore(
     set(RESTORING);
     // A sign-in that lands first wins: only a restore nobody overtook may set the session.
     const stillRestoring = () => state.status === 'restoring';
+    // The refresh starts at once (a sign-in that lands meanwhile makes its answer stale) and
+    // the saved data loads alongside. Nothing is decided before both: a signed-in screen opens
+    // on the saved cache, and a sign-out wipes it with the rest.
+    const saved = offline.load();
+    let auth: AuthResponse | null;
     try {
-      // The refresh starts at once (a sign-in that lands meanwhile makes its answer stale) and
-      // the saved cache loads alongside. Nothing is decided before both: a signed-in screen
-      // opens on the saved cache, and a sign-out wipes it with the rest.
-      const [auth] = await Promise.all([api.refresh(), offline.load()]);
-      if (!stillRestoring()) return;
-      if (auth === null) signedOut();
-      else set({ status: 'signedIn', user: auth.user });
+      [auth] = await Promise.all([api.refresh(), saved]);
     } catch {
-      if (stillRestoring()) set(UNREACHABLE);
+      // No answer about the session. A station that was signed in here opens on its saved data.
+      const user = await saved;
+      if (stillRestoring()) set(user === null ? UNREACHABLE : { status: 'signedIn', user });
+      return;
     }
+    if (!stillRestoring()) return;
+    if (auth === null) return signedOut();
+    set({ status: 'signedIn', user: auth.user });
+    void offline.saveUser(auth.user);
   }
 
   function restore(): Promise<void> {
@@ -118,6 +134,7 @@ export function createSessionStore(
       // Nothing saved on this device may belong to another station.
       await offline.wipe();
       set({ status: 'signedIn', user: auth.user });
+      void offline.saveUser(auth.user);
     },
     async signOut() {
       await api.logout();
