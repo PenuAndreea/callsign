@@ -100,7 +100,7 @@ Run each app in its own terminal, from the repo root.
 pnpm db:up
 ```
 
-Starts MongoDB 8 in Docker on `localhost:27017` and waits until it is healthy. Data is kept in a Docker volume. `pnpm db:down` stops it and keeps the data.
+Starts MongoDB 8 in Docker on `localhost:27017` as a one-node replica set (`rs0`; the API uses transactions, which need one) and waits until it is primary. The healthcheck initiates the replica set on first start, also on a data volume from before it was one. Data is kept in a Docker volume. `pnpm db:down` stops it and keeps the data. A container started before this change needs `docker compose up -d --force-recreate mongo` once to pick up the new command.
 
 #### Viewing the data
 

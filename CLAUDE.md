@@ -48,6 +48,7 @@ Optional, only if time allows: "X is transmitting..." typing indicator (Socket.I
 - The API compiles to CommonJS but Nest 12 is ESM-only: Node **≥24.9**, Jest with `--experimental-vm-modules`.
 - API: services throw `ApiException(status, code, message)`. Validate with the shared schemas through `ZodValidationPipe` (HTTP) or `parseOrThrow` (sockets; handlers ack and never throw). Global guards/filters as `APP_GUARD` / `APP_FILTER`, never `app.useGlobal*`. Every route needs a token unless `@Public()`. Never `import type` an injected class.
 - Sockets: type them only through `ChatServer` / `ChatSocket` (API) and `RealtimeSocket` (client). Only `RealtimeService` moves sockets or emits.
+- Writes that must commit together go through `TransactionRunner.run`: database work only inside it (no emits, no caught write errors); sockets after it resolves.
 - Take `senderId` from the token, never from the client. Paginate every list endpoint.
 - Shared hooks never import platform code: token storage, API URL, sockets and error reporting come in through `ApiPlatform`. Screens take navigation as callbacks and never import a router.
 - Errors: `ApiClientError` is expected (shown inline with a retry); anything else is a bug, reported and thrown to the nearest `ScreenErrorBoundary`. Copy comes from `errorMessage(error)`.

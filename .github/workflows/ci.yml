@@ -81,7 +81,7 @@ jobs:
     env:
       NODE_ENV: production
       PORT: 3000
-      MONGODB_URI: mongodb://localhost:27017/callsign
+      MONGODB_URI: mongodb://localhost:27017/callsign?replicaSet=rs0
       WEB_ORIGIN: http://localhost:4173
       # Plain http on the runner; production keeps the secure default.
       COOKIE_SECURE: 'false'
@@ -104,11 +104,12 @@ jobs:
 
       # Not the `mongo` Docker image as a service: mongod 8.0 in that image exits at startup on
       # the runner's kernel (6.19+, SERVER-121912), while the binary the e2e tests use runs.
-      # Run from apps/api so mongodb-memory-server picks up the pinned version.
+      # Run from apps/api so mongodb-memory-server picks up the pinned version. A one-node replica
+      # set, like docker-compose.yml: the API runs transactions.
       - name: Start MongoDB
         working-directory: apps/api
         run: |
-          node -e "require('mongodb-memory-server').MongoMemoryServer.create({ instance: { port: 27017 } }).then(() => console.log('MongoDB ready'))" > ../../mongo.log 2>&1 &
+          node -e "require('mongodb-memory-server').MongoMemoryReplSet.create({ replSet: { name: 'rs0', storageEngine: 'wiredTiger' }, instanceOpts: [{ port: 27017 }] }).then(() => console.log('MongoDB ready'))" > ../../mongo.log 2>&1 &
           timeout 120 bash -c 'until grep -q "MongoDB ready" ../../mongo.log; do sleep 1; done'
 
       # `vite preview` serves the production build and proxies /api and /socket.io to the API

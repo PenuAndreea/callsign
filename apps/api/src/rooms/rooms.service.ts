@@ -10,6 +10,7 @@ import { ApiException } from '../common/errors/api.exception';
 import { isDuplicateKeyError } from '../common/mongo/is-duplicate-key-error';
 import { decodeCursor } from '../common/pagination/cursor';
 import { pageFetchLimit, toPage } from '../common/pagination/to-page';
+import { TransactionRunner } from '../common/mongo/transaction-runner';
 import { MembershipsService } from '../memberships/memberships.service';
 import { RealtimeService } from '../realtime/realtime.service';
 import type { RoomDocument, RoomLastMessage } from './room.schema';
@@ -19,11 +20,9 @@ import { toRoomDto } from './rooms.mapper';
 
 /**
  * Nets: create, list, read, join, leave, and the last-message preview. Owns `memberCount`: it changes only when
- * `MembershipsService` reports that a row was really added or removed.
- *
- * Known trade-off: the membership write and the `$inc` are two writes, not one transaction
- * (that needs a replica set). A crash between them leaves the count off by one; access
- * checks always use `memberships`, never the count.
+ * `MembershipsService` reports that a row was really added or removed, in the same transaction
+ * as that row, so the count never drifts from `memberships`. Access checks still use
+ * `memberships`, never the count.
  */
 @Injectable()
 export class RoomsService {
@@ -31,6 +30,7 @@ export class RoomsService {
     @InjectModel(Room.name) private readonly roomModel: Model<Room>,
     private readonly memberships: MembershipsService,
     private readonly realtime: RealtimeService,
+    private readonly transactions: TransactionRunner,
   ) {}
 
   /**
@@ -94,15 +94,18 @@ export class RoomsService {
    */
   async join(userId: string, roomId: string): Promise<RoomDto> {
     const room = await this.findRoom(roomId);
-    const added = await this.memberships.add(userId, room.id);
+    // The row and the count commit together. `null`: already a member, nothing written.
+    const updated = await this.transactions.run(async () => {
+      if (!(await this.memberships.add(userId, room.id))) return null;
+      const counted = await this.adjustMemberCount(room, 1);
+      // Deleted since `findRoom`: throwing rolls the new membership back too.
+      if (!counted) throw netNotFound();
+      return counted;
+    });
+    // After the commit: socket work is never rerun or left behind by a retried transaction.
     // Also on a repeated join: cheap, and repairs a socket that missed an earlier sync.
     this.realtime.joinUserToNet(userId, room.id);
-    if (!added) return toRoomDto(room, true);
-
-    const updated = await this.roomModel
-      .findByIdAndUpdate(room._id, { $inc: { memberCount: 1 } }, { returnDocument: 'after' })
-      .exec();
-    if (!updated) throw netNotFound();
+    if (!updated) return toRoomDto(room, true);
     this.realtime.broadcastRoomUpdate({ id: updated.id, memberCount: updated.memberCount });
     return toRoomDto(updated, true);
   }
@@ -115,14 +118,12 @@ export class RoomsService {
    */
   async leave(userId: string, roomId: string): Promise<void> {
     const room = await this.findRoom(roomId);
-    const removed = await this.memberships.remove(userId, room.id);
-    // Also on a repeated leave: repairs a socket still in a net the user is not in.
+    // The row and the count commit together. `null`: not a member, or the net is gone.
+    const updated = await this.transactions.run(async () =>
+      (await this.memberships.remove(userId, room.id)) ? this.adjustMemberCount(room, -1) : null,
+    );
+    // After the commit. Also on a repeated leave: repairs a socket still in a net the user is not in.
     this.realtime.removeUserFromNet(userId, room.id);
-    if (!removed) return;
-
-    const updated = await this.roomModel
-      .findByIdAndUpdate(room._id, { $inc: { memberCount: -1 } }, { returnDocument: 'after' })
-      .exec();
     if (updated) {
       this.realtime.broadcastRoomUpdate({ id: updated.id, memberCount: updated.memberCount });
     }
@@ -160,6 +161,13 @@ export class RoomsService {
       )
       .exec();
     return modifiedCount === 1;
+  }
+
+  /** The room after `$inc`, or `null` when it no longer exists. */
+  private adjustMemberCount(room: RoomDocument, by: 1 | -1): Promise<RoomDocument | null> {
+    return this.roomModel
+      .findByIdAndUpdate(room._id, { $inc: { memberCount: by } }, { returnDocument: 'after' })
+      .exec();
   }
 
   /** A malformed id is a 404 too: an id that cannot exist does not exist. */

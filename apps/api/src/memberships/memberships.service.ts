@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
-import { isDuplicateKeyError } from '../common/mongo/is-duplicate-key-error';
 import { Membership } from './membership.schema';
 
 /**
@@ -15,17 +14,22 @@ export class MembershipsService {
   constructor(@InjectModel(Membership.name) private readonly membershipModel: Model<Membership>) {}
 
   /**
-   * Joins the net. `false` when the user was already a member: the unique index decides,
-   * so two concurrent joins insert one row and only one caller gets `true`.
+   * Joins the net. `false` when the user was already a member. An upsert, not an insert that
+   * catches the duplicate key: it reports the outcome without failing, so it can run inside a
+   * transaction (a failed write aborts one). Two concurrent joins still insert one row, and only
+   * one caller gets `true`: the server retries an upsert that hits the unique index, and inside
+   * a transaction the loser gets a write conflict and `TransactionRunner` reruns it.
    */
   async add(userId: string, roomId: string): Promise<boolean> {
-    try {
-      await this.membershipModel.create({ userId, roomId });
-      return true;
-    } catch (error) {
-      if (isDuplicateKeyError(error, 'roomId')) return false;
-      throw error;
-    }
+    const { upsertedCount } = await this.membershipModel
+      .updateOne(
+        { userId, roomId },
+        // The filter's fields go into the new row on their own; `joinedAt` comes from `timestamps`.
+        { $setOnInsert: { userId, roomId } },
+        { upsert: true },
+      )
+      .exec();
+    return upsertedCount === 1;
   }
 
   /** Leaves the net. `false` when the user was not a member (nothing deleted). */
