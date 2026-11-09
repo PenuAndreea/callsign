@@ -6,11 +6,13 @@ import * as SplashScreen from 'expo-splash-screen';
 
 import { connectAppFocus } from '@/appFocus';
 import { fontSources } from '@/fonts';
+import { connectNetworkStatus } from '@/networkStatus';
 import { RootStack } from '@/navigation/RootStack';
 import { createMobilePlatform } from '@/platform';
 
 void SplashScreen.preventAutoHideAsync();
 connectAppFocus();
+connectNetworkStatus();
 
 // Module level: the provider reads the platform once.
 const platform = createMobilePlatform();

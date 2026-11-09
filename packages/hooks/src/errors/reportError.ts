@@ -1,10 +1,10 @@
 import { ApiClientError } from '../api/ApiClientError';
 
 /**
- * Where an error surfaced: a render crash (error boundary), a query, a mutation, or the socket
- * (a send's ack, a live event).
+ * Where an error surfaced: a render crash (error boundary), a query, a mutation, the socket
+ * (a send's ack, a live event), or the device's offline storage.
  */
-export type ErrorSource = 'render' | 'query' | 'mutation' | 'realtime';
+export type ErrorSource = 'render' | 'query' | 'mutation' | 'realtime' | 'storage';
 
 export interface ErrorContext {
   source: ErrorSource;

@@ -3,8 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { createWebPlatform } from '../platform';
 
 describe('createWebPlatform', () => {
-  it('talks to the same origin as a web client', () => {
-    expect(createWebPlatform(undefined)).toEqual({ apiUrl: '', client: 'web' });
+  it('talks to the same origin as a web client and keeps offline data in IndexedDB', () => {
+    const platform = createWebPlatform(undefined);
+    expect(platform).toEqual({ apiUrl: '', client: 'web', offlineStorage: expect.any(Object) });
+    expect(Object.keys(platform.offlineStorage ?? {})).toEqual([
+      'getItem',
+      'setItem',
+      'removeItem',
+      'clear',
+    ]);
   });
 
   it('runs exclusive tasks under a Web Lock with the given name', async () => {

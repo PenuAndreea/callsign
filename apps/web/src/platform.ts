@@ -1,4 +1,6 @@
-import type { ApiPlatform, ExclusiveRunner } from '@callsign/hooks';
+import type { ApiPlatform, ExclusiveRunner, OfflineStorage } from '@callsign/hooks';
+
+import { createIndexedDbStorage } from './offlineStorage';
 
 /**
  * Web Locks: one lock for every tab of this origin. Missing outside secure contexts (plain http
@@ -11,9 +13,13 @@ function locksRunner(locks: LockManager | undefined): ExclusiveRunner | undefine
 
 /**
  * Same origin as the API through the Vite proxy (`/api`), so the refresh cookie
- * (`sameSite=strict`, `path=/api/auth`) is sent; JavaScript never sees it.
+ * (`sameSite=strict`, `path=/api/auth`) is sent; JavaScript never sees it. Offline data goes to
+ * IndexedDB.
  */
-export function createWebPlatform(locks: LockManager | undefined = navigator.locks): ApiPlatform {
+export function createWebPlatform(
+  locks: LockManager | undefined = navigator.locks,
+  offlineStorage: OfflineStorage = createIndexedDbStorage(),
+): ApiPlatform {
   const runExclusive = locksRunner(locks);
-  return { apiUrl: '', client: 'web', ...(runExclusive && { runExclusive }) };
+  return { apiUrl: '', client: 'web', offlineStorage, ...(runExclusive && { runExclusive }) };
 }

@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApiClient } from '../api/createApiClient';
 import { useSession } from '../session/useSession';
-import { apiError, webPlatform } from '../test/fixtures';
+import { apiError, MemoryOfflineStorage, webPlatform } from '../test/fixtures';
 import { api, server } from '../test/server';
 import { ApiProvider } from './ApiProvider';
 import { useApiClient } from './useApiClient';
@@ -32,6 +32,18 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 describe('ApiProvider', () => {
+  it("wipes the platform's offline storage when the session turns out to be over", async () => {
+    const offlineStorage = new MemoryOfflineStorage();
+    await offlineStorage.setItem('cache', 'tower');
+    const platform = { ...webPlatform, offlineStorage };
+    const { result } = renderHook(() => useSession().session, {
+      wrapper: ({ children }) => <ApiProvider platform={platform}>{children}</ApiProvider>,
+    });
+
+    await waitFor(() => expect(result.current.status).toBe('signedOut'));
+    await waitFor(() => expect(offlineStorage.items.size).toBe(0));
+  });
+
   it('keeps one API client and one query cache across renders', async () => {
     const { result, rerender } = renderHook(
       () => ({ api: useApiClient(), cache: useQueryClient(), session: useSession().session }),

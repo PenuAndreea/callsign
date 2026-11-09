@@ -2,7 +2,16 @@
 
 One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0, M1 = 0.2.0, and so on; 1.0.0 is the finished v1 scope.
 
-## 0.8.0
+## Unreleased
+
+### Offline-first
+
+- feat(hooks): a start without network opens signed in as the saved station, on its saved data
+- feat(hooks): save nets and their newest history on the device, restored on start (persisted query cache)
+- feat(mobile): encrypted offline storage (AES-256-GCM, key in the secure store)
+- feat(web): offline storage in IndexedDB
+- feat(hooks): offline storage on the platform, wiped on every sign-in and sign-out
+- feat(mobile): pause queries while the device is offline (NetInfo feeds `onlineManager`)
 
 ### Security
 

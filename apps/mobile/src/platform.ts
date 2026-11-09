@@ -3,16 +3,10 @@ import { defaultSocketFactory } from '@callsign/hooks';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-const REFRESH_TOKEN_KEY = 'callsign.refreshToken';
+import { createEncryptedStorage } from '@/offlineStorage/encryptedStorage';
+import { SECURE_STORE_OPTIONS } from '@/secureStoreOptions';
 
-/**
- * iOS: readable after the first unlock since boot (so a background refresh still works), and
- * never in iCloud/iTunes backups or moved to another device. Android ignores it: the Keystore key
- * never leaves the device, and the config plugin keeps the secure store out of Auto Backup.
- */
-export const SECURE_STORE_OPTIONS: SecureStore.SecureStoreOptions = {
-  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
-};
+const REFRESH_TOKEN_KEY = 'callsign.refreshToken';
 
 /** The refresh token in the OS keychain (iOS) / keystore (Android), never in plain storage. */
 export const secureRefreshTokenStore: RefreshTokenStore = {
@@ -49,7 +43,7 @@ export function assertSecureApiUrl(apiUrl: string, isDev: boolean): void {
 
 /**
  * The mobile side of the API: refresh token in the request body, kept in the secure store;
- * WebSocket only (long-polling is unreliable in React Native).
+ * WebSocket only (long-polling is unreliable in React Native); offline data encrypted on disk.
  */
 export function createMobilePlatform(
   // Expo inlines `EXPO_PUBLIC_*` at build time: read it with the literal name.
@@ -62,5 +56,6 @@ export function createMobilePlatform(
     client: 'mobile',
     refreshTokenStore: secureRefreshTokenStore,
     createSocket: defaultSocketFactory(apiUrl, { transports: ['websocket'] }),
+    offlineStorage: createEncryptedStorage(),
   };
 }
