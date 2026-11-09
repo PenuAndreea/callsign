@@ -18,7 +18,7 @@ catalog:
   react-dom: 19.2.3
   react-test-renderer: 19.2.3
   react-native-web: ~0.21.0
-  react-native-svg: 15.15.4
+  react-native-svg: 15.15.5
   '@types/react': ~19.2.2
   '@types/react-dom': ~19.2.3
   # Not tied to Expo: one version for the shared schemas and every package that imports zod.
