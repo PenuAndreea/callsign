@@ -14,6 +14,7 @@ import { RealtimeContext } from '../realtime/RealtimeContext';
 import { resolveSocketFactory } from '../realtime/resolveSocketFactory';
 import { SessionContext } from '../session/SessionContext';
 import { createSessionStore } from '../session/sessionStore';
+import { clearOfflineStorage } from '../storage/clearOfflineStorage';
 import { ApiClientContext } from './ApiClientContext';
 
 export interface ApiProviderProps {
@@ -35,7 +36,11 @@ export function ApiProvider({ platform, apiClient, queryClient, children }: ApiP
   const [reportError] = useState(() => oncePerError(platform.reportError ?? consoleErrorReporter));
   const [client] = useState(() => apiClient ?? createApiClient(platform));
   const [cache] = useState(() => queryClient ?? createQueryClient(reportError));
-  const [session] = useState(() => createSessionStore(client, cache));
+  const [session] = useState(() =>
+    createSessionStore(client, cache, () =>
+      clearOfflineStorage(platform.offlineStorage, reportError),
+    ),
+  );
   const [realtime] = useState(() =>
     createRealtime({
       api: client,

@@ -34,10 +34,15 @@ const SIGNED_OUT: SessionState = { status: 'signedOut' };
 
 /**
  * The session lives outside React and outside the query cache: React reads it through
- * `useSyncExternalStore`, and every change of user empties the cache, so one station never
- * sees another's nets.
+ * `useSyncExternalStore`, and every change of user empties the cache and the offline storage,
+ * so one station never sees another's nets, on screen or on disk.
  */
-export function createSessionStore(api: ApiClient, queryClient: QueryClient): SessionStore {
+export function createSessionStore(
+  api: ApiClient,
+  queryClient: QueryClient,
+  /** Empties the device's offline storage. Never rejects (failures are reported by the caller). */
+  wipeOfflineData: () => Promise<void> = () => Promise.resolve(),
+): SessionStore {
   const listeners = new Set<() => void>();
   let state: SessionState = RESTORING;
   let restoring: Promise<void> | null = null;
@@ -51,6 +56,7 @@ export function createSessionStore(api: ApiClient, queryClient: QueryClient): Se
     set(SIGNED_OUT);
     // After the state change, so the signed-in screens are gone and nothing refetches.
     queryClient.clear();
+    void wipeOfflineData();
   }
 
   async function runRestore(): Promise<void> {
@@ -94,6 +100,8 @@ export function createSessionStore(api: ApiClient, queryClient: QueryClient): Se
     async signIn(auth) {
       await api.startSession(auth);
       queryClient.clear();
+      // Nothing saved on this device may belong to another station.
+      await wipeOfflineData();
       set({ status: 'signedIn', user: auth.user });
     },
     async signOut() {

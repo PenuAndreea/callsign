@@ -6,7 +6,12 @@ export type { ApiRequest, HttpMethod, QueryParams } from './api/http';
 export type { ErrorContext, ErrorReporter, ErrorSource } from './errors/reportError';
 export { consoleErrorReporter, isUnexpectedError } from './errors/reportError';
 export { useReportError } from './errors/useReportError';
-export type { ApiPlatform, ExclusiveRunner, RefreshTokenStore } from './platform/platform.types';
+export type {
+  ApiPlatform,
+  ExclusiveRunner,
+  OfflineStorage,
+  RefreshTokenStore,
+} from './platform/platform.types';
 export type { ApiProviderProps } from './provider/ApiProvider';
 export { ApiProvider } from './provider/ApiProvider';
 export { useApiClient } from './provider/useApiClient';

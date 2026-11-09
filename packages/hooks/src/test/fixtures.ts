@@ -1,7 +1,7 @@
 import type { ApiError, AuthResponse, ErrorCode, Page, RoomDto, UserDto } from '@callsign/types';
 import { HttpResponse } from 'msw';
 
-import type { ApiPlatform, RefreshTokenStore } from '../platform/platform.types';
+import type { ApiPlatform, OfflineStorage, RefreshTokenStore } from '../platform/platform.types';
 import { API_URL } from './server';
 
 export const wolf: UserDto = {
@@ -54,6 +54,30 @@ export class MemoryTokenStore implements RefreshTokenStore {
 
   clear(): Promise<void> {
     this.token = null;
+    return Promise.resolve();
+  }
+}
+
+/** Offline storage in a `Map`: what a test saved, and whether a sign-in or sign-out wiped it. */
+export class MemoryOfflineStorage implements OfflineStorage {
+  readonly items = new Map<string, string>();
+
+  getItem(key: string): Promise<string | null> {
+    return Promise.resolve(this.items.get(key) ?? null);
+  }
+
+  setItem(key: string, value: string): Promise<void> {
+    this.items.set(key, value);
+    return Promise.resolve();
+  }
+
+  removeItem(key: string): Promise<void> {
+    this.items.delete(key);
+    return Promise.resolve();
+  }
+
+  clear(): Promise<void> {
+    this.items.clear();
     return Promise.resolve();
   }
 }

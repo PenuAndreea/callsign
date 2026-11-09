@@ -3,15 +3,16 @@ import { delay, http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createApiClient } from '../api/createApiClient';
-import { apiError, authResponse, webPlatform, wolf } from '../test/fixtures';
+import { apiError, authResponse, MemoryOfflineStorage, webPlatform, wolf } from '../test/fixtures';
 import { api, server } from '../test/server';
 import { createSessionStore } from './sessionStore';
 
 function setup() {
   const apiClient = createApiClient(webPlatform);
   const queryClient = new QueryClient();
-  const store = createSessionStore(apiClient, queryClient);
-  return { apiClient, queryClient, store };
+  const offline = new MemoryOfflineStorage();
+  const store = createSessionStore(apiClient, queryClient, () => offline.clear());
+  return { apiClient, queryClient, offline, store };
 }
 
 const refreshAnswers = (respond: () => Response | Promise<Response>) =>
@@ -123,6 +124,50 @@ describe('createSessionStore: sign in and out', () => {
 
     await store.signOut();
     expect(store.getSnapshot()).toEqual({ status: 'signedOut' });
+  });
+});
+
+describe('createSessionStore: offline storage', () => {
+  it('wipes it before a sign-in shows the new user', async () => {
+    const { store, offline } = setup();
+    await offline.setItem('cache', 'someone else’s nets');
+    let savedWhenSignedIn: string | null = 'not signed in';
+    store.subscribe(() => {
+      if (store.getSnapshot().status === 'signedIn')
+        savedWhenSignedIn = offline.items.get('cache') ?? null;
+    });
+
+    await store.signIn(authResponse('access-1'));
+    expect(savedWhenSignedIn).toBeNull();
+  });
+
+  it('wipes it on sign-out', async () => {
+    server.use(http.post(api('/auth/logout'), () => new HttpResponse(null, { status: 204 })));
+    const { store, offline } = setup();
+    await store.signIn(authResponse('access-1'));
+    await offline.setItem('cache', 'tower');
+
+    await store.signOut();
+    expect(offline.items.size).toBe(0);
+  });
+
+  it('wipes it when the restore finds the session over', async () => {
+    refreshAnswers(() => apiError(401, 'UNAUTHORIZED'));
+    const { store, offline } = setup();
+    await offline.setItem('cache', 'tower');
+
+    await store.restore();
+    expect(offline.items.size).toBe(0);
+  });
+
+  it('keeps it while the API cannot answer (the session may still be valid)', async () => {
+    refreshAnswers(() => HttpResponse.error());
+    const { store, offline } = setup();
+    await offline.setItem('cache', 'tower');
+
+    await store.restore();
+    expect(store.getSnapshot()).toEqual({ status: 'unreachable' });
+    expect(offline.items.get('cache')).toBe('tower');
   });
 });
 
