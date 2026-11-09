@@ -16,6 +16,8 @@ export * from './components/Input/Input';
 export type * from './components/Input/Input.types';
 export * from './components/StatusDot/StatusDot';
 export type * from './components/StatusDot/StatusDot.types';
+export * from './components/StatusStrip/StatusStrip';
+export type * from './components/StatusStrip/StatusStrip.types';
 
 export * from './components/SectionLabel/SectionLabel';
 export type * from './components/SectionLabel/SectionLabel.types';
