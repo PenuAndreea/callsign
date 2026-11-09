@@ -10,10 +10,14 @@ if (!serverUri) {
   throw new Error(`${MONGO_MEMORY_URI} is not set: is test/global-setup.ts configured?`);
 }
 
+// The replica set URI ends in `/?replicaSet=...`: set the database name, keep the query.
+const databaseUri = new URL(serverUri);
+databaseUri.pathname = `/callsign-${randomUUID()}`;
+
 Object.assign(process.env, {
   NODE_ENV: 'test',
   // A fresh database per test file on the shared memory server, so files never see each other's data.
-  MONGODB_URI: `${serverUri}callsign-${randomUUID()}`,
+  MONGODB_URI: databaseUri.toString(),
   WEB_ORIGIN: 'http://localhost:5173',
   JWT_ACCESS_SECRET: 'test-secret-that-is-at-least-32-characters',
   COOKIE_SECURE: 'false',

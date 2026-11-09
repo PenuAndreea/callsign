@@ -4,6 +4,12 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ## Unreleased
 
+### Transactions
+
+- feat(api): join and leave write the membership and the member count in one transaction
+- feat(api): TransactionRunner, with the session passed to every query inside it
+- chore(config): MongoDB as a one-node replica set in Docker, the e2e tests and CI
+
 ### Offline-first
 
 - feat(screens): net actions disabled offline; log out warns about unsent messages
