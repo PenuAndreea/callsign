@@ -63,6 +63,18 @@ describe('createPendingStore', () => {
     expect(store.nextQueued()).toBeUndefined();
   });
 
+  it('lists every pending message of every net', () => {
+    const store = createPendingStore();
+    store.add(pending('a'));
+    store.add(pending('b', 'ground'));
+    expect(
+      store
+        .all()
+        .map((message) => message.clientMessageId)
+        .sort(),
+    ).toEqual(['a', 'b']);
+  });
+
   it('ignores unknown ids', () => {
     const store = createPendingStore();
     const listener = vi.fn();

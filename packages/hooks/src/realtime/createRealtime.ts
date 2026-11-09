@@ -27,6 +27,8 @@ export interface RealtimeOptions {
   createSocket: SocketFactory | null;
   /** Where broken acks and events go. Omitted: the console. */
   reportError?: ErrorReporter;
+  /** The outbox's pending messages (the provider shares it with the saved outbox). */
+  pending?: PendingStore;
 }
 
 export interface Realtime {
@@ -62,13 +64,13 @@ export function createRealtime({
   session,
   createSocket,
   reportError = consoleErrorReporter,
+  pending = createPendingStore(),
 }: RealtimeOptions): Realtime {
   const listeners = new Set<() => void>();
   let status: RealtimeStatus = 'disconnected';
   let socket: RealtimeSocket | null = null;
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
   let authRetries = 0;
-  const pending = createPendingStore();
   const outbox = createOutbox({ pending, queryClient, getSocket: () => socket, reportError });
 
   function setStatus(next: RealtimeStatus): void {
