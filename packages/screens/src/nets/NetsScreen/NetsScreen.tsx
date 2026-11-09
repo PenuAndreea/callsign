@@ -4,10 +4,12 @@ import type { RoomDto, RoomScope } from '@callsign/types';
 import { Button, ScreenHeader, SectionLabel } from '@callsign/ui';
 import type { SectionListData } from 'react-native';
 import { SectionList, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { errorMessageIfAny } from '../../errors/errorMessage';
 import { FormError } from '../../form/FormError';
 import { useInsetPadding } from '../../layout/useInsetPadding';
+import { ConnectionToast } from '../../status/ConnectionToast/ConnectionToast';
 import { JoinedNetRow, OpenNetRow } from './NetRows';
 import { useNetsStyles } from './NetsScreen.styles';
 import type { NetsScreenProps } from './NetsScreen.types';
@@ -33,6 +35,7 @@ export function NetsScreen({ onOpenNet, onNewNet, selectedNetId }: NetsScreenPro
   const join = useJoinNet();
   const logout = useLogout();
   const insetPadding = useInsetPadding({ top: spacing.xl, bottom: spacing.xxl * 2 });
+  const insets = useSafeAreaInsets();
 
   const sections: SectionListData<RoomDto, NetSection>[] = [
     {
@@ -59,50 +62,54 @@ export function NetsScreen({ onOpenNet, onNewNet, selectedNetId }: NetsScreenPro
   const joinAndOpen = (id: string) => join.mutate(id, { onSuccess: (net) => onOpenNet(net.id) });
 
   return (
-    <SectionList
-      style={styles.screen}
-      contentContainerStyle={[styles.content, insetPadding]}
-      sections={sections}
-      keyExtractor={(net) => net.id}
-      stickySectionHeadersEnabled={false}
-      onEndReached={loadMore}
-      onEndReachedThreshold={0.5}
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
-      ListHeaderComponent={
-        <View style={styles.header}>
-          <ScreenHeader
-            eyebrow={`Station ${user.callsign}`}
-            title="Nets"
-            action={
-              <Button
-                label="Log out"
-                variant="link"
-                loading={logout.isPending}
-                onPress={() => logout.mutate()}
-              />
-            }
-          />
-          <Button label="New net" icon="plus" variant="secondary" onPress={onNewNet} />
-          <FormError message={errorMessageIfAny(join.error)} />
-        </View>
-      }
-      renderSectionHeader={({ section }) => (
-        <SectionLabel title={section.title} style={styles.section} />
-      )}
-      renderSectionFooter={({ section }) => (
-        <SectionStatus query={section.query} emptyText={section.emptyText} />
-      )}
-      renderItem={({ item, section }) =>
-        section.key === 'joined' ? (
-          <JoinedNetRow net={item} selected={item.id === selectedNetId} onOpen={onOpenNet} />
-        ) : (
-          <OpenNetRow
-            net={item}
-            joining={join.isPending && join.variables === item.id}
-            onJoin={joinAndOpen}
-          />
-        )
-      }
-    />
+    <View style={styles.screen}>
+      <SectionList
+        style={styles.list}
+        contentContainerStyle={[styles.content, insetPadding]}
+        sections={sections}
+        keyExtractor={(net) => net.id}
+        stickySectionHeadersEnabled={false}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <ScreenHeader
+              eyebrow={`Station ${user.callsign}`}
+              title="Nets"
+              action={
+                <Button
+                  label="Log out"
+                  variant="link"
+                  loading={logout.isPending}
+                  onPress={() => logout.mutate()}
+                />
+              }
+            />
+            <Button label="New net" icon="plus" variant="secondary" onPress={onNewNet} />
+            <FormError message={errorMessageIfAny(join.error)} />
+          </View>
+        }
+        renderSectionHeader={({ section }) => (
+          <SectionLabel title={section.title} style={styles.section} />
+        )}
+        renderSectionFooter={({ section }) => (
+          <SectionStatus query={section.query} emptyText={section.emptyText} />
+        )}
+        renderItem={({ item, section }) =>
+          section.key === 'joined' ? (
+            <JoinedNetRow net={item} selected={item.id === selectedNetId} onOpen={onOpenNet} />
+          ) : (
+            <OpenNetRow
+              net={item}
+              joining={join.isPending && join.variables === item.id}
+              onJoin={joinAndOpen}
+            />
+          )
+        }
+      />
+      {/* Next to an open chat (web sidebar), the chat says it: once per window. */}
+      {selectedNetId === undefined && <ConnectionToast bottom={insets.bottom + spacing.xl} />}
+    </View>
   );
 }

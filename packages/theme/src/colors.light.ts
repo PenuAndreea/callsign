@@ -27,5 +27,7 @@ export const lightColors: ThemeColors = {
   onDanger: '#FFFFFF',
   dangerText: '#8F2F1B',
   dangerSoft: 'rgba(181, 67, 44, 0.12)',
+  warning: '#F08A24',
+  onWarning: '#2B2408',
   shadow: 'rgba(32, 36, 26, 0.14)',
 };

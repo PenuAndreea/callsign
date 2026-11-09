@@ -70,6 +70,16 @@ function renderChat(props: { onBack?: () => void; onLeft?: () => void } = {}) {
   return { onLeft };
 }
 
+/**
+ * Waits until the chat is live: the server's member count reaches the header, so the socket is
+ * connected and handling events. Changes the count to `memberCount`.
+ */
+async function live(memberCount = 5) {
+  await waitFor(() => expect(sockets.io.sockets.sockets.size).toBe(1));
+  sockets.io.emit('room:updated', { id: tower.id, memberCount });
+  await screen.findByText(`${memberCount} stations on net`);
+}
+
 const transmit = async (text: string) => {
   const user = userEvent.setup();
   await user.type(await screen.findByRole('textbox', { name: 'Message' }), text);
@@ -109,7 +119,7 @@ describe('ChatScreen', () => {
 
   it('transmits, clears the composer and shows the saved message', async () => {
     renderChat();
-    await screen.findByText('4 stations on net');
+    await live();
     await transmit('Wolf Two on final. Over.');
 
     expect(await screen.findByText('Wolf Two on final. Over.')).toBeInTheDocument();
@@ -131,7 +141,7 @@ describe('ChatScreen', () => {
       });
     };
     renderChat();
-    await screen.findByText('4 stations on net');
+    await live();
     await transmit('Over.');
 
     expect(await screen.findByText(/Not sent/)).toBeInTheDocument();
@@ -144,8 +154,7 @@ describe('ChatScreen', () => {
   it('adds messages from other stations live', async () => {
     renderChat();
     await screen.findByText('Roger. Over.');
-    // Live once the subtitle drops "· reconnecting".
-    await screen.findByText('4 stations on net');
+    await live();
 
     sockets.io.emit(
       'message:new',
@@ -169,7 +178,7 @@ describe('ChatScreen', () => {
     );
     renderChat();
     // Connecting refetches the failed history, which swaps the offer for a spinner meanwhile.
-    await screen.findByText('4 stations on net');
+    await live();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Join the net' }));
     expect(await screen.findByText('Welcome. Over.')).toBeInTheDocument();
@@ -226,7 +235,7 @@ describe('ChatScreen', () => {
     server.use(http.delete(api(`/rooms/${tower.id}/members/me`), () => HttpResponse.error()));
     const { onLeft } = renderChat();
     // Connected first: connecting later would clear the error (back on the air) before it is read.
-    await screen.findByText('4 stations on net');
+    await live();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Leave' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -238,13 +247,14 @@ describe('ChatScreen', () => {
   it('drops the leave error once back on the air', async () => {
     server.use(http.delete(api(`/rooms/${tower.id}/members/me`), () => HttpResponse.error()));
     renderChat();
-    await screen.findByText('4 stations on net');
+    await live();
     await userEvent.click(await screen.findByRole('button', { name: 'Leave' }));
     await screen.findByText(/^Could not leave\./);
 
+    const before = [...sockets.io.sockets.sockets.keys()];
     sockets.dropConnections();
-    await screen.findByText('4 stations on net · reconnecting');
-    await screen.findByText('4 stations on net');
+    await waitFor(() => expect([...sockets.io.sockets.sockets.keys()]).not.toEqual(before));
+    await live(6);
 
     expect(screen.queryByText(/^Could not leave\./)).not.toBeInTheDocument();
   });
@@ -255,7 +265,7 @@ describe('ChatScreen', () => {
       http.put(api(`/rooms/${tower.id}/members/me`), () => apiError(429, 'RATE_LIMITED')),
     );
     renderChat();
-    await screen.findByText('4 stations on net');
+    await live();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Join the net' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(

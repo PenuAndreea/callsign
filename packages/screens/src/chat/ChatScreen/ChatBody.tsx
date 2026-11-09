@@ -34,6 +34,8 @@ export interface ChatBodyProps {
   joinError: string | undefined;
   userId: string;
   userCallsign: string;
+  /** The net is live (pending sends go out now). */
+  live: boolean;
   onRetrySend: (clientMessageId: string) => void;
   onDiscard: (clientMessageId: string) => void;
 }
@@ -113,6 +115,7 @@ export function ChatBody({ listRef, ...props }: ChatBodyProps) {
             entry={item}
             userId={props.userId}
             userCallsign={props.userCallsign}
+            live={props.live}
             onRetry={props.onRetrySend}
             onDiscard={props.onDiscard}
           />

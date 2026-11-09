@@ -5,6 +5,8 @@ export const useChatStyles = createStyles(({ colors }) => ({
   screen: { flex: 1, backgroundColor: colors.background },
   // `paddingTop` comes from `useInsetPadding` (safe area).
   header: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
+  // Where the connection toast hangs: no height, over the traffic, above the composer.
+  toastAnchor: { height: 0, zIndex: 1 },
   // Under the header: why the last Leave failed.
   headerNotice: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
   list: { flex: 1 },

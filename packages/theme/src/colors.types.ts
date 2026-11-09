@@ -51,6 +51,10 @@ export interface ThemeColors {
   dangerText: string;
   /** Soft danger background (error banner) */
   dangerSoft: string;
+  /** Attention without alarm: the connection toast (the net is not live) */
+  warning: string;
+  /** Text on top of `warning` */
+  onWarning: string;
   /** Card shadow color (low opacity) */
   shadow: string;
 }

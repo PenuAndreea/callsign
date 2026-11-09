@@ -6,6 +6,8 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ### Offline-first
 
+- feat(screens): connection toast on the nets list and the chat; queued messages wait for signal and can be discarded
+- feat(ui): StatusToast replaces StatusStrip, in signal orange (new `warning` / `onWarning` tokens)
 - feat(ui): StatusStrip
 - feat(hooks): useConnectivity (device network and socket)
 - feat(hooks): unsent messages survive a restart (saved outbox)

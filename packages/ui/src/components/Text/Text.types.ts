@@ -16,6 +16,7 @@ export type TextTone = Extract<
   | 'bubbleOutMeta'
   | 'dangerText'
   | 'onDanger'
+  | 'onWarning'
   | 'displayText'
   | 'displayMuted'
 >;

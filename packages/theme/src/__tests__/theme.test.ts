@@ -22,6 +22,7 @@ const TEXT_PAIRS: [foreground: ColorKey, background: ColorKey][] = [
   ['bubbleOutText', 'bubbleOut'],
   ['bubbleOutMeta', 'bubbleOut'],
   ['onDanger', 'danger'],
+  ['onWarning', 'warning'],
   ['dangerText', 'background'],
   ['dangerText', 'surface'],
   ['displayText', 'display'],

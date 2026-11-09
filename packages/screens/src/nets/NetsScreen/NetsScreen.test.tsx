@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 
+import { connectionCopy, TOAST_DELAY_MS } from '../../status/ConnectionToast/connectionCopy';
 import { renderScreen } from '../../test/renderScreen';
 import { NetsScreen } from './NetsScreen';
 
@@ -113,6 +114,21 @@ describe('NetsScreen', () => {
 
     const row = await screen.findByRole('button', { name: /^tower, joined/ });
     expect(row).toHaveAttribute('aria-selected', 'true');
+  });
+
+  // The fixture platform has realtime off: the net is never live.
+  it('says when the net is not live', async () => {
+    nets([tower], []);
+    renderNets();
+    expect(await screen.findByRole('status')).toHaveTextContent(connectionCopy.noSignal);
+  });
+
+  it('leaves that to the chat open beside it (web sidebar)', async () => {
+    nets([tower], []);
+    renderNets({ selectedNetId: tower.id });
+    await screen.findByRole('button', { name: /^tower, joined/ });
+    await new Promise((resolve) => setTimeout(resolve, TOAST_DELAY_MS + 100));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('starts a new net', async () => {

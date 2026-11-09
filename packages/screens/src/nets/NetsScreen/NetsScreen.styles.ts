@@ -3,6 +3,7 @@ import { createStyles } from '@callsign/ui';
 
 export const useNetsStyles = createStyles(({ colors }) => ({
   screen: { flex: 1, backgroundColor: colors.background },
+  list: { flex: 1 },
   // Top and bottom come from `useInsetPadding` (safe areas).
   content: { paddingHorizontal: spacing.xl },
   header: { gap: spacing.lg, paddingBottom: spacing.sm },
