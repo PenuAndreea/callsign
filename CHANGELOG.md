@@ -6,6 +6,7 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ### Offline-first
 
+- feat(hooks): useConnectivity (device network and socket)
 - feat(hooks): unsent messages survive a restart (saved outbox)
 - feat(hooks): list offline storage keys (web and mobile)
 - feat(hooks): one sender for pending messages, in order, waiting for the connection and for rate limits
