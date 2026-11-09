@@ -41,7 +41,10 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
   const join = useJoinNet();
   const leave = useLeaveNet();
   const realtime = useRealtimeStatus();
-  const live = useConnectivity() === 'connected';
+  const connectivity = useConnectivity();
+  const live = connectivity === 'connected';
+  // No network: Join and Leave are off (they would only wait); the toast says why.
+  const offline = connectivity === 'offline';
   const [draft, setDraft] = useState('');
   const listRef = useRef<FlatList<ChatItem>>(null);
   const { reset: resetLeave } = leave;
@@ -73,6 +76,7 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
               label="Leave"
               variant="link"
               loading={leave.isPending}
+              disabled={offline}
               onPress={() => leave.mutate(netId, { onSuccess: onLeft })}
             />
           )
@@ -96,6 +100,7 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
         onRetryLoad={() => void chat.refetch()}
         onJoin={() => join.mutate(netId, { onSuccess: () => void chat.refetch() })}
         joining={join.isPending}
+        offline={offline}
         joinError={errorMessageIfAny(join.error)}
         userId={user.id}
         userCallsign={user.callsign}

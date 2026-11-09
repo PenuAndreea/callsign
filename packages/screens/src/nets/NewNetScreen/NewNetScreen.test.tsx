@@ -1,9 +1,11 @@
+import { onlineManager } from '@callsign/hooks';
 import { api, apiError, net, server } from '@callsign/hooks/testing';
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 
+import { OFFLINE_ACTION_NOTE } from '../../status/ConnectionToast/connectionCopy';
 import { renderScreen } from '../../test/renderScreen';
 import { NewNetScreen } from './NewNetScreen';
 
@@ -56,5 +58,17 @@ describe('NewNetScreen', () => {
     const { onBack } = renderNewNet();
     await userEvent.click(await screen.findByRole('button', { name: 'Back' }));
     expect(onBack).toHaveBeenCalledOnce();
+  });
+
+  it('says why it cannot open a net while offline', async () => {
+    renderNewNet();
+    const open = await screen.findByRole('button', { name: 'Open the net' });
+    act(() => onlineManager.setOnline(false));
+    try {
+      expect(open).toHaveAttribute('aria-disabled', 'true');
+      expect(screen.getByText(OFFLINE_ACTION_NOTE)).toBeInTheDocument();
+    } finally {
+      act(() => onlineManager.setOnline(true));
+    }
   });
 });

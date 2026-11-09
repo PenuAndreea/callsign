@@ -59,6 +59,13 @@ describe('ChatScreen while the net is not live', () => {
     );
   });
 
+  it('turns off Leave while the device is offline', async () => {
+    renderChat();
+    const leave = await screen.findByRole('button', { name: 'Leave' });
+    act(() => onlineManager.setOnline(false));
+    expect(leave).toHaveAttribute('aria-disabled', 'true');
+  });
+
   it('keeps a send waiting for signal, with Discard to take it back', async () => {
     renderChat();
     await screen.findByText('Roger. Over.');

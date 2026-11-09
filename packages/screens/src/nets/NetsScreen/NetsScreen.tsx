@@ -1,8 +1,16 @@
-import { useJoinNet, useLogout, useNets, useSignedInUser } from '@callsign/hooks';
+import {
+  useConnectivity,
+  useJoinNet,
+  useLogout,
+  useNets,
+  useSignedInUser,
+  useUnsentCount,
+} from '@callsign/hooks';
 import { spacing } from '@callsign/theme';
 import type { RoomDto, RoomScope } from '@callsign/types';
 import { Button, ScreenHeader, SectionLabel } from '@callsign/ui';
 import type { SectionListData } from 'react-native';
+import { useState } from 'react';
 import { SectionList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,6 +18,7 @@ import { errorMessageIfAny } from '../../errors/errorMessage';
 import { FormError } from '../../form/FormError';
 import { useInsetPadding } from '../../layout/useInsetPadding';
 import { ConnectionToast } from '../../status/ConnectionToast/ConnectionToast';
+import { LogoutConfirm } from './LogoutConfirm';
 import { JoinedNetRow, OpenNetRow } from './NetRows';
 import { useNetsStyles } from './NetsScreen.styles';
 import type { NetsScreenProps } from './NetsScreen.types';
@@ -34,6 +43,12 @@ export function NetsScreen({ onOpenNet, onNewNet, selectedNetId }: NetsScreenPro
   const open = useNets('open');
   const join = useJoinNet();
   const logout = useLogout();
+  // No network: actions that need the API are off (they would only wait); the toast says why.
+  const offline = useConnectivity() === 'offline';
+  const unsent = useUnsentCount();
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
+  // Logging out wipes the outbox: ask first when something is still unsent.
+  const askLogout = () => (unsent > 0 ? setConfirmingLogout(true) : logout.mutate());
   const insetPadding = useInsetPadding({ top: spacing.xl, bottom: spacing.xxl * 2 });
   const insets = useSafeAreaInsets();
 
@@ -82,11 +97,25 @@ export function NetsScreen({ onOpenNet, onNewNet, selectedNetId }: NetsScreenPro
                   label="Log out"
                   variant="link"
                   loading={logout.isPending}
-                  onPress={() => logout.mutate()}
+                  onPress={askLogout}
                 />
               }
             />
-            <Button label="New net" icon="plus" variant="secondary" onPress={onNewNet} />
+            {confirmingLogout && unsent > 0 && (
+              <LogoutConfirm
+                unsent={unsent}
+                loggingOut={logout.isPending}
+                onConfirm={() => logout.mutate()}
+                onCancel={() => setConfirmingLogout(false)}
+              />
+            )}
+            <Button
+              label="New net"
+              icon="plus"
+              variant="secondary"
+              disabled={offline}
+              onPress={onNewNet}
+            />
             <FormError message={errorMessageIfAny(join.error)} />
           </View>
         }
@@ -103,6 +132,7 @@ export function NetsScreen({ onOpenNet, onNewNet, selectedNetId }: NetsScreenPro
             <OpenNetRow
               net={item}
               joining={join.isPending && join.variables === item.id}
+              offline={offline}
               onJoin={joinAndOpen}
             />
           )

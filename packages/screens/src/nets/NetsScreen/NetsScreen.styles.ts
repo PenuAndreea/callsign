@@ -4,6 +4,8 @@ import { createStyles } from '@callsign/ui';
 export const useNetsStyles = createStyles(({ colors }) => ({
   screen: { flex: 1, backgroundColor: colors.background },
   list: { flex: 1 },
+  confirm: { gap: spacing.sm },
+  confirmActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   // Top and bottom come from `useInsetPadding` (safe areas).
   content: { paddingHorizontal: spacing.xl },
   header: { gap: spacing.lg, paddingBottom: spacing.sm },
