@@ -4,9 +4,9 @@ import {
   assertSecureApiUrl,
   createMobilePlatform,
   defaultApiUrl,
-  SECURE_STORE_OPTIONS,
   secureRefreshTokenStore,
 } from '@/platform';
+import { SECURE_STORE_OPTIONS } from '@/secureStoreOptions';
 
 jest.mock('expo-secure-store', () => ({
   AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 'after-first-unlock-this-device-only',

@@ -6,6 +6,9 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ### Offline-first
 
+- feat(mobile): encrypted offline storage (AES-256-GCM, key in the secure store)
+- feat(web): offline storage in IndexedDB
+- feat(hooks): offline storage on the platform, wiped on every sign-in and sign-out
 - feat(mobile): pause queries while the device is offline (NetInfo feeds `onlineManager`)
 
 ### Security
