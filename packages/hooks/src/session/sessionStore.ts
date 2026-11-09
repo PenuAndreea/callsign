@@ -37,11 +37,23 @@ const SIGNED_OUT: SessionState = { status: 'signedOut' };
  * `useSyncExternalStore`, and every change of user empties the cache and the offline storage,
  * so one station never sees another's nets, on screen or on disk.
  */
+/** What the device saved for offline use. Neither method rejects (the caller reports failures). */
+export interface OfflineData {
+  /** Loads the saved data (the query cache) before the first restore decides anything. */
+  load(): Promise<void>;
+  /** Empties it, on every change of user. */
+  wipe(): Promise<void>;
+}
+
+const NO_OFFLINE_DATA: OfflineData = {
+  load: () => Promise.resolve(),
+  wipe: () => Promise.resolve(),
+};
+
 export function createSessionStore(
   api: ApiClient,
   queryClient: QueryClient,
-  /** Empties the device's offline storage. Never rejects (failures are reported by the caller). */
-  wipeOfflineData: () => Promise<void> = () => Promise.resolve(),
+  offline: OfflineData = NO_OFFLINE_DATA,
 ): SessionStore {
   const listeners = new Set<() => void>();
   let state: SessionState = RESTORING;
@@ -56,7 +68,7 @@ export function createSessionStore(
     set(SIGNED_OUT);
     // After the state change, so the signed-in screens are gone and nothing refetches.
     queryClient.clear();
-    void wipeOfflineData();
+    void offline.wipe();
   }
 
   async function runRestore(): Promise<void> {
@@ -64,7 +76,10 @@ export function createSessionStore(
     // A sign-in that lands first wins: only a restore nobody overtook may set the session.
     const stillRestoring = () => state.status === 'restoring';
     try {
-      const auth = await api.refresh();
+      // The refresh starts at once (a sign-in that lands meanwhile makes its answer stale) and
+      // the saved cache loads alongside. Nothing is decided before both: a signed-in screen
+      // opens on the saved cache, and a sign-out wipes it with the rest.
+      const [auth] = await Promise.all([api.refresh(), offline.load()]);
       if (!stillRestoring()) return;
       if (auth === null) signedOut();
       else set({ status: 'signedIn', user: auth.user });
@@ -101,7 +116,7 @@ export function createSessionStore(
       await api.startSession(auth);
       queryClient.clear();
       // Nothing saved on this device may belong to another station.
-      await wipeOfflineData();
+      await offline.wipe();
       set({ status: 'signedIn', user: auth.user });
     },
     async signOut() {

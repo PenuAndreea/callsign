@@ -11,7 +11,10 @@ function setup() {
   const apiClient = createApiClient(webPlatform);
   const queryClient = new QueryClient();
   const offline = new MemoryOfflineStorage();
-  const store = createSessionStore(apiClient, queryClient, () => offline.clear());
+  const store = createSessionStore(apiClient, queryClient, {
+    load: () => Promise.resolve(),
+    wipe: () => offline.clear(),
+  });
   return { apiClient, queryClient, offline, store };
 }
 
@@ -158,6 +161,25 @@ describe('createSessionStore: offline storage', () => {
 
     await store.restore();
     expect(offline.items.size).toBe(0);
+  });
+
+  it('loads it before the restore decides the session', async () => {
+    refreshAnswers(() => HttpResponse.json(authResponse('access-1')));
+    let loaded = false;
+    const store = createSessionStore(createApiClient(webPlatform), new QueryClient(), {
+      load: async () => {
+        await delay(30);
+        loaded = true;
+      },
+      wipe: () => Promise.resolve(),
+    });
+    let loadedWhenSignedIn = false;
+    store.subscribe(() => {
+      if (store.getSnapshot().status === 'signedIn') loadedWhenSignedIn = loaded;
+    });
+
+    await store.restore();
+    expect(loadedWhenSignedIn).toBe(true);
   });
 
   it('keeps it while the API cannot answer (the session may still be valid)', async () => {
