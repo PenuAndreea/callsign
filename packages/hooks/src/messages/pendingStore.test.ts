@@ -48,6 +48,21 @@ describe('createPendingStore', () => {
     expect(listener).toHaveBeenCalledTimes(5);
   });
 
+  it('finds the oldest queued message of any net', () => {
+    const store = createPendingStore();
+    const at = (minute: number) => `2026-10-17T22:${minute}:00.000Z`;
+    store.add({ ...pending('sending'), createdAt: at(10), status: 'sending' });
+    store.add({ ...pending('second'), createdAt: at(12), status: 'queued' });
+    store.add({ ...pending('first', 'ground'), createdAt: at(11), status: 'queued' });
+    store.add({ ...pending('failed'), createdAt: at(9), status: 'failed' });
+
+    expect(store.nextQueued()?.clientMessageId).toBe('first');
+    store.remove('first');
+    expect(store.nextQueued()?.clientMessageId).toBe('second');
+    store.remove('second');
+    expect(store.nextQueued()).toBeUndefined();
+  });
+
   it('ignores unknown ids', () => {
     const store = createPendingStore();
     const listener = vi.fn();

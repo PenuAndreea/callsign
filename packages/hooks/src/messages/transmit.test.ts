@@ -17,8 +17,13 @@ const message: PendingMessage = {
 };
 
 /** Only the part of a socket `transmit` uses. */
-function socketAnswering(answer: () => Promise<unknown>, timeouts: number[] = []) {
+function socketAnswering(
+  answer: () => Promise<unknown>,
+  timeouts: number[] = [],
+  connected = true,
+) {
   return {
+    connected,
     timeout: (ms: number) => {
       timeouts.push(ms);
       return { emitWithAck: answer };
@@ -32,26 +37,69 @@ beforeEach(() => {
   reportError = vi.fn<ErrorReporter>();
 });
 
-async function run(socket: RealtimeSocket | null) {
+async function run(socket: RealtimeSocket) {
   const pending = createPendingStore();
   pending.add(message);
-  await transmit(socket, new QueryClient(), pending, message, reportError);
-  return pending.get('key-1');
+  const outcome = await transmit(socket, new QueryClient(), pending, message, reportError);
+  return { outcome, ...pending.get('key-1') };
 }
 
+const refusal = (statusCode: number, code: string) => () =>
+  Promise.resolve({ ok: false, error: { statusCode, code, message: 'x' } });
+
 describe('transmit', () => {
-  it('fails as NETWORK_ERROR on an ack timeout, waiting ACK_TIMEOUT_MS', async () => {
+  it('is sent: the pending entry goes away', async () => {
+    const socket = socketAnswering(() =>
+      Promise.resolve({
+        ok: true,
+        message: {
+          id: 'ff00000000000000000000ff',
+          roomId: 'tower',
+          sender: { id: 'a0', callsign: 'wolf-2' },
+          content: 'Over.',
+          createdAt: '2026-10-17T22:14:01.000Z',
+        },
+      }),
+    );
+    await expect(run(socket)).resolves.toEqual({ outcome: 'sent' });
+  });
+
+  it('fails as NETWORK_ERROR on an ack timeout while still connected, after ACK_TIMEOUT_MS', async () => {
     const timeouts: number[] = [];
     const socket = socketAnswering(
       () => Promise.reject(new Error('operation has timed out')),
       timeouts,
     );
-    await expect(run(socket)).resolves.toMatchObject({ status: 'failed', error: 'NETWORK_ERROR' });
+    await expect(run(socket)).resolves.toMatchObject({
+      outcome: 'failed',
+      status: 'failed',
+      error: 'NETWORK_ERROR',
+    });
     expect(timeouts).toEqual([ACK_TIMEOUT_MS]);
   });
 
-  it('fails as NETWORK_ERROR without a socket', async () => {
-    await expect(run(null)).resolves.toMatchObject({ status: 'failed', error: 'NETWORK_ERROR' });
+  it('goes back to the queue when the connection dropped before the ack', async () => {
+    const socket = socketAnswering(() => Promise.reject(new Error('timed out')), [], false);
+    await expect(run(socket)).resolves.toMatchObject({
+      outcome: 'requeued',
+      status: 'queued',
+      error: null,
+    });
+  });
+
+  it('goes back to the queue when rate limited', async () => {
+    await expect(run(socketAnswering(refusal(429, 'RATE_LIMITED')))).resolves.toMatchObject({
+      outcome: 'rateLimited',
+      status: 'queued',
+    });
+  });
+
+  it('fails with the code of any other refusal', async () => {
+    await expect(run(socketAnswering(refusal(403, 'NOT_A_MEMBER')))).resolves.toMatchObject({
+      outcome: 'failed',
+      status: 'failed',
+      error: 'NOT_A_MEMBER',
+    });
   });
 
   it('fails as INVALID_RESPONSE on an ack that is not a SendMessageAck', async () => {
@@ -78,13 +126,8 @@ describe('transmit', () => {
   });
 
   it('does not report an expected refusal or a timeout', async () => {
-    const refused = socketAnswering(() =>
-      Promise.resolve({
-        ok: false,
-        error: { statusCode: 429, code: 'RATE_LIMITED', message: 'Slow down' },
-      }),
-    );
-    await expect(run(refused)).resolves.toMatchObject({ error: 'RATE_LIMITED' });
+    await run(socketAnswering(refusal(403, 'NOT_A_MEMBER')));
+    await run(socketAnswering(refusal(429, 'RATE_LIMITED')));
     await run(socketAnswering(() => Promise.reject(new Error('operation has timed out'))));
     expect(reportError).not.toHaveBeenCalled();
   });

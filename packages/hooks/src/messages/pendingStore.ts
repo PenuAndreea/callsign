@@ -7,6 +7,8 @@ export interface PendingStore {
   list(roomId: string): readonly PendingMessage[];
   subscribe(listener: () => void): () => void;
   get(clientMessageId: string): PendingMessage | undefined;
+  /** The oldest `queued` message of any net: the outbox sends in the order they were written. */
+  nextQueued(): PendingMessage | undefined;
   add(message: PendingMessage): void;
   update(clientMessageId: string, patch: Partial<PendingMessage>): void;
   remove(clientMessageId: string): void;
@@ -44,6 +46,16 @@ export function createPendingStore(): PendingStore {
       return () => listeners.delete(listener);
     },
     get: find,
+    nextQueued() {
+      let oldest: PendingMessage | undefined;
+      for (const messages of byRoom.values()) {
+        for (const message of messages) {
+          if (message.status !== 'queued') continue;
+          if (oldest === undefined || message.createdAt < oldest.createdAt) oldest = message;
+        }
+      }
+      return oldest;
+    },
     add(message) {
       setRoom(message.roomId, [message, ...(byRoom.get(message.roomId) ?? NONE)]);
     },

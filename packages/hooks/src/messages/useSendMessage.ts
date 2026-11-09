@@ -1,7 +1,7 @@
 import { useRealtime } from '../realtime/RealtimeContext';
 
 export interface SendMessageActions {
-  /** Shows the message at once (pending) and transmits it. Never rejects: failures show on it. */
+  /** Shows the message at once (pending) and queues it in the outbox. Failures show on it. */
   send: (content: string) => void;
   /** Sends a failed message again (same idempotency key). */
   retry: (clientMessageId: string) => void;
@@ -13,8 +13,8 @@ export interface SendMessageActions {
 export function useSendMessage(netId: string): SendMessageActions {
   const realtime = useRealtime();
   return {
-    send: (content) => void realtime.send(netId, content),
-    retry: (clientMessageId) => void realtime.retry(clientMessageId),
+    send: (content) => realtime.send(netId, content),
+    retry: (clientMessageId) => realtime.retry(clientMessageId),
     discard: (clientMessageId) => realtime.discard(clientMessageId),
   };
 }
