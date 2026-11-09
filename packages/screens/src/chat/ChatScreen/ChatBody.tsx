@@ -30,10 +30,14 @@ export interface ChatBodyProps {
   /** Shown when the history says `NOT_A_MEMBER` (opened from a link, or left elsewhere). */
   onJoin: () => void;
   joining: boolean;
+  /** No network: Join is off (the toast says why). */
+  offline: boolean;
   /** Why the last join failed, under the Join button. */
   joinError: string | undefined;
   userId: string;
   userCallsign: string;
+  /** The net is live (pending sends go out now). */
+  live: boolean;
   onRetrySend: (clientMessageId: string) => void;
   onDiscard: (clientMessageId: string) => void;
 }
@@ -64,7 +68,12 @@ export function ChatBody({ listRef, ...props }: ChatBodyProps) {
   if (notMember) {
     return (
       <ChatNotice message="You are not on this net. Join to read the traffic and transmit.">
-        <Button label="Join the net" loading={props.joining} onPress={props.onJoin} />
+        <Button
+          label="Join the net"
+          loading={props.joining}
+          disabled={props.offline}
+          onPress={props.onJoin}
+        />
         <FormError message={props.joinError} />
       </ChatNotice>
     );
@@ -113,6 +122,7 @@ export function ChatBody({ listRef, ...props }: ChatBodyProps) {
             entry={item}
             userId={props.userId}
             userCallsign={props.userCallsign}
+            live={props.live}
             onRetry={props.onRetrySend}
             onDiscard={props.onDiscard}
           />

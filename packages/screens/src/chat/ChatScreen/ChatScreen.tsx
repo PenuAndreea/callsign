@@ -3,6 +3,7 @@ import {
   useJoinNet,
   useLeaveNet,
   useNet,
+  useConnectivity,
   useNetMessages,
   useRealtimeStatus,
   useSendMessage,
@@ -20,6 +21,7 @@ import { FormError } from '../../form/FormError';
 import { stationsLabel } from '../../format/stations';
 import { KeyboardFrame } from '../../layout/KeyboardFrame';
 import { useInsetPadding } from '../../layout/useInsetPadding';
+import { ConnectionToast } from '../../status/ConnectionToast/ConnectionToast';
 import { ChatBody } from './ChatBody';
 import type { ChatItem } from './chatItems';
 import { useChatStyles } from './ChatScreen.styles';
@@ -39,6 +41,10 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
   const join = useJoinNet();
   const leave = useLeaveNet();
   const realtime = useRealtimeStatus();
+  const connectivity = useConnectivity();
+  const live = connectivity === 'connected';
+  // No network: Join and Leave are off (they would only wait); the toast says why.
+  const offline = connectivity === 'offline';
   const [draft, setDraft] = useState('');
   const listRef = useRef<FlatList<ChatItem>>(null);
   const { reset: resetLeave } = leave;
@@ -53,7 +59,6 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
   const offAir = isApiClientError(netQuery.error, 'NOT_FOUND');
   const notMember = isApiClientError(chat.error, 'NOT_A_MEMBER');
   const leaveError = leaveErrorMessage(leave.error);
-  const live = realtime === 'connected' ? '' : ' · reconnecting';
 
   return (
     <KeyboardFrame style={styles.screen}>
@@ -62,7 +67,7 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
         {...(onBack && { onBack })}
         eyebrow="Net"
         title={net?.name ?? ''}
-        {...(net && { subtitle: `${stationsLabel(net.memberCount)} on net${live}` })}
+        {...(net && { subtitle: `${stationsLabel(net.memberCount)} on net` })}
         truncateTitle
         action={
           !notMember &&
@@ -71,6 +76,7 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
               label="Leave"
               variant="link"
               loading={leave.isPending}
+              disabled={offline}
               onPress={() => leave.mutate(netId, { onSuccess: onLeft })}
             />
           )
@@ -94,12 +100,18 @@ export function ChatScreen({ netId, onBack, onLeft }: ChatScreenProps) {
         onRetryLoad={() => void chat.refetch()}
         onJoin={() => join.mutate(netId, { onSuccess: () => void chat.refetch() })}
         joining={join.isPending}
+        offline={offline}
         joinError={errorMessageIfAny(join.error)}
         userId={user.id}
         userCallsign={user.callsign}
+        live={live}
         onRetrySend={retry}
         onDiscard={discard}
       />
+      {/* Zero height between the traffic and the composer: the toast floats just above it. */}
+      <View style={styles.toastAnchor}>
+        <ConnectionToast bottom={spacing.md} />
+      </View>
       <MessageInput
         value={draft}
         onChangeText={setDraft}

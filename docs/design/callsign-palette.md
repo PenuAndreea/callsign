@@ -15,7 +15,7 @@ The values live in [`packages/theme/src`](../../packages/theme/src) and are not 
 Rules of thumb:
 
 - Brass only in the dark theme, olive drab only in the light theme (both live in `primary`).
-- Red (`danger`) only for errors and destructive actions in v1.
+- Red (`danger`) only for errors and destructive actions in v1; signal orange (`warning`) only for the connection toast.
 - Stencil font for short labels and headings, typewriter for message text and inputs, mono for numbers and small meta text.
 - Minimum tap target 44, screen gutter 20.
 - Text pairs reach 4.5:1 and status dots 3:1 in both themes; `src/__tests__/theme.test.ts` checks every pair, so a value change that breaks contrast fails the tests.
@@ -24,6 +24,7 @@ Changes from the design canvas:
 
 - Dark `textMuted` is `#A3A588` instead of `#9A9C80`, to reach 4.5:1 on `surfaceInset` (composer placeholder).
 - Added `primaryHalo` (translucent `primary`) for the ring around primary buttons.
+- Added `warning` `#F08A24` / `onWarning` `#2B2408` (same in both themes) for the connection toast (offline-first): clearly apart from dark brass (buttons, own bubbles) and from `danger` red, dark text for contrast.
 - Added `lineHeights`; Special Elite runs tight without them.
 - Added for the splash tuner: `display`, `displayText`, `displayMuted`, `tick`, `needle` (values below). Light `needle` is `#BC462E` instead of `#B5432C`, to reach 3:1 on `display`.
 - Left out until their features land: `frequency` (frequency display), `badge` / `onBadge` (unread counts), the `micro` font size (priority tag) and the segmented-control radii.

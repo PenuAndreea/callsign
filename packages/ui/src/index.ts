@@ -16,6 +16,8 @@ export * from './components/Input/Input';
 export type * from './components/Input/Input.types';
 export * from './components/StatusDot/StatusDot';
 export type * from './components/StatusDot/StatusDot.types';
+export * from './components/StatusToast/StatusToast';
+export type * from './components/StatusToast/StatusToast.types';
 
 export * from './components/SectionLabel/SectionLabel';
 export type * from './components/SectionLabel/SectionLabel.types';

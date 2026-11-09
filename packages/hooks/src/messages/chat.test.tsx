@@ -12,6 +12,7 @@ import type { SocketTestServer } from '../test/socketServer';
 import { startSocketTestServer } from '../test/socketServer';
 import { useNetMessages } from './useNetMessages';
 import { useSendMessage } from './useSendMessage';
+import { useUnsentCount } from './useUnsentCount';
 
 const tower = net('tower');
 const saved = (id: string, content: string, overrides: Partial<MessageDto> = {}): MessageDto => ({
@@ -53,6 +54,7 @@ async function renderChat() {
       chat: useNetMessages(tower.id),
       actions: useSendMessage(tower.id),
       status: useRealtimeStatus(),
+      unsent: useUnsentCount(),
     }),
     { ...webPlatform, createSocket: sockets.createSocket },
   );
@@ -166,6 +168,21 @@ describe('chat', () => {
     );
     act(() => result.current.actions.discard(result.current.chat.entries[0]?.key ?? ''));
     expect(result.current.chat.entries).toHaveLength(1);
+  });
+
+  it('counts unsent messages until they are discarded', async () => {
+    onSend = (_payload, ack) =>
+      ack({ ok: false, error: { statusCode: 403, code: 'NOT_A_MEMBER', message: 'x' } });
+    const { result } = await renderChat();
+    expect(result.current.unsent).toBe(0);
+
+    act(() => result.current.actions.send('Over.'));
+    expect(result.current.unsent).toBe(1);
+    await waitFor(() =>
+      expect(result.current.chat.entries[0]).toMatchObject({ pending: { status: 'failed' } }),
+    );
+    act(() => result.current.actions.discard(result.current.chat.entries[0]?.key ?? ''));
+    expect(result.current.unsent).toBe(0);
   });
 
   it('adds messages from other stations live', async () => {

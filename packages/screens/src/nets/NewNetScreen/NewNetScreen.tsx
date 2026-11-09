@@ -1,4 +1,4 @@
-import { isApiClientError, useCreateNet, useSignedInUser } from '@callsign/hooks';
+import { isApiClientError, useConnectivity, useCreateNet, useSignedInUser } from '@callsign/hooks';
 import { createRoomRequestSchema } from '@callsign/types';
 import { Button, ScreenHeader, Text } from '@callsign/ui';
 import { View } from 'react-native';
@@ -10,6 +10,7 @@ import { FormInput } from '../../form/FormInput';
 import { useFormStyles } from '../../form/form.styles';
 import { useZodForm } from '../../form/useZodForm';
 import { FormLayout } from '../../layout/FormLayout/FormLayout';
+import { OFFLINE_ACTION_NOTE } from '../../status/ConnectionToast/connectionCopy';
 import type { NewNetScreenProps } from './NewNetScreen.types';
 
 /** Opens a public net: only a name (3 to 30 characters). The creator joins it automatically. */
@@ -17,6 +18,8 @@ export function NewNetScreen({ onBack, onCreated }: NewNetScreenProps) {
   const styles = useFormStyles();
   const user = useSignedInUser();
   const create = useCreateNet();
+  // No network: creating would only wait. This screen has no connection toast, so it says why.
+  const offline = useConnectivity() === 'offline';
   const { control, handleSubmit, setError } = useZodForm(createRoomRequestSchema, { name: '' });
 
   const submit = handleSubmit((values) =>
@@ -51,10 +54,16 @@ export function NewNetScreen({ onBack, onCreated }: NewNetScreenProps) {
       </View>
       <View style={styles.actions}>
         <FormError message={formErrorExcept(create.error, 'NET_NAME_TAKEN')} />
+        {offline && (
+          <Text variant="small" tone="textMuted">
+            {OFFLINE_ACTION_NOTE}
+          </Text>
+        )}
         <Button
           label="Open the net"
           icon="arrowRight"
           loading={create.isPending}
+          disabled={offline}
           onPress={() => void submit()}
         />
       </View>

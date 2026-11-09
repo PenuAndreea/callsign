@@ -27,11 +27,13 @@ export function JoinedNetRow({ net, selected, onOpen }: JoinedNetRowProps) {
 interface OpenNetRowProps {
   net: RoomDto;
   joining: boolean;
+  /** No network: joining would only wait (the toast says why). */
+  offline: boolean;
   onJoin: (id: string) => void;
 }
 
 /** A net to join: the row is not pressable (the Join button is the action, no nested buttons). */
-export function OpenNetRow({ net, joining, onJoin }: OpenNetRowProps) {
+export function OpenNetRow({ net, joining, offline, onJoin }: OpenNetRowProps) {
   return (
     <RoomListItem
       name={net.name}
@@ -44,6 +46,7 @@ export function OpenNetRow({ net, joining, onJoin }: OpenNetRowProps) {
           variant="secondary"
           size="small"
           loading={joining}
+          disabled={offline}
           onPress={() => onJoin(net.id)}
         />
       }

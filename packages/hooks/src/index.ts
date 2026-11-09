@@ -31,10 +31,13 @@ export type {
   SocketFactory,
 } from './realtime/realtime.types';
 export { useRealtimeStatus } from './realtime/useRealtimeStatus';
+export type { Connectivity } from './realtime/useConnectivity';
+export { useConnectivity } from './realtime/useConnectivity';
 export type { ChatEntry, PendingMessage } from './messages/messages.types';
 export { useNetMessages } from './messages/useNetMessages';
 export type { SendMessageActions } from './messages/useSendMessage';
 export { useSendMessage } from './messages/useSendMessage';
+export { useUnsentCount } from './messages/useUnsentCount';
 export type { SocketFactoryOptions } from './realtime/defaultSocketFactory';
 export { defaultSocketFactory } from './realtime/defaultSocketFactory';
 // Platform wiring without a second TanStack dependency (React Native: AppState → focus;
