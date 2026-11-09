@@ -6,6 +6,7 @@ import type { OfflineStorage } from '../platform/platform.types';
 import type { OfflineData } from '../session/sessionStore';
 import type { CachePersistence } from './cachePersistence';
 import { clearOfflineStorage } from './clearOfflineStorage';
+import type { OutboxPersistence } from './outboxPersistence';
 
 /** The storage key of the station last signed in on this device. */
 export const USER_KEY = 'session-user';
@@ -14,11 +15,13 @@ interface OfflineDataOptions {
   /** Omitted: nothing is saved, and a start without network shows the unreachable screen. */
   storage: OfflineStorage | undefined;
   persistence: CachePersistence;
+  outbox: OutboxPersistence;
   reportError: ErrorReporter;
 }
 
 /**
- * What the session store needs from the device: the saved query cache and who it belongs to.
+ * What the session store needs from the device: the saved query cache, the unsent messages and
+ * who they belong to.
  * The saved user is parsed with the shared schema like an API response (it comes from disk); one
  * that does not match reads as none. Nothing here rejects: failures are reported
  * (`source: 'storage'`) and the app goes on as if nothing was saved.
@@ -26,6 +29,7 @@ interface OfflineDataOptions {
 export function createOfflineData({
   storage,
   persistence,
+  outbox,
   reportError,
 }: OfflineDataOptions): OfflineData {
   const report = (error: unknown) => reportError(error, { source: 'storage', key: ['user'] });
@@ -45,7 +49,7 @@ export function createOfflineData({
 
   return {
     async load() {
-      const [, user] = await Promise.all([persistence.restore(), readUser()]);
+      const [, , user] = await Promise.all([persistence.restore(), outbox.restore(), readUser()]);
       return user;
     },
     async saveUser(user) {

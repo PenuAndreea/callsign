@@ -8,6 +8,7 @@ import { createApiClient } from '../api/createApiClient';
 import { ErrorReporterContext } from '../errors/ErrorReporterContext';
 import { consoleErrorReporter, oncePerError } from '../errors/reportError';
 import type { ApiPlatform } from '../platform/platform.types';
+import { createPendingStore } from '../messages/pendingStore';
 import { createQueryClient } from '../query/createQueryClient';
 import { createRealtime } from '../realtime/createRealtime';
 import { RealtimeContext } from '../realtime/RealtimeContext';
@@ -16,6 +17,7 @@ import { SessionContext } from '../session/SessionContext';
 import { createSessionStore } from '../session/sessionStore';
 import { createCachePersistence } from '../storage/cachePersistence';
 import { createOfflineData } from '../storage/offlineData';
+import { createOutboxPersistence } from '../storage/outboxPersistence';
 import { ApiClientContext } from './ApiClientContext';
 
 export interface ApiProviderProps {
@@ -41,11 +43,15 @@ export function ApiProvider({ platform, apiClient, queryClient, children }: ApiP
   const [persistence] = useState(() =>
     createCachePersistence({ queryClient: cache, storage: platform.offlineStorage, reportError }),
   );
+  const [pending] = useState(createPendingStore);
+  const [outbox] = useState(() =>
+    createOutboxPersistence({ pending, storage: platform.offlineStorage, reportError }),
+  );
   const [session] = useState(() =>
     createSessionStore(
       client,
       cache,
-      createOfflineData({ storage: platform.offlineStorage, persistence, reportError }),
+      createOfflineData({ storage: platform.offlineStorage, persistence, outbox, reportError }),
     ),
   );
   const [realtime] = useState(() =>
@@ -55,12 +61,14 @@ export function ApiProvider({ platform, apiClient, queryClient, children }: ApiP
       session,
       createSocket: resolveSocketFactory(platform),
       reportError,
+      pending,
     }),
   );
 
   // Subscribing is an effect, not part of creating the store: StrictMode runs initializers
   // twice, and only an effect gets a cleanup. A second `start` reuses the restore in flight.
   useEffect(() => persistence.start(), [persistence]);
+  useEffect(() => outbox.start(), [outbox]);
   useEffect(() => session.start(), [session]);
   useEffect(() => realtime.start(), [realtime]);
 

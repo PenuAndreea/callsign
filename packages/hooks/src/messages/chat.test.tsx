@@ -133,7 +133,7 @@ describe('chat', () => {
     onSend = (payload, ack) => {
       keys.push(payload.clientMessageId);
       if (keys.length === 1) {
-        ack({ ok: false, error: { statusCode: 429, code: 'RATE_LIMITED', message: 'x' } });
+        ack({ ok: false, error: { statusCode: 403, code: 'NOT_A_MEMBER', message: 'x' } });
         return;
       }
       ack({ ok: true, message: saved('ff00000000000000000000ff', payload.content, payload) });
@@ -144,7 +144,7 @@ describe('chat', () => {
     await waitFor(() =>
       expect(result.current.chat.entries[0]).toMatchObject({
         type: 'pending',
-        pending: { status: 'failed', error: 'RATE_LIMITED' },
+        pending: { status: 'failed', error: 'NOT_A_MEMBER' },
       }),
     );
     const key = result.current.chat.entries[0]?.key ?? '';

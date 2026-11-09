@@ -76,6 +76,10 @@ export class MemoryOfflineStorage implements OfflineStorage {
     return Promise.resolve();
   }
 
+  keys(): Promise<string[]> {
+    return Promise.resolve([...this.items.keys()]);
+  }
+
   clear(): Promise<void> {
     this.items.clear();
     return Promise.resolve();

@@ -8,8 +8,7 @@ import type { ErrorReporter } from '../errors/reportError';
 import { consoleErrorReporter } from '../errors/reportError';
 import type { PendingStore } from '../messages/pendingStore';
 import { createPendingStore } from '../messages/pendingStore';
-import { newClientMessageId } from '../messages/newClientMessageId';
-import { transmit } from '../messages/transmit';
+import { createOutbox } from '../messages/outbox';
 import { netKeys } from '../nets/netKeys';
 import type { SessionStore } from '../session/sessionStore';
 import { applyNewMessage, applyRoomUpdate } from './liveCache';
@@ -28,6 +27,8 @@ export interface RealtimeOptions {
   createSocket: SocketFactory | null;
   /** Where broken acks and events go. Omitted: the console. */
   reportError?: ErrorReporter;
+  /** The outbox's pending messages (the provider shares it with the saved outbox). */
+  pending?: PendingStore;
 }
 
 export interface Realtime {
@@ -37,12 +38,12 @@ export interface Realtime {
   start(): () => void;
   /** The open socket (`null` while signed out). */
   getSocket(): RealtimeSocket | null;
-  /** This device's unconfirmed sends. */
+  /** This device's unconfirmed sends (the outbox). */
   pending: PendingStore;
-  /** Shows the message as pending at once and sends it with a new idempotency key. */
-  send(roomId: string, content: string): Promise<void>;
-  /** Sends a failed message again with the same key (never saved twice). */
-  retry(clientMessageId: string): Promise<void>;
+  /** Shows the message as pending at once and queues it, with a new idempotency key. */
+  send(roomId: string, content: string): void;
+  /** Queues a failed message again with the same key (never saved twice). */
+  retry(clientMessageId: string): void;
   /** Drops a failed message from the screen. */
   discard(clientMessageId: string): void;
 }
@@ -63,13 +64,14 @@ export function createRealtime({
   session,
   createSocket,
   reportError = consoleErrorReporter,
+  pending = createPendingStore(),
 }: RealtimeOptions): Realtime {
   const listeners = new Set<() => void>();
   let status: RealtimeStatus = 'disconnected';
   let socket: RealtimeSocket | null = null;
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
   let authRetries = 0;
-  const pending = createPendingStore();
+  const outbox = createOutbox({ pending, queryClient, getSocket: () => socket, reportError });
 
   function setStatus(next: RealtimeStatus): void {
     if (next === status) return;
@@ -97,6 +99,8 @@ export function createRealtime({
         (state.status === 'error' && state.fetchStatus === 'idle') ||
         (state.dataUpdatedAt !== 0 && state.dataUpdatedAt < connectedAt),
     });
+    // Whatever was written while disconnected goes out now, in order.
+    outbox.flush();
   }
 
   /** Refreshes through the shared refresh, then connects with the new token. */
@@ -174,6 +178,7 @@ export function createRealtime({
     socket?.disconnect();
     socket = null;
     authRetries = 0;
+    outbox.stop();
     pending.clear();
     setStatus('disconnected');
   }
@@ -198,24 +203,8 @@ export function createRealtime({
     },
     getSocket: () => socket,
     pending,
-    send(roomId, content) {
-      const message = {
-        clientMessageId: newClientMessageId(),
-        roomId,
-        content,
-        createdAt: new Date().toISOString(),
-        status: 'sending',
-        error: null,
-      } as const;
-      pending.add(message);
-      return transmit(socket, queryClient, pending, message, reportError);
-    },
-    retry(clientMessageId) {
-      const message = pending.get(clientMessageId);
-      return message
-        ? transmit(socket, queryClient, pending, message, reportError)
-        : Promise.resolve();
-    },
-    discard: (clientMessageId) => pending.remove(clientMessageId),
+    send: outbox.send,
+    retry: outbox.retry,
+    discard: outbox.discard,
   };
 }

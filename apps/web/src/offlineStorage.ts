@@ -1,6 +1,6 @@
 import type { OfflineStorage } from '@callsign/hooks';
 import type { UseStore } from 'idb-keyval';
-import { clear, createStore, del, get, set } from 'idb-keyval';
+import { clear, createStore, del, get, keys, set } from 'idb-keyval';
 
 /** One database for the app's offline data, so a sign-out can empty it in one go. */
 const DB_NAME = 'callsign-offline';
@@ -22,6 +22,8 @@ export function createIndexedDbStorage(
     },
     setItem: (key, value) => set(key, value, store),
     removeItem: (key) => del(key, store),
+    // Only string keys are ours: IndexedDB also allows numbers, dates and arrays.
+    keys: async () => (await keys(store)).filter((key): key is string => typeof key === 'string'),
     clear: () => clear(store),
   };
 }

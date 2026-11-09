@@ -6,6 +6,9 @@ One short line per commit, newest first. Each milestone is a release: M0 = 0.1.0
 
 ### Offline-first
 
+- feat(hooks): unsent messages survive a restart (saved outbox)
+- feat(hooks): list offline storage keys (web and mobile)
+- feat(hooks): one sender for pending messages, in order, waiting for the connection and for rate limits
 - feat(hooks): a start without network opens signed in as the saved station, on its saved data
 - feat(hooks): save nets and their newest history on the device, restored on start (persisted query cache)
 - feat(mobile): encrypted offline storage (AES-256-GCM, key in the secure store)

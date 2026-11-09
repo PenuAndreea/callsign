@@ -122,7 +122,7 @@ describe('ChatScreen', () => {
     onSend = (payload, ack) => {
       attempts += 1;
       if (attempts === 1) {
-        ack({ ok: false, error: { statusCode: 429, code: 'RATE_LIMITED', message: 'x' } });
+        ack({ ok: false, error: { statusCode: 403, code: 'NOT_A_MEMBER', message: 'x' } });
         return;
       }
       ack({
@@ -135,7 +135,7 @@ describe('ChatScreen', () => {
     await transmit('Over.');
 
     expect(await screen.findByText(/Not sent/)).toBeInTheDocument();
-    expect(screen.getByText(/Stand by a few seconds/)).toBeInTheDocument();
+    expect(screen.getByText('Join the net first.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(screen.queryByText(/Not sent/)).not.toBeInTheDocument());
     expect(attempts).toBe(2);

@@ -37,6 +37,8 @@ export function createEncryptedStorage({
   randomBytes = getRandomBytes,
 }: EncryptedStorageOptions = {}): OfflineStorage {
   const cipher = async (): Promise<Cipher> => createCipher(await keys.get(), randomBytes);
+  const ownKeys = async () =>
+    (await backing.getAllKeys()).filter((key) => key.startsWith(KEY_PREFIX));
 
   return {
     async getItem(key) {
@@ -55,9 +57,9 @@ export function createEncryptedStorage({
       await backing.setItem(KEY_PREFIX + key, encrypt(value, key));
     },
     removeItem: (key) => backing.removeItem(KEY_PREFIX + key),
+    keys: async () => (await ownKeys()).map((key) => key.slice(KEY_PREFIX.length)),
     async clear() {
-      const ours = (await backing.getAllKeys()).filter((key) => key.startsWith(KEY_PREFIX));
-      await backing.multiRemove(ours);
+      await backing.multiRemove(await ownKeys());
       await keys.forget();
     },
   };

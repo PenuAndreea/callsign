@@ -5,8 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createApiClient } from '../api/createApiClient';
 import { netKeys } from '../nets/netKeys';
+import { createPendingStore } from '../messages/pendingStore';
 import { createCachePersistence } from '../storage/cachePersistence';
 import { createOfflineData, USER_KEY } from '../storage/offlineData';
+import { createOutboxPersistence } from '../storage/outboxPersistence';
 import { apiError, authResponse, MemoryOfflineStorage, webPlatform, wolf } from '../test/fixtures';
 import { api, server } from '../test/server';
 import { createSessionStore } from './sessionStore';
@@ -17,9 +19,11 @@ function setup(offline = new MemoryOfflineStorage()) {
   const queryClient = new QueryClient();
   const reportError = vi.fn();
   const persistence = createCachePersistence({ queryClient, storage: offline, reportError });
-  const offlineData = createOfflineData({ storage: offline, persistence, reportError });
+  const pending = createPendingStore();
+  const outbox = createOutboxPersistence({ pending, storage: offline, reportError });
+  const offlineData = createOfflineData({ storage: offline, persistence, outbox, reportError });
   const store = createSessionStore(apiClient, queryClient, offlineData);
-  return { apiClient, queryClient, offline, store };
+  return { apiClient, queryClient, offline, pending, store };
 }
 
 const refreshAnswers = (respond: () => Response | Promise<Response>) =>
@@ -128,6 +132,25 @@ describe('createSessionStore: start without an answer', () => {
     expect(store.getSnapshot()).toEqual({ status: 'signedIn', user: wolf });
     expect(queryClient.getQueryData(netKeys.detail('n1'))).toEqual({ id: 'n1' });
     expect(offline.items.has(USER_KEY)).toBe(true);
+  });
+
+  it('brings back the unsent messages before it opens', async () => {
+    refreshAnswers(() => HttpResponse.error());
+    const offline = deviceWithSavedSession();
+    const unsent = {
+      clientMessageId: 'c0ffee00-0000-4000-8000-000000000001',
+      roomId: 'n1',
+      content: 'Written offline. Over.',
+      createdAt: '2026-10-17T22:14:00.000Z',
+      status: 'sending',
+      error: null,
+    };
+    offline.items.set(`outbox:${unsent.clientMessageId}`, JSON.stringify(unsent));
+    const { store, pending } = setup(offline);
+
+    await store.restore();
+    expect(store.getSnapshot().status).toBe('signedIn');
+    expect(pending.list('n1')).toEqual([{ ...unsent, status: 'queued' }]);
   });
 
   it('also on a server failure (no answer about the session)', async () => {

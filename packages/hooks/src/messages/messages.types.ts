@@ -9,8 +9,13 @@ export interface PendingMessage {
   content: string;
   /** Local send time, for ordering and the bubble's meta line. */
   createdAt: string;
-  status: 'sending' | 'failed';
-  /** Why the last attempt failed (`RATE_LIMITED`, `NOT_A_MEMBER`, `NETWORK_ERROR` for a timeout). */
+  /**
+   * - `queued`: in the outbox, waiting for its turn or for a connection.
+   * - `sending`: on the wire, waiting for the ack.
+   * - `failed`: refused or timed out while connected; waits for Retry or Discard.
+   */
+  status: 'queued' | 'sending' | 'failed';
+  /** Why the last attempt failed (`NOT_A_MEMBER`, `NETWORK_ERROR` for a timeout, ...). */
   error: ClientErrorCode | null;
 }
 

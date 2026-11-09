@@ -2,8 +2,10 @@ import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 
 import { MemoryOfflineStorage, wolf } from '../test/fixtures';
+import { createPendingStore } from '../messages/pendingStore';
 import { createCachePersistence } from './cachePersistence';
 import { createOfflineData, USER_KEY } from './offlineData';
+import { createOutboxPersistence } from './outboxPersistence';
 
 /** `null`: a platform without offline storage. */
 function setup(withStorage: MemoryOfflineStorage | null = new MemoryOfflineStorage()) {
@@ -12,16 +14,19 @@ function setup(withStorage: MemoryOfflineStorage | null = new MemoryOfflineStora
   const reportError = vi.fn();
   const persistence = createCachePersistence({ queryClient, storage, reportError });
   const restore = vi.spyOn(persistence, 'restore');
-  const data = createOfflineData({ storage, persistence, reportError });
-  return { data, storage, reportError, restore };
+  const outbox = createOutboxPersistence({ pending: createPendingStore(), storage, reportError });
+  const restoreOutbox = vi.spyOn(outbox, 'restore');
+  const data = createOfflineData({ storage, persistence, outbox, reportError });
+  return { data, storage, reportError, restore, restoreOutbox };
 }
 
 describe('createOfflineData', () => {
   it('saves the signed-in station and loads it back with the cache', async () => {
-    const { data, restore } = setup();
+    const { data, restore, restoreOutbox } = setup();
     await data.saveUser(wolf);
     await expect(data.load()).resolves.toEqual(wolf);
     expect(restore).toHaveBeenCalledTimes(1);
+    expect(restoreOutbox).toHaveBeenCalledTimes(1);
   });
 
   it('loads no station when none was saved', async () => {
