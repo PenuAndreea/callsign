@@ -8,3 +8,7 @@ jest.mock('react-native-reanimated', () => ({
   ...jest.requireActual<object>('react-native-reanimated/mock'),
   useReducedMotion: jest.fn(() => false),
 }));
+// NetInfo's native module does not exist in Jest; its own mock reports a connected device.
+jest.mock('@react-native-community/netinfo', () =>
+  jest.requireActual<object>('@react-native-community/netinfo/jest/netinfo-mock.js'),
+);
