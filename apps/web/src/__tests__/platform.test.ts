@@ -10,6 +10,7 @@ describe('createWebPlatform', () => {
       'getItem',
       'setItem',
       'removeItem',
+      'keys',
       'clear',
     ]);
   });

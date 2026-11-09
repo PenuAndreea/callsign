@@ -21,6 +21,8 @@ export interface OfflineStorage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
   removeItem(key: string): Promise<void>;
+  /** Every key it holds, in no particular order (the outbox saves one key per message). */
+  keys(): Promise<string[]>;
   /** Removes everything this storage holds (and, on mobile, its encryption key). */
   clear(): Promise<void>;
 }

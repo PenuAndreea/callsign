@@ -58,6 +58,15 @@ describe('createEncryptedStorage', () => {
     expect(await AsyncStorage.getItem(`${KEY_PREFIX}cache`)).toBeNull();
   });
 
+  it('lists only its own keys, without the prefix', async () => {
+    const { storage } = setup();
+    await AsyncStorage.setItem('other-library', 'not ours');
+    await storage.setItem('cache', 'tower');
+    await storage.setItem('outbox:1', 'Over.');
+
+    expect((await storage.keys()).sort()).toEqual(['cache', 'outbox:1']);
+  });
+
   it('clears only its own values and forgets the key', async () => {
     const { storage } = setup();
     await AsyncStorage.setItem('other-library', 'kept');

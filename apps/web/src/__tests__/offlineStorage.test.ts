@@ -34,6 +34,15 @@ describe('createIndexedDbStorage', () => {
     expect(await storage.getItem('outbox:1')).toBeNull();
   });
 
+  it('lists its keys', async () => {
+    const { store, storage } = freshStorage();
+    await storage.setItem('cache', 'nets');
+    await storage.setItem('outbox:1', 'message');
+    await set(42, 'not ours', store);
+
+    expect((await storage.keys()).sort()).toEqual(['cache', 'outbox:1']);
+  });
+
   it('reads a value that is not a string as missing', async () => {
     const { store, storage } = freshStorage();
     await set('cache', { not: 'a string' }, store);
